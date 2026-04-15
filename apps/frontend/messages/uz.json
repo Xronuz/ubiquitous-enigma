@@ -1,0 +1,39 @@
+{
+  "common": {
+    "loading": "Yuklanmoqda...",
+    "save": "Saqlash",
+    "cancel": "Bekor qilish",
+    "delete": "O'chirish",
+    "edit": "Tahrirlash",
+    "add": "Qo'shish",
+    "search": "Qidirish",
+    "back": "Orqaga",
+    "next": "Keyingi",
+    "prev": "Oldingi",
+    "yes": "Ha",
+    "no": "Yo'q",
+    "error": "Xato",
+    "success": "Muvaffaqiyatli"
+  },
+  "auth": {
+    "login": "Kirish",
+    "logout": "Chiqish",
+    "email": "Email",
+    "password": "Parol",
+    "forgotPassword": "Parolni unutdingizmi?",
+    "loginTitle": "EduPlatform",
+    "loginDesc": "Maktab boshqaruv tizimiga kiring"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "users": "Foydalanuvchilar",
+    "classes": "Sinflar",
+    "schedule": "Jadval",
+    "attendance": "Davomat",
+    "grades": "Baholar",
+    "payments": "To'lovlar",
+    "notifications": "Bildirishnomalar",
+    "messages": "Xabarlar",
+    "settings": "Sozlamalar"
+  }
+}

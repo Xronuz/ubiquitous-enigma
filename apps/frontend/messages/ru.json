@@ -1,0 +1,39 @@
+{
+  "common": {
+    "loading": "Загрузка...",
+    "save": "Сохранить",
+    "cancel": "Отмена",
+    "delete": "Удалить",
+    "edit": "Редактировать",
+    "add": "Добавить",
+    "search": "Поиск",
+    "back": "Назад",
+    "next": "Далее",
+    "prev": "Назад",
+    "yes": "Да",
+    "no": "Нет",
+    "error": "Ошибка",
+    "success": "Успешно"
+  },
+  "auth": {
+    "login": "Войти",
+    "logout": "Выйти",
+    "email": "Email",
+    "password": "Пароль",
+    "forgotPassword": "Забыли пароль?",
+    "loginTitle": "EduPlatform",
+    "loginDesc": "Войдите в систему управления школой"
+  },
+  "nav": {
+    "dashboard": "Главная",
+    "users": "Пользователи",
+    "classes": "Классы",
+    "schedule": "Расписание",
+    "attendance": "Посещаемость",
+    "grades": "Оценки",
+    "payments": "Платежи",
+    "notifications": "Уведомления",
+    "messages": "Сообщения",
+    "settings": "Настройки"
+  }
+}

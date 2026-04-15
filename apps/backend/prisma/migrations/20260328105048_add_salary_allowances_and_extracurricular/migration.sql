@@ -1,0 +1,10 @@
+-- AlterTable
+ALTER TABLE "payroll_items" ADD COLUMN     "certificateAllowance" DOUBLE PRECISION NOT NULL DEFAULT 0,
+ADD COLUMN     "degreeAllowance" DOUBLE PRECISION NOT NULL DEFAULT 0,
+ADD COLUMN     "extraCurricularAmount" DOUBLE PRECISION NOT NULL DEFAULT 0,
+ADD COLUMN     "extraCurricularHours" INTEGER NOT NULL DEFAULT 0;
+
+-- AlterTable
+ALTER TABLE "staff_salaries" ADD COLUMN     "certificateAllowance" DOUBLE PRECISION NOT NULL DEFAULT 0,
+ADD COLUMN     "degreeAllowance" DOUBLE PRECISION NOT NULL DEFAULT 0,
+ADD COLUMN     "extraCurricularRate" DOUBLE PRECISION NOT NULL DEFAULT 0;
