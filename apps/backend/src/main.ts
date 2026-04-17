@@ -3,17 +3,17 @@ import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { join } from 'path';
-import { WinstonModule } from 'nest-winston';
+import { Logger } from 'nestjs-pino';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
-import { winstonConfig } from './common/logger/winston.config';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
-    logger: WinstonModule.createLogger(winstonConfig),
+    bufferLogs: true,
   });
+  app.useLogger(app.get(Logger));
 
   // Lokal yuklangan fayllarni serve qilish (MinIO ishlatilmasa)
   app.useStaticAssets(join(process.cwd(), 'uploads'), { prefix: '/uploads' });

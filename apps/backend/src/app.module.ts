@@ -3,8 +3,8 @@ import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { ScheduleModule } from '@nestjs/schedule';
-import { WinstonModule } from 'nest-winston';
-import { winstonConfig } from './common/logger/winston.config';
+import { LoggerModule } from 'nestjs-pino';
+import { pinoConfig } from './common/logger/logger.config';
 import { PrismaModule } from './common/prisma/prisma.module';
 import { RedisModule } from './common/redis/redis.module';
 import { AuthModule } from './modules/auth/auth.module';
@@ -56,7 +56,7 @@ import { envValidationSchema } from './common/config/env.validation';
       validationSchema: envValidationSchema,
       validationOptions: { allowUnknown: true, abortEarly: false },
     }),
-    WinstonModule.forRoot(winstonConfig),
+    LoggerModule.forRoot(pinoConfig),
 
     // Rate limiting
     ThrottlerModule.forRootAsync({
