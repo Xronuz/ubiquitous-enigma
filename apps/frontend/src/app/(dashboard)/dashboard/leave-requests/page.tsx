@@ -48,7 +48,7 @@ const LEAVE_TYPES = [
   { value: 'other',    label: '📋 Boshqa' },
 ] as const;
 
-const EMPTY_FORM = { reason: '', startDate: '', endDate: '', type: 'personal' as string };
+const EMPTY_FORM = { reason: '', startDate: '', endDate: '', type: 'personal' as 'sick' | 'personal' | 'family' | 'other' };
 
 export default function LeaveRequestsPage() {
   const { user } = useAuthStore();
@@ -354,7 +354,7 @@ export default function LeaveRequestsPage() {
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
               <Label>Ta'til turi</Label>
-              <Select value={form.type} onValueChange={v => setForm(f => ({ ...f, type: v }))}>
+              <Select value={form.type} onValueChange={v => setForm(f => ({ ...f, type: v as 'sick' | 'personal' | 'family' | 'other' }))}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>

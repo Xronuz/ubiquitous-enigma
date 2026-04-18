@@ -491,7 +491,7 @@ export default function ClubsPage() {
               <EmptyState
                 icon={UserPlus}
                 title="Hali hech qaysi to'garakka a'zo emassiz"
-                description='"Barcha to\'garaklar" bo\'limidan sizga yoqqan to\'garakni tanlang'
+                description={"\"Barcha to'garaklar\" bo'limidan sizga yoqqan to'garakni tanlang"}
               />
             ) : (
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

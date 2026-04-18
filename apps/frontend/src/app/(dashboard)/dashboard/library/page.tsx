@@ -60,7 +60,7 @@ export default function LibraryPage() {
   });
 
   const exportPdfMutation = useMutation({
-    mutationFn: libraryApi.exportLoansPdf,
+    mutationFn: () => libraryApi.exportLoansPdf(),
     onError: () => toast({ variant: 'destructive', title: 'PDF yuklab olishda xato' }),
   });
 
