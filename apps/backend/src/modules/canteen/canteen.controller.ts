@@ -1,5 +1,5 @@
 import {
-  Controller, Get, Post, Delete, Body, Param, Query, UseGuards,
+  Controller, Get, Post, Delete, Body, Param, Query, UseGuards, ParseIntPipe, DefaultValuePipe,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
@@ -15,6 +15,20 @@ import { JwtPayload, UserRole } from '@eduplatform/types';
 @Controller({ path: 'canteen', version: '1' })
 export class CanteenController {
   constructor(private readonly canteenService: CanteenService) {}
+
+  /** Barcha menyu yozuvlari ro'yxati (admin CRUD sahifasi uchun) */
+  @Get()
+  @Roles(UserRole.SCHOOL_ADMIN, UserRole.VICE_PRINCIPAL)
+  @ApiOperation({ summary: 'Barcha menyu yozuvlari ro\'yxati (admin)' })
+  findAll(
+    @CurrentUser() currentUser: JwtPayload,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page?: number,
+    @Query('limit', new DefaultValuePipe(30), ParseIntPipe) limit?: number,
+  ) {
+    return this.canteenService.findAll(currentUser, { from, to, page, limit });
+  }
 
   /** Haftalik menyu */
   @Get('week')

@@ -3,7 +3,7 @@ import { IsArray, IsDateString, IsEnum, IsNumber, IsOptional, IsString, IsUUID, 
 import { Type } from 'class-transformer';
 import { Queue } from 'bullmq';
 import { PrismaService } from '@/common/prisma/prisma.service';
-import { GradeType, JwtPayload } from '@eduplatform/types';
+import { GradeType, JwtPayload, UserRole } from '@eduplatform/types';
 import { CreateGradeDto } from './dto/create-grade.dto';
 import { NotificationsService } from '@/modules/notifications/notifications.service';
 import { NOTIFICATION_QUEUE, NotificationJobType, GradeNotificationData } from '@/common/queue/queue.constants';
@@ -153,7 +153,11 @@ export class GradesService {
   }
 
   async getStudentGrades(studentId: string, currentUser: JwtPayload, subjectId?: string) {
-    const where: any = { studentId, schoolId: currentUser.schoolId! };
+    // Students may only access their own grades
+    const resolvedStudentId =
+      currentUser.role === UserRole.STUDENT ? currentUser.sub : studentId;
+
+    const where: any = { studentId: resolvedStudentId, schoolId: currentUser.schoolId! };
     if (subjectId) where.subjectId = subjectId;
 
     const grades = await this.prisma.grade.findMany({
@@ -275,6 +279,63 @@ export class GradesService {
       : 0;
 
     return { students: sorted, classAvg };
+  }
+
+  /**
+   * Role-scoped grade list:
+   *  - SCHOOL_ADMIN / VICE_PRINCIPAL → all grades in school (filterable)
+   *  - TEACHER / CLASS_TEACHER       → grades for classes they teach
+   *  - STUDENT                       → own grades only
+   *  - PARENT                        → 403 (use /parent/child/:id/grades)
+   */
+  async findAll(
+    currentUser: JwtPayload,
+    query?: { classId?: string; subjectId?: string; studentId?: string; page?: number; limit?: number },
+  ) {
+    const schoolId = currentUser.schoolId!;
+    const page  = query?.page  ?? 1;
+    const limit = Math.min(query?.limit ?? 50, 200);
+    const skip  = (page - 1) * limit;
+
+    const where: any = { schoolId };
+
+    if (query?.classId)   where.classId   = query.classId;
+    if (query?.subjectId) where.subjectId = query.subjectId;
+
+    // Student can only see their own grades
+    if (currentUser.role === UserRole.STUDENT) {
+      where.studentId = currentUser.sub;
+    } else if (query?.studentId) {
+      where.studentId = query.studentId;
+    }
+
+    // Teacher/class_teacher: scope to subjects they own
+    if (
+      currentUser.role === UserRole.TEACHER ||
+      currentUser.role === UserRole.CLASS_TEACHER
+    ) {
+      const mySubjects = await this.prisma.subject.findMany({
+        where: { schoolId, teacherId: currentUser.sub },
+        select: { id: true },
+      });
+      where.subjectId = { in: mySubjects.map((s) => s.id) };
+    }
+
+    const [data, total] = await this.prisma.$transaction([
+      this.prisma.grade.findMany({
+        where,
+        include: {
+          student: { select: { id: true, firstName: true, lastName: true } },
+          subject: { select: { id: true, name: true } },
+        },
+        orderBy: { date: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.grade.count({ where }),
+    ]);
+
+    return { data, meta: { total, page, limit, totalPages: Math.ceil(total / limit) } };
   }
 
   private calculateGpa(grades: { score: number; maxScore: number }[]): number {

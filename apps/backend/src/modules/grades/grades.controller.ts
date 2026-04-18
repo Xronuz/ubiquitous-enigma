@@ -15,6 +15,24 @@ import { JwtPayload, UserRole } from '@eduplatform/types';
 export class GradesController {
   constructor(private readonly gradesService: GradesService) {}
 
+  @Get()
+  @Roles(
+    UserRole.SCHOOL_ADMIN, UserRole.VICE_PRINCIPAL,
+    UserRole.TEACHER, UserRole.CLASS_TEACHER,
+    UserRole.STUDENT,
+  )
+  @ApiOperation({ summary: 'Baholar ro\'yxati (rol bo\'yicha filtrlangan)' })
+  findAll(
+    @CurrentUser() user: JwtPayload,
+    @Query('classId') classId?: string,
+    @Query('subjectId') subjectId?: string,
+    @Query('studentId') studentId?: string,
+    @Query('page') page = 1,
+    @Query('limit') limit = 50,
+  ) {
+    return this.gradesService.findAll(user, { classId, subjectId, studentId, page: +page, limit: +limit });
+  }
+
   @Post()
   @Roles(UserRole.TEACHER, UserRole.CLASS_TEACHER, UserRole.VICE_PRINCIPAL)
   @ApiOperation({ summary: 'Baho qo\'shish' })
@@ -50,7 +68,7 @@ export class GradesController {
   }
 
   @Get('student/:id')
-  @Roles(UserRole.TEACHER, UserRole.CLASS_TEACHER, UserRole.VICE_PRINCIPAL, UserRole.SCHOOL_ADMIN)
+  @Roles(UserRole.TEACHER, UserRole.CLASS_TEACHER, UserRole.VICE_PRINCIPAL, UserRole.SCHOOL_ADMIN, UserRole.STUDENT)
   @ApiOperation({ summary: 'O\'quvchi baholari' })
   getStudentGrades(
     @Param('id') studentId: string,

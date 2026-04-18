@@ -16,6 +16,12 @@ export interface MenuDay {
 }
 
 export const canteenApi = {
+  /** Admin CRUD list — paginated, filterable by date range */
+  findAll: (params?: { from?: string; to?: string; page?: number; limit?: number }) =>
+    apiClient.get<{ data: MenuDay[]; meta: { total: number; page: number; limit: number; totalPages: number } }>(
+      '/canteen', { params },
+    ).then(r => r.data),
+
   getWeekMenu: (params?: { from?: string; to?: string }) =>
     apiClient.get<MenuDay[]>('/canteen/week', { params }).then(r => r.data),
 

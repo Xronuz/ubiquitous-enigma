@@ -44,8 +44,7 @@ export class TransportController {
   @Get('routes')
   @Roles(
     UserRole.SCHOOL_ADMIN, UserRole.VICE_PRINCIPAL,
-    UserRole.TEACHER, UserRole.CLASS_TEACHER,
-    UserRole.STUDENT, UserRole.PARENT,
+    UserRole.CLASS_TEACHER,
   )
   @ApiOperation({ summary: 'Barcha marshrutlar ro\'yxati' })
   getRoutes(@CurrentUser() user: JwtPayload) {

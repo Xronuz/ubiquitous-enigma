@@ -63,8 +63,8 @@ export class NotificationsController {
   }
 
   @Get('queue-stats')
-  @Roles(UserRole.SUPER_ADMIN)
-  @ApiOperation({ summary: 'Notification queue statistikasi (super_admin)' })
+  @Roles(UserRole.SUPER_ADMIN, UserRole.SCHOOL_ADMIN)
+  @ApiOperation({ summary: 'Notification queue statistikasi (super_admin/school_admin)' })
   getQueueStats() {
     return this.queueService.getQueueStats();
   }

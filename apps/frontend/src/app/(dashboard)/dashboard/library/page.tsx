@@ -59,6 +59,11 @@ export default function LibraryPage() {
     onSuccess: () => { toast({ title: '✅ Kitob qaytarildi' }); queryClient.invalidateQueries({ queryKey: ['library'] }); },
   });
 
+  const exportPdfMutation = useMutation({
+    mutationFn: libraryApi.exportLoansPdf,
+    onError: () => toast({ variant: 'destructive', title: 'PDF yuklab olishda xato' }),
+  });
+
   const validateBook = () => {
     const e: Record<string, string> = {};
     if (!bookForm.title.trim()) e.title = 'Kitob nomi kiriting';
@@ -85,13 +90,13 @@ export default function LibraryPage() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() =>
-                libraryApi.exportLoansPdf().catch(() =>
-                  toast({ variant: 'destructive', title: 'PDF yuklab olishda xato' })
-                )
-              }
+              onClick={() => exportPdfMutation.mutate()}
+              disabled={exportPdfMutation.isPending}
             >
-              <Download className="mr-1.5 h-4 w-4" /> PDF Tarix
+              {exportPdfMutation.isPending
+                ? <><Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> Yuklanmoqda...</>
+                : <><Download className="mr-1.5 h-4 w-4" /> PDF Tarix</>
+              }
             </Button>
             <Button variant="outline" onClick={() => { setLoanOpen(true); setLoanForm(EMPTY_LOAN); setLoanErrors({}); }}>
               <BookMarked className="mr-2 h-4 w-4" /> Kitob berish

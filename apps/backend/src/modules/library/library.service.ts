@@ -84,27 +84,37 @@ export class LibraryService {
   }
 
   async loanBook(dto: LoanBookDto, currentUser: JwtPayload) {
-    const book = await this.prisma.libraryBook.findFirst({ where: { id: dto.bookId, schoolId: currentUser.schoolId! } });
-    if (!book) throw new NotFoundException('Kitob topilmadi');
-    if (book.copiesAvailable < 1) throw new BadRequestException('Kitob nusxasi qolmagan');
+    // Atomic transaction — race condition oldini oladi (double-booking mumkin emas)
+    return this.prisma.$transaction(async (tx) => {
+      const book = await tx.libraryBook.findFirst({ where: { id: dto.bookId, schoolId: currentUser.schoolId! } });
+      if (!book) throw new NotFoundException('Kitob topilmadi');
+      if (book.copiesAvailable < 1) throw new BadRequestException('Kitob nusxasi qolmagan');
 
-    const dueDate = new Date();
-    dueDate.setDate(dueDate.getDate() + 14); // 2 hafta
+      const dueDate = new Date();
+      dueDate.setDate(dueDate.getDate() + 14); // 2 hafta
 
-    const loan = await this.prisma.libraryLoan.create({
-      data: {
-        schoolId: currentUser.schoolId!,
-        bookId: dto.bookId,
-        studentId: dto.studentId,
-        dueDate,
-      },
-      include: { book: { select: { title: true } } },
+      const loan = await tx.libraryLoan.create({
+        data: {
+          schoolId: currentUser.schoolId!,
+          bookId: dto.bookId,
+          studentId: dto.studentId,
+          dueDate,
+        },
+        include: { book: { select: { title: true } } },
+      });
+
+      // Faqat haqiqatan nusxa bo'lsa dekrement qilamiz (atomic check)
+      const updated = await tx.libraryBook.updateMany({
+        where: { id: dto.bookId, copiesAvailable: { gt: 0 } },
+        data: { copiesAvailable: { decrement: 1 } },
+      });
+
+      if (updated.count === 0) {
+        throw new BadRequestException('Kitob nusxasi qolmagan — boshqa foydalanuvchi oldi');
+      }
+
+      return loan;
     });
-    await this.prisma.libraryBook.update({
-      where: { id: dto.bookId },
-      data: { copiesAvailable: { decrement: 1 } },
-    });
-    return loan;
   }
 
   async returnBook(loanId: string, currentUser: JwtPayload) {

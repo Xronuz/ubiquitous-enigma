@@ -310,10 +310,32 @@ export default function HomeworkPage() {
     },
   });
 
+  const FILE_MAX_MB = 10;
+  const ALLOWED_TYPES = [
+    'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'text/plain',
+    'image/png', 'image/jpeg',
+    'application/vnd.ms-excel',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'text/csv',
+  ];
+
   const handleStudentSubmit = async (hwId: string) => {
     if (!submitText.trim() && !submitFile) {
       toast({ variant: 'destructive', title: 'Javob yoki fayl kiriting' });
       return;
+    }
+    if (submitFile) {
+      if (submitFile.size > FILE_MAX_MB * 1024 * 1024) {
+        toast({ variant: 'destructive', title: `Fayl hajmi ${FILE_MAX_MB}MB dan oshmasligi kerak` });
+        return;
+      }
+      if (!ALLOWED_TYPES.includes(submitFile.type)) {
+        toast({ variant: 'destructive', title: 'Noto\'g\'ri fayl turi', description: 'PDF, DOC, DOCX, TXT, PNG, JPG, XLSX, CSV fayl turlarini yuklash mumkin' });
+        return;
+      }
     }
     let fileUrl: string | undefined;
     if (submitFile) {

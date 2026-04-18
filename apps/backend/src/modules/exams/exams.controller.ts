@@ -18,7 +18,7 @@ export class ExamsController {
   @Get('upcoming')
   @Roles(
     UserRole.SCHOOL_ADMIN, UserRole.VICE_PRINCIPAL, UserRole.TEACHER,
-    UserRole.CLASS_TEACHER, UserRole.STUDENT, UserRole.PARENT,
+    UserRole.CLASS_TEACHER, UserRole.STUDENT,
   )
   @ApiOperation({ summary: 'Yaqin imtihonlar (dashboard widget)' })
   getUpcoming(
@@ -35,7 +35,6 @@ export class ExamsController {
     UserRole.TEACHER,
     UserRole.CLASS_TEACHER,
     UserRole.STUDENT,
-    UserRole.PARENT,
   )
   @ApiOperation({ summary: 'Imtihonlar ro\'yxati' })
   findAll(
@@ -53,7 +52,6 @@ export class ExamsController {
     UserRole.TEACHER,
     UserRole.CLASS_TEACHER,
     UserRole.STUDENT,
-    UserRole.PARENT,
   )
   @ApiOperation({ summary: 'Imtihon ma\'lumoti' })
   findOne(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
@@ -88,7 +86,6 @@ export class ExamsController {
     UserRole.TEACHER,
     UserRole.CLASS_TEACHER,
     UserRole.STUDENT,
-    UserRole.PARENT,
   )
   @ApiOperation({ summary: 'Imtihon natijalari va statistika' })
   getResults(@Param('id') id: string, @CurrentUser() user: JwtPayload) {

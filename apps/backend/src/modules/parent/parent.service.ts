@@ -41,7 +41,7 @@ export class ParentService {
   // ── Read endpoints ────────────────────────────────────────────────────────
 
   async getChildren(currentUser: JwtPayload) {
-    return this.prisma.parentStudent.findMany({
+    const rows = await this.prisma.parentStudent.findMany({
       where: {
         parentId: currentUser.sub,
         student: { schoolId: currentUser.schoolId!, isActive: true },
@@ -56,6 +56,21 @@ export class ParentService {
           },
         },
       },
+    });
+
+    // Flatten: return student-shaped objects so consumers can use children[n].id
+    // as the studentId for /parent/child/:studentId/* endpoints.
+    return rows.map((r) => {
+      const studentClasses = r.student.studentClasses.map((sc) => sc.class);
+      return {
+        id: r.student.id,
+        firstName: r.student.firstName,
+        lastName: r.student.lastName,
+        avatarUrl: r.student.avatarUrl,
+        // Convenience: primary class (first enrollment) for UI display
+        class: studentClasses[0] ?? null,
+        classes: studentClasses,
+      };
     });
   }
 

@@ -1,7 +1,7 @@
 import { apiClient } from './client';
 
 export const leaveRequestsApi = {
-  create: async (payload: { reason: string; startDate: string; endDate: string }) => {
+  create: async (payload: { reason: string; startDate: string; endDate: string; type?: 'sick' | 'personal' | 'family' | 'other' }) => {
     const { data } = await apiClient.post('/leave-requests', payload);
     return data;
   },

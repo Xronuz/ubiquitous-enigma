@@ -45,6 +45,36 @@ export class UpdateMenuDayDto {
 export class CanteenService {
   constructor(private readonly prisma: PrismaService) {}
 
+  /**
+   * Admin: barcha menyu yozuvlari ro'yxati (CRUD sahifasi uchun)
+   * Sahifalanadi, `from`/`to` sana filtri qo'llanadi.
+   */
+  async findAll(
+    currentUser: JwtPayload,
+    query?: { from?: string; to?: string; page?: number; limit?: number },
+  ) {
+    const schoolId = currentUser.schoolId!;
+    const page  = query?.page  ?? 1;
+    const limit = Math.min(query?.limit ?? 30, 100);
+    const skip  = (page - 1) * limit;
+
+    const where: any = { schoolId };
+    if (query?.from) where.date = { ...(where.date ?? {}), gte: new Date(query.from) };
+    if (query?.to)   where.date = { ...(where.date ?? {}), lte: new Date(query.to) };
+
+    const [data, total] = await this.prisma.$transaction([
+      this.prisma.menuDay.findMany({
+        where,
+        orderBy: [{ date: 'desc' }, { mealType: 'asc' }],
+        skip,
+        take: limit,
+      }),
+      this.prisma.menuDay.count({ where }),
+    ]);
+
+    return { data, meta: { total, page, limit, totalPages: Math.ceil(total / limit) } };
+  }
+
   /** Haftalik menyu — sana oralig'i bo'yicha */
   async getWeekMenu(currentUser: JwtPayload, from?: string, to?: string) {
     const schoolId = currentUser.schoolId!;

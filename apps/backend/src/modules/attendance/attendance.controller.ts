@@ -23,7 +23,7 @@ export class AttendanceController {
   }
 
   @Get('report')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.VICE_PRINCIPAL, UserRole.CLASS_TEACHER)
+  @Roles(UserRole.SCHOOL_ADMIN, UserRole.VICE_PRINCIPAL, UserRole.CLASS_TEACHER, UserRole.TEACHER)
   @ApiOperation({ summary: 'Davomat hisoboti' })
   getReport(
     @CurrentUser() user: JwtPayload,

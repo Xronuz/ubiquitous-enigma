@@ -1,29 +1,29 @@
 import { IsString, IsEnum, IsOptional, IsDateString, IsArray, ValidateNested } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Type, Transform, TransformFnParams } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { AttendanceStatus } from '@eduplatform/types';
 
 export class AttendanceEntryDto {
-  @ApiProperty()
+  @ApiProperty({ example: 'uuid-student-id', description: "O'quvchi user ID si" })
   @IsString()
   studentId: string;
 
-  @ApiProperty({ enum: AttendanceStatus })
+  @ApiProperty({ enum: AttendanceStatus, example: AttendanceStatus.PRESENT, description: 'present | absent | late | excused' })
   @IsEnum(AttendanceStatus)
   status: AttendanceStatus;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ example: 'Kasal', description: 'Ixtiyoriy izoh' })
   @IsOptional()
   @IsString()
   note?: string;
 }
 
 export class MarkAttendanceDto {
-  @ApiProperty()
+  @ApiProperty({ example: 'uuid-class-id', description: 'Sinf ID si' })
   @IsString()
   classId: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ example: 'uuid-schedule-id', description: 'Dars jadvali ID si (ixtiyoriy)' })
   @IsOptional()
   @IsString()
   scheduleId?: string;
@@ -32,9 +32,14 @@ export class MarkAttendanceDto {
   @IsDateString()
   date: string;
 
-  @ApiProperty({ type: [AttendanceEntryDto] })
+  @ApiProperty({
+    type: [AttendanceEntryDto],
+    description: "O'quvchilar davomati ro'yxati. 'records' nomi ham qabul qilinadi (legacy alias).",
+  })
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => AttendanceEntryDto)
+  // Accept both 'entries' (canonical) and 'records' (legacy alias from older frontend builds)
+  @Transform(({ value, obj }: TransformFnParams) => value ?? obj?.records)
   entries: AttendanceEntryDto[];
 }

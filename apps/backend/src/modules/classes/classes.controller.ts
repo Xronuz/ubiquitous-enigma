@@ -35,8 +35,8 @@ export class ClassesController {
   constructor(private readonly classesService: ClassesService) {}
 
   @Get('my-class')
-  @Roles(UserRole.CLASS_TEACHER)
-  @ApiOperation({ summary: 'O\'z sinfi (class_teacher)' })
+  @Roles(UserRole.CLASS_TEACHER, UserRole.TEACHER)
+  @ApiOperation({ summary: 'O\'z sinfi (class_teacher/teacher)' })
   findMyClass(@CurrentUser() user: JwtPayload) {
     return this.classesService.findMyClass(user);
   }

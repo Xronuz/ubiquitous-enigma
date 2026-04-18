@@ -22,7 +22,6 @@ export class HomeworkController {
     UserRole.TEACHER,
     UserRole.CLASS_TEACHER,
     UserRole.STUDENT,
-    UserRole.PARENT,
   )
   @ApiOperation({ summary: 'Uyga vazifalar ro\'yxati' })
   findAll(
@@ -40,7 +39,6 @@ export class HomeworkController {
     UserRole.TEACHER,
     UserRole.CLASS_TEACHER,
     UserRole.STUDENT,
-    UserRole.PARENT,
   )
   @ApiOperation({ summary: 'Uyga vazifa ma\'lumoti' })
   findOne(@Param('id') id: string, @CurrentUser() user: JwtPayload) {

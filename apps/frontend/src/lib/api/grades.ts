@@ -2,6 +2,25 @@ import { apiClient } from './client';
 import type { GradeType } from '@eduplatform/types';
 
 export const gradesApi = {
+  /** Role-scoped list: admin→all, teacher→own subjects, student→own grades */
+  findAll: async (params?: {
+    classId?: string;
+    subjectId?: string;
+    studentId?: string;
+    page?: number;
+    limit?: number;
+  }) => {
+    const { data } = await apiClient.get('/grades', { params });
+    return data as {
+      data: Array<{
+        id: string; score: number; maxScore: number; type: string; date: string;
+        student: { id: string; firstName: string; lastName: string };
+        subject: { id: string; name: string };
+      }>;
+      meta: { total: number; page: number; limit: number; totalPages: number };
+    };
+  },
+
   create: async (payload: {
     studentId: string;
     classId: string;

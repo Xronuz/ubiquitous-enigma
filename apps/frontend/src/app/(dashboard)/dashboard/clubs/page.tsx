@@ -20,6 +20,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
 import { cn } from '@/lib/utils';
+import { EmptyState } from '@/components/ui/empty-state';
 
 // ─── Category config ──────────────────────────────────────────────────────────
 
@@ -372,11 +373,12 @@ export default function ClubsPage() {
       </div>
     );
     if (list.length === 0) return (
-      <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
-        <Puzzle className="h-12 w-12 text-muted-foreground/30" />
-        <p className="font-medium text-muted-foreground">To'garaklar topilmadi</p>
-        {isAdmin && <Button size="sm" onClick={() => setCreateOpen(true)}><Plus className="h-4 w-4 mr-1" />Birinchi to'garakni yarating</Button>}
-      </div>
+      <EmptyState
+        icon={Puzzle}
+        title="To'garaklar topilmadi"
+        description={search ? `"${search}" bo'yicha natija yo'q` : "Hali hech qanday to'garak yaratilmagan"}
+        action={isAdmin ? { label: "Birinchi to'garakni yarating", onClick: () => setCreateOpen(true) } : undefined}
+      />
     );
 
     return (
@@ -486,11 +488,11 @@ export default function ClubsPage() {
         {isStudent && (
           <TabsContent value="mine" className="mt-4">
             {(myClubs as any[]).length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
-                <UserPlus className="h-12 w-12 text-muted-foreground/30" />
-                <p className="font-medium text-muted-foreground">Hali hech qaysi to'garakka a'zo emassiz</p>
-                <p className="text-sm text-muted-foreground">Yuqoridagi "Barcha to'garaklar" bo'limidan tanlang</p>
-              </div>
+              <EmptyState
+                icon={UserPlus}
+                title="Hali hech qaysi to'garakka a'zo emassiz"
+                description='"Barcha to\'garaklar" bo\'limidan sizga yoqqan to\'garakni tanlang'
+              />
             ) : (
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {(myClubs as any[]).map((club: any) => (
@@ -515,10 +517,11 @@ export default function ClubsPage() {
         {(isTeacher || isAdmin) && (
           <TabsContent value="led" className="mt-4">
             {(ledClubs as any[]).length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
-                <Puzzle className="h-12 w-12 text-muted-foreground/30" />
-                <p className="font-medium text-muted-foreground">Siz rahbar bo'lgan to'garaklar yo'q</p>
-              </div>
+              <EmptyState
+                icon={Puzzle}
+                title="Siz rahbar bo'lgan to'garaklar yo'q"
+                description="Maktab admini sizni to'garak rahbari sifatida tayinlaganda bu yerda ko'rinadi"
+              />
             ) : (
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {(ledClubs as any[]).map((club: any) => (

@@ -23,6 +23,7 @@ import {
 import { leaveRequestsApi } from '@/lib/api/leave-requests';
 import { useAuthStore } from '@/store/auth.store';
 import { useToast } from '@/components/ui/use-toast';
+import { EmptyState } from '@/components/ui/empty-state';
 import { formatDate, getInitials, getRoleLabel } from '@/lib/utils';
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
@@ -40,7 +41,14 @@ const STATUS_FILTERS = [
   { value: 'cancelled', label: 'Bekor qilindi' },
 ];
 
-const EMPTY_FORM = { reason: '', startDate: '', endDate: '' };
+const LEAVE_TYPES = [
+  { value: 'sick',     label: '🤒 Kasallik' },
+  { value: 'personal', label: '👤 Shaxsiy' },
+  { value: 'family',   label: '👨‍👩‍👧 Oilaviy' },
+  { value: 'other',    label: '📋 Boshqa' },
+] as const;
+
+const EMPTY_FORM = { reason: '', startDate: '', endDate: '', type: 'personal' as string };
 
 export default function LeaveRequestsPage() {
   const { user } = useAuthStore();
@@ -48,6 +56,7 @@ export default function LeaveRequestsPage() {
   const queryClient = useQueryClient();
 
   const isApprover = ['school_admin', 'vice_principal'].includes(user?.role ?? '');
+  const isStudent  = user?.role === 'student';
 
   const [filterStatus, setFilterStatus] = useState('');
   const [createOpen, setCreateOpen] = useState(false);
@@ -143,6 +152,8 @@ export default function LeaveRequestsPage() {
           <p className="text-muted-foreground">
             {isApprover
               ? `Xodimlarning ta'til so'rovlari • ${pendingCount > 0 ? `${pendingCount} ta yangi` : 'Yangi so\'rov yo\'q'}`
+              : isStudent
+              ? "Dars qoldirishga so'rov yuboring — ma'muriyat tasdiqlaydi"
               : "Ta'tilga chiqish uchun so'rov yuboring"}
           </p>
         </div>
@@ -176,12 +187,22 @@ export default function LeaveRequestsPage() {
           {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)}
         </div>
       ) : (requests as any[]).length === 0 ? (
-        <Card>
-          <CardContent className="py-16 text-center">
-            <CalendarOff className="mx-auto mb-3 h-12 w-12 text-muted-foreground opacity-30" />
-            <p className="text-muted-foreground">So'rovlar topilmadi</p>
-          </CardContent>
-        </Card>
+        <EmptyState
+          icon={CalendarOff}
+          title="So'rovlar topilmadi"
+          description={
+            filterStatus
+              ? `"${STATUS_FILTERS.find(f => f.value === filterStatus)?.label}" holatidagi so'rovlar yo'q`
+              : isStudent
+              ? "Siz hali so'rov yubormadingiz. Dars qoldirishga ehtiyoj bo'lsa, quyidagi tugmani bosing."
+              : "Hech qanday ta'til so'rovi mavjud emas."
+          }
+          action={
+            !filterStatus
+              ? { label: "So'rov yuborish", onClick: () => { setCreateOpen(true); setForm(EMPTY_FORM); setFormErrors({}); } }
+              : undefined
+          }
+        />
       ) : (
         <div className="space-y-3">
           {(requests as any[]).map((req: any) => {
@@ -331,6 +352,19 @@ export default function LeaveRequestsPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label>Ta'til turi</Label>
+              <Select value={form.type} onValueChange={v => setForm(f => ({ ...f, type: v }))}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {LEAVE_TYPES.map(t => (
+                    <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label>Boshlanish sanasi <span className="text-destructive">*</span></Label>

@@ -19,6 +19,28 @@ function dateOnly(offset: number): Date {
 async function main() {
   console.log('🌱 Seeding database...');
 
+  // ─── 0. Cleanup: remove duplicate ClassStudent rows ─────────────────────
+  // If a student somehow got enrolled in the same class twice (e.g. seed ran
+  // without the upsert guard), deduplicate by keeping only the latest row.
+  const allEnrollments = await prisma.classStudent.findMany({
+    select: { id: true, classId: true, studentId: true, createdAt: true },
+    orderBy: { createdAt: 'asc' },
+  });
+  const seen = new Map<string, string>(); // key → keep id
+  const toDelete: string[] = [];
+  for (const e of allEnrollments) {
+    const key = `${e.classId}:${e.studentId}`;
+    if (seen.has(key)) {
+      toDelete.push(e.id); // older duplicate → delete
+    } else {
+      seen.set(key, e.id);
+    }
+  }
+  if (toDelete.length > 0) {
+    await prisma.classStudent.deleteMany({ where: { id: { in: toDelete } } });
+    console.log(`🧹 ${toDelete.length} ta takroriy ClassStudent yozuv o'chirildi`);
+  }
+
   // ─── 1. Super Admin ─────────────────────────────────────────────────────
   const superAdmin = await prisma.user.upsert({
     where: { email: 'super@eduplatform.uz' },

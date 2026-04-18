@@ -233,9 +233,12 @@ export default function TransportPage() {
           </div>
         ) : !myRoute ? (
           <Card>
-            <CardContent className="py-16 text-center">
+            <CardContent className="py-16 text-center space-y-2">
               <Bus className="mx-auto mb-3 h-12 w-12 text-muted-foreground opacity-30" />
-              <p className="text-muted-foreground">Siz hali hech qanday avtobus marshrutiga biriktirilmagansiz</p>
+              <p className="text-muted-foreground font-medium">Siz hali hech qanday avtobus marshrutiga biriktirilmagansiz</p>
+              <p className="text-sm text-muted-foreground">
+                Marshrut qo&apos;shish uchun sinf rahbaringiz yoki maktab administratoriga murojaat qiling
+              </p>
             </CardContent>
           </Card>
         ) : (

@@ -29,7 +29,6 @@ export class SubjectsController {
     UserRole.TEACHER,
     UserRole.CLASS_TEACHER,
     UserRole.STUDENT,
-    UserRole.PARENT,
   )
   @ApiOperation({ summary: 'Fanlar ro\'yxati' })
   findAll(@CurrentUser() user: JwtPayload, @Query('classId') classId?: string) {

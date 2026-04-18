@@ -807,6 +807,7 @@ export default function ParentPage() {
                       value={leaveForm.reason}
                       onChange={e => setLeaveForm(f => ({ ...f, reason: e.target.value }))}
                       rows={3}
+                      maxLength={500}
                     />
                     <p className="text-xs text-muted-foreground text-right">{leaveForm.reason.length}/500</p>
                     {leaveErrors.reason && (

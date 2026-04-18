@@ -322,7 +322,13 @@ function StudentScheduleView() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold">Dars jadvali</h1>
-          <p className="text-muted-foreground">Haftalik dars jadvali</p>
+          <p className="text-muted-foreground flex items-center gap-2">
+            Haftalik dars jadvali
+            <span className="inline-flex items-center gap-1 text-xs text-muted-foreground bg-muted border border-border rounded-full px-2 py-0.5">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              Faqat ko&apos;rish
+            </span>
+          </p>
         </div>
         {(classes as any[]).length > 1 && (
           <Select value={classId} onValueChange={setSelectedClassId}>

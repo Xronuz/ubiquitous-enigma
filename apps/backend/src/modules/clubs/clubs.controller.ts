@@ -15,7 +15,7 @@ const ALL_SCHOOL = [
   UserRole.SCHOOL_ADMIN, UserRole.VICE_PRINCIPAL,
   UserRole.TEACHER, UserRole.CLASS_TEACHER,
   UserRole.ACCOUNTANT, UserRole.LIBRARIAN,
-  UserRole.STUDENT, UserRole.PARENT,
+  UserRole.STUDENT,
 ];
 
 @ApiTags('clubs')

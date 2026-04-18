@@ -22,6 +22,7 @@ export class LeaveRequestsController {
     UserRole.TEACHER, UserRole.CLASS_TEACHER,
     UserRole.ACCOUNTANT, UserRole.LIBRARIAN,
     UserRole.SCHOOL_ADMIN, UserRole.VICE_PRINCIPAL,
+    UserRole.STUDENT,
   )
   @ApiOperation({ summary: "Ta'til so'rovi yuborish" })
   create(@Body() dto: CreateLeaveRequestDto, @CurrentUser() user: JwtPayload) {
@@ -32,6 +33,7 @@ export class LeaveRequestsController {
   @Roles(
     UserRole.TEACHER, UserRole.CLASS_TEACHER, UserRole.ACCOUNTANT,
     UserRole.LIBRARIAN, UserRole.SCHOOL_ADMIN, UserRole.VICE_PRINCIPAL,
+    UserRole.STUDENT, UserRole.PARENT,
   )
   @ApiOperation({ summary: "Ta'til so'rovlari ro'yxati" })
   findAll(@CurrentUser() user: JwtPayload, @Query('status') status?: string) {
@@ -42,6 +44,7 @@ export class LeaveRequestsController {
   @Roles(
     UserRole.TEACHER, UserRole.CLASS_TEACHER, UserRole.ACCOUNTANT,
     UserRole.LIBRARIAN, UserRole.SCHOOL_ADMIN, UserRole.VICE_PRINCIPAL,
+    UserRole.STUDENT, UserRole.PARENT,
   )
   @ApiOperation({ summary: "So'rov tafsiloti" })
   findOne(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
@@ -64,6 +67,7 @@ export class LeaveRequestsController {
   @Roles(
     UserRole.TEACHER, UserRole.CLASS_TEACHER, UserRole.ACCOUNTANT,
     UserRole.LIBRARIAN, UserRole.SCHOOL_ADMIN, UserRole.VICE_PRINCIPAL,
+    UserRole.STUDENT,
   )
   @ApiOperation({ summary: "So'rovni bekor qilish" })
   cancel(@Param('id') id: string, @CurrentUser() user: JwtPayload) {

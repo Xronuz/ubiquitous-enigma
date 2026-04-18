@@ -62,7 +62,7 @@ const navGroups: NavGroup[] = [
     title: 'ASOSIY',
     items: [
       { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, roles: ['school_admin', 'vice_principal', 'teacher', 'class_teacher', 'accountant', 'librarian'] },
-      { label: 'Mening sinfim', href: '/dashboard/my-class', icon: School, roles: ['class_teacher'] },
+      { label: 'Mening sinfim', href: '/dashboard/my-class', icon: School, roles: ['class_teacher', 'teacher'] },
       { label: 'Mening portalim', href: '/dashboard/student', icon: UserCircle, roles: ['student'] },
       { label: 'Farzandlarim', href: '/dashboard/parent', icon: Heart, roles: ['parent'] },
     ],
@@ -100,7 +100,7 @@ const navGroups: NavGroup[] = [
     title: 'XODIMLAR',
     items: [
       { label: 'Foydalanuvchilar', href: '/dashboard/users', icon: Users, roles: ['school_admin', 'vice_principal'] },
-      { label: "Ta'til so'rovlari", href: '/dashboard/leave-requests', icon: CalendarOff, roles: ALL_STAFF },
+      { label: "Ta'til so'rovlari", href: '/dashboard/leave-requests', icon: CalendarOff, roles: [...ALL_STAFF, 'student'] },
       { label: 'Intizom jurnali', href: '/dashboard/discipline', icon: ShieldAlert, roles: ['school_admin', 'vice_principal', 'teacher', 'class_teacher'] },
       { label: 'Ota-ona uchrashuvlari', href: '/dashboard/meetings', icon: CalendarCheck, roles: ['school_admin', 'vice_principal', 'teacher', 'class_teacher'] },
     ],
@@ -110,7 +110,7 @@ const navGroups: NavGroup[] = [
     items: [
       { label: 'Kutubxona', href: '/dashboard/library', icon: Library, roles: ['school_admin', 'vice_principal', 'librarian'] },
       { label: "O'quv markazi", href: '/dashboard/learning-center', icon: MonitorPlay, roles: ['school_admin', 'vice_principal', 'teacher', 'student'] },
-      { label: "To'garaklar", href: '/dashboard/clubs', icon: Puzzle, roles: ['school_admin', 'vice_principal', 'teacher', 'class_teacher', 'student', 'parent'] },
+      { label: "To'garaklar", href: '/dashboard/clubs', icon: Puzzle, roles: ['school_admin', 'vice_principal', 'teacher', 'class_teacher', 'accountant', 'librarian', 'student'] },
       { label: 'Ovqatxona', href: '/dashboard/canteen', icon: UtensilsCrossed, roles: ['school_admin', 'vice_principal', 'teacher', 'class_teacher', 'student'] },
       { label: 'Transport', href: '/dashboard/transport', icon: Bus, roles: ['school_admin', 'vice_principal', 'student', 'parent'] },
     ],

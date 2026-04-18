@@ -1,25 +1,41 @@
 import { Injectable, NotFoundException, ForbiddenException, BadRequestException, Optional } from '@nestjs/common';
-import { IsString, IsDateString, IsOptional, MinLength, MaxLength } from 'class-validator';
+import { IsString, IsDateString, IsOptional, IsIn, MinLength, MaxLength } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { PrismaService } from '@/common/prisma/prisma.service';
 import { JwtPayload, UserRole } from '@eduplatform/types';
 import { AuditService } from '@/common/audit/audit.service';
 import { EventsGateway } from '@/modules/gateway/events.gateway';
 
 export class CreateLeaveRequestDto {
+  @ApiProperty({ example: 'Kasal bo\'lgani uchun ta\'til so\'ralmoqda', minLength: 5, maxLength: 500 })
   @IsString() @MinLength(5) @MaxLength(500)
   reason: string;
 
+  @ApiProperty({ example: '2026-05-01', description: 'Boshlanish sanasi (YYYY-MM-DD)' })
   @IsDateString()
   startDate: string;
 
+  @ApiProperty({ example: '2026-05-03', description: 'Tugash sanasi (YYYY-MM-DD)' })
   @IsDateString()
   endDate: string;
+
+  @ApiPropertyOptional({
+    enum: ['sick', 'personal', 'family', 'other'],
+    example: 'sick',
+    description: 'Ta\'til turi: sick | personal | family | other',
+  })
+  @IsOptional()
+  @IsString()
+  @IsIn(['sick', 'personal', 'family', 'other'])
+  type?: string;
 }
 
 export class ReviewLeaveDto {
+  @ApiProperty({ enum: ['approve', 'reject'], example: 'approve' })
   @IsString()
   action: 'approve' | 'reject';
 
+  @ApiPropertyOptional({ example: 'Ruxsat berildi', maxLength: 300 })
   @IsOptional() @IsString() @MaxLength(300)
   comment?: string;
 }
