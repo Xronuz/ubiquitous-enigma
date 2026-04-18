@@ -24,6 +24,20 @@ import { useToast } from '@/components/ui/use-toast';
 
 const EMPTY = { classId: '', subjectId: '', title: '', description: '', dueDate: '' };
 
+// ── File upload constraints (modul darajasida — har renderda qayta yaratilmaydi) ──
+const FILE_MAX_MB = 10;
+const ALLOWED_MIME_TYPES = new Set([
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'text/plain',
+  'image/png',
+  'image/jpeg',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'text/csv',
+]);
+
 // ── My Submission Dialog (student) ───────────────────────────────────────────
 function MySubmissionDialog({ homeworkId, homeworkTitle, open, onClose }: {
   homeworkId: string;
@@ -310,18 +324,6 @@ export default function HomeworkPage() {
     },
   });
 
-  const FILE_MAX_MB = 10;
-  const ALLOWED_TYPES = [
-    'application/pdf',
-    'application/msword',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    'text/plain',
-    'image/png', 'image/jpeg',
-    'application/vnd.ms-excel',
-    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    'text/csv',
-  ];
-
   const handleStudentSubmit = async (hwId: string) => {
     if (!submitText.trim() && !submitFile) {
       toast({ variant: 'destructive', title: 'Javob yoki fayl kiriting' });
@@ -332,7 +334,7 @@ export default function HomeworkPage() {
         toast({ variant: 'destructive', title: `Fayl hajmi ${FILE_MAX_MB}MB dan oshmasligi kerak` });
         return;
       }
-      if (!ALLOWED_TYPES.includes(submitFile.type)) {
+      if (!ALLOWED_MIME_TYPES.has(submitFile.type)) {
         toast({ variant: 'destructive', title: 'Noto\'g\'ri fayl turi', description: 'PDF, DOC, DOCX, TXT, PNG, JPG, XLSX, CSV fayl turlarini yuklash mumkin' });
         return;
       }
