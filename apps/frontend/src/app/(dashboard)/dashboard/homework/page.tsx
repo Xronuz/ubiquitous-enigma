@@ -21,6 +21,7 @@ import { classesApi } from '@/lib/api/classes';
 import { subjectsApi } from '@/lib/api/subjects';
 import { useAuthStore } from '@/store/auth.store';
 import { useToast } from '@/components/ui/use-toast';
+import { EmptyState } from '@/components/ui/empty-state';
 
 const EMPTY = { classId: '', subjectId: '', title: '', description: '', dueDate: '' };
 
@@ -290,7 +291,7 @@ export default function HomeworkPage() {
   const [gradingHw, setGradingHw] = useState<any | null>(null);
   const [viewSubmissionHw, setViewSubmissionHw] = useState<any | null>(null);
 
-  const { data: homeworks = [], isLoading } = useQuery({ queryKey: ['homework'], queryFn: () => homeworkApi.getAll() });
+  const { data: homeworks = [], isLoading, isError } = useQuery({ queryKey: ['homework'], queryFn: () => homeworkApi.getAll() });
   const { data: classes = [] } = useQuery({ queryKey: ['classes'], queryFn: () => classesApi.getAll(), enabled: open });
   const { data: subjects = [] } = useQuery({ queryKey: ['subjects'], queryFn: () => subjectsApi.getAll(), enabled: open });
 
@@ -429,12 +430,18 @@ export default function HomeworkPage() {
 
       {isLoading ? (
         <div className="space-y-3">{Array(3).fill(0).map((_, i) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}</div>
+      ) : isError ? (
+        <EmptyState
+          icon={FileX}
+          title="Uy vazifalari yuklanmadi"
+          description="Server bilan bog'lanishda xato. Sahifani yangilang yoki qayta urinib ko'ring."
+        />
       ) : hw.length === 0 ? (
-        <Card><CardContent className="p-12 text-center">
-          <BookMarked className="h-12 w-12 text-muted-foreground mx-auto mb-3 opacity-40" />
-          <p className="text-muted-foreground">Hali uy vazifalari yo'q</p>
-          {isTeacher && <p className="text-sm mt-1 text-muted-foreground">Yuqoridagi tugmani bosib vazifa qo'shing</p>}
-        </CardContent></Card>
+        <EmptyState
+          icon={BookMarked}
+          title="Hali uy vazifalari yo'q"
+          description={isTeacher ? "Yuqoridagi '+ Vazifa qo'shish' tugmasini bosib birinchi vazifani kiriting" : "O'qituvchi tomonidan berilgan vazifalar bu yerda ko'rinadi"}
+        />
       ) : (
         <div className="space-y-6">
           {active.length > 0 && (

@@ -2,6 +2,7 @@ import { Injectable, Logger, Optional } from '@nestjs/common';
 import { PrismaService } from '@/common/prisma/prisma.service';
 import { JwtPayload } from '@eduplatform/types';
 import { EventsGateway } from '@/modules/gateway/events.gateway';
+import { NotificationQueueService } from './notification-queue.service';
 
 export class SendNotificationDto {
   recipientId: string;
@@ -18,6 +19,7 @@ export class NotificationsService {
   constructor(
     private readonly prisma: PrismaService,
     @Optional() private readonly eventsGateway: EventsGateway,
+    @Optional() private readonly notificationQueue: NotificationQueueService,
   ) {}
 
   async send(dto: SendNotificationDto, currentUser: JwtPayload) {
@@ -31,7 +33,32 @@ export class NotificationsService {
         metadata: dto.metadata,
       },
     });
-    // TODO: Queue SMS/push via BullMQ in Phase 2
+    // H-5: BullMQ orqali SMS/push yuborish (Phase 2 implementation)
+    // Agar type 'sms' yoki 'push' bo'lsa — queue orqali asinxron yuboramiz
+    if (dto.type === 'sms' || dto.type === 'push') {
+      const recipient = await this.prisma.user.findUnique({
+        where: { id: dto.recipientId },
+        select: { phone: true, email: true, firstName: true, lastName: true },
+      }).catch(() => null);
+
+      if (recipient?.phone && dto.type === 'sms') {
+        await this.notificationQueue?.queueSms({
+          to: recipient.phone,
+          message: `${dto.title}: ${dto.body}`,
+        }).catch(() => { /* Queue bo'lmasa davom etadi */ });
+      }
+    }
+
+    // Real-time WebSocket push (in_app + push)
+    if (dto.type !== 'sms') {
+      this.eventsGateway?.emitToUser(dto.recipientId, 'notification:new', {
+        id: notification.id,
+        title: dto.title,
+        body: dto.body,
+        type: dto.type ?? 'in_app',
+      });
+    }
+
     this.logger.log(`Bildirishnoma yuborildi: ${dto.recipientId} — ${dto.title}`);
     return notification;
   }

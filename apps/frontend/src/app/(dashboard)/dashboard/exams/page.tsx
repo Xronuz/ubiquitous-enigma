@@ -25,6 +25,7 @@ import { classesApi } from '@/lib/api/classes';
 import { subjectsApi } from '@/lib/api/subjects';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuthStore } from '@/store/auth.store';
+import { EmptyState } from '@/components/ui/empty-state';
 
 const QTYPE_LABELS: Record<string, string> = {
   multiple_choice: "Ko'p variantli",
@@ -356,7 +357,7 @@ export default function ExamsPage() {
 
   const anyOpen = singleOpen || bulkOpen;
 
-  const { data: exams = [], isLoading } = useQuery({ queryKey: ['exams'], queryFn: () => examsApi.getAll() });
+  const { data: exams = [], isLoading, isError } = useQuery({ queryKey: ['exams'], queryFn: () => examsApi.getAll() });
   const { data: classes = [] } = useQuery({ queryKey: ['classes'], queryFn: () => classesApi.getAll(), enabled: anyOpen });
   const { data: subjects = [] } = useQuery({ queryKey: ['subjects'], queryFn: () => subjectsApi.getAll(), enabled: anyOpen });
 
@@ -480,12 +481,18 @@ export default function ExamsPage() {
 
       {isLoading ? (
         <div className="space-y-3">{Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
+      ) : isError ? (
+        <EmptyState
+          icon={FileText}
+          title="Imtihonlar yuklanmadi"
+          description="Server bilan bog'lanishda xato yuz berdi. Sahifani yangilang yoki qayta urinib ko'ring."
+        />
       ) : (exams as any[]).length === 0 ? (
-        <Card><CardContent className="p-12 text-center">
-          <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-3 opacity-40" />
-          <p className="text-muted-foreground">Hali imtihonlar yo'q</p>
-          {canManage && <p className="text-sm mt-1 text-muted-foreground">Yuqoridagi tugmani bosib imtihon qo'shing</p>}
-        </CardContent></Card>
+        <EmptyState
+          icon={FileText}
+          title="Hali imtihonlar yo'q"
+          description={canManage ? "Yuqoridagi '+ Yangi imtihon' tugmasini bosib birinchi imtihonni qo'shing" : "O'qituvchi tomonidan e'lon qilingan imtihonlar bu yerda ko'rinadi"}
+        />
       ) : (
         <div className="space-y-6">
           {upcoming.length > 0 && (

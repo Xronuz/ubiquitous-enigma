@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format, subDays } from 'date-fns';
 import {
   CalendarDays, CheckCircle2, XCircle, Clock, AlertCircle,
-  Users, CheckCheck, BarChart2, TrendingUp, TrendingDown, FileUp,
+  Users, CheckCheck, BarChart2, TrendingUp, TrendingDown, FileUp, ClipboardX,
 } from 'lucide-react';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -21,6 +21,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { cn } from '@/lib/utils';
 import { AttendanceStatus } from '@eduplatform/types';
 import { ImportDialog } from '@/components/import/import-dialog';
+import { EmptyState } from '@/components/ui/empty-state';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const STATUS_CONFIG = {
@@ -79,7 +80,7 @@ export default function AttendancePage() {
   const [view, setView] = useState<'mark' | 'history'>('mark');
 
   // ── Queries ──────────────────────────────────────────────────────────────────
-  const { data: classes } = useQuery({ queryKey: ['classes'], queryFn: classesApi.getAll });
+  const { data: classes, isError: classesError } = useQuery({ queryKey: ['classes'], queryFn: classesApi.getAll });
   const classList: any[] = Array.isArray(classes) ? classes : [];
 
   const { data: classStudents } = useQuery({
@@ -90,7 +91,7 @@ export default function AttendancePage() {
   const students: any[] = (Array.isArray(classStudents) ? classStudents : []).map((s: any) => s.student ?? s);
 
   // Today's report for current class
-  const { data: reportData, isLoading: reportLoading } = useQuery({
+  const { data: reportData, isLoading: reportLoading, isError: reportError } = useQuery({
     queryKey: ['attendance', 'report', selectedClass, selectedDate],
     queryFn: () => attendanceApi.getReport({ classId: selectedClass || undefined, startDate: selectedDate, endDate: selectedDate }),
     enabled: !!selectedClass,
@@ -185,8 +186,26 @@ export default function AttendancePage() {
     markMutation.mutate({ classId: selectedClass, date: selectedDate, entries });
   };
 
+  // D-1: isError global banner
+  if (classesError) {
+    return (
+      <EmptyState
+        icon={AlertCircle}
+        title="Ma'lumot yuklanmadi"
+        description="Server bilan bog'lanishda xato yuz berdi. Sahifani yangilang yoki keyinroq urinib ko'ring."
+      />
+    );
+  }
+
   return (
     <div className="space-y-6">
+      {/* D-1: Davomat ma'lumoti yuklanmasa ogohlantirish */}
+      {reportError && selectedClass && (
+        <div className="flex items-center gap-2 rounded-lg border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+          <AlertCircle className="h-4 w-4 shrink-0" />
+          Davomat ma'lumotlari yuklanmadi — internet aloqangizni tekshiring va qayta urinib ko'ring.
+        </div>
+      )}
       {/* ── Header ──────────────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
@@ -316,10 +335,11 @@ export default function AttendancePage() {
                 {reportLoading ? (
                   <div className="space-y-2">{[...Array(5)].map((_, i) => <Skeleton key={i} className="h-14 rounded-xl" />)}</div>
                 ) : students.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <Users className="h-8 w-8 mx-auto mb-2 opacity-30" />
-                    <p>Bu sinfda o'quvchilar yo'q</p>
-                  </div>
+                  <EmptyState
+                    icon={Users}
+                    title="Bu sinfda o'quvchilar yo'q"
+                    description="Sinfga o'quvchi qo'shish uchun 'Sinflar' bo'limiga o'ting"
+                  />
                 ) : (
                   <div className="space-y-2">
                     {students.map((s: any, idx: number) => {

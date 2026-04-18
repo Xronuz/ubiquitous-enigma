@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   BarChart2, Plus, Loader2, Trash2, TrendingUp, Filter,
   BookOpen, Award, ChevronLeft, ChevronRight, Search, LayoutList, Save, Pencil, Check, X as XIcon,
-  Download,
+  Download, AlertCircle,
 } from 'lucide-react';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -25,6 +25,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { formatDate } from '@/lib/utils';
 import { GradeType } from '@eduplatform/types';
 import { usePrint } from '@/hooks/use-print';
+import { EmptyState } from '@/components/ui/empty-state';
 import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid,
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
@@ -431,14 +432,14 @@ export default function GradesPage() {
   const studentList: any[] = classStudents as any[];
 
   // My grades (student view)
-  const { data: studentGrades, isLoading: studentLoading } = useQuery({
+  const { data: studentGrades, isLoading: studentLoading, isError: studentGradesError } = useQuery({
     queryKey: ['grades', 'student', user?.id],
     queryFn: () => gradesApi.getStudentGrades(user!.id),
     enabled: isStudent && !!user?.id,
   });
 
   // Class journal (teacher/admin view)
-  const { data: classReport, isLoading: classLoading } = useQuery({
+  const { data: classReport, isLoading: classLoading, isError: classReportError } = useQuery({
     queryKey: ['grades', 'class', selectedClass, selectedSubject, page],
     queryFn: () => gradesApi.getClassReport(selectedClass, selectedSubject || undefined, page, LIMIT),
     enabled: !isStudent && !!selectedClass,
@@ -528,6 +529,16 @@ export default function GradesPage() {
 
   // ── Student view ──────────────────────────────────────────────────────────────
   if (isStudent) {
+    if (studentGradesError) {
+      return (
+        <EmptyState
+          icon={AlertCircle}
+          title="Baholar yuklanmadi"
+          description="Server bilan bog'lanishda xato yuz berdi. Sahifani yangilang"
+        />
+      );
+    }
+
     const myGrades = studentGrades?.grades ?? [];
     const gpa = studentGrades?.gpa ?? 0;
 
@@ -778,6 +789,12 @@ export default function GradesPage() {
             </Card>
           ) : classLoading ? (
             <div className="space-y-3">{[...Array(5)].map((_, i) => <Skeleton key={i} className="h-14 rounded-xl" />)}</div>
+          ) : classReportError ? (
+            <EmptyState
+              icon={AlertCircle}
+              title="Baholar yuklanmadi"
+              description="Server bilan bog'lanishda xato yuz berdi. Sinf tanlash yoki sahifani yangilang"
+            />
           ) : (
             <div ref={printRef} className="space-y-4">
               {/* Subject averages */}

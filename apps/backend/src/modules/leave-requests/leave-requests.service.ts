@@ -225,6 +225,58 @@ export class LeaveRequestsService {
       },
     });
 
+    // H-1: Ta'til tasdiqlanganda davomat 'excused' yozuvi avtomatik yaratiladi
+    if (overallStatus === 'approved') {
+      try {
+        const requester = await this.prisma.user.findUnique({
+          where: { id: req.requesterId },
+          select: { role: true },
+        });
+
+        if (requester?.role === 'student') {
+          // O'quvchining sinfini olamiz
+          const studentClass = await this.prisma.classStudent.findFirst({
+            where: { studentId: req.requesterId },
+            select: { classId: true },
+          });
+          const classId = studentClass?.classId;
+          if (!classId) throw new Error('Student has no active class');
+
+          const start = new Date(req.startDate);
+          const end   = new Date(req.endDate);
+          const cur   = new Date(start);
+
+          while (cur <= end) {
+            const dayStart = new Date(cur); dayStart.setHours(0, 0, 0, 0);
+            const dayEnd   = new Date(cur); dayEnd.setHours(23, 59, 59, 999);
+
+            const existing = await this.prisma.attendance.findFirst({
+              where: { studentId: req.requesterId, date: { gte: dayStart, lte: dayEnd } },
+            });
+
+            if (existing) {
+              await this.prisma.attendance.update({
+                where: { id: existing.id },
+                data: { status: 'excused' as any },
+              });
+            } else {
+              await this.prisma.attendance.create({
+                data: {
+                  schoolId: currentUser.schoolId!,
+                  studentId: req.requesterId,
+                  classId,
+                  date: dayStart,
+                  status: 'excused' as any,
+                  note: `Ta'til so'rovi #${id} tasdiqlandi`,
+                },
+              });
+            }
+            cur.setDate(cur.getDate() + 1);
+          }
+        }
+      } catch { /* Davomat yozilmasa ham asosiy jarayon to'xtamaydi */ }
+    }
+
     // Notify requester if final decision made
     if (overallStatus === 'approved' || overallStatus === 'rejected') {
       const notifTitle = overallStatus === 'approved' ? "✅ Ta'til so'rovi tasdiqlandi" : "❌ Ta'til so'rovi rad etildi";

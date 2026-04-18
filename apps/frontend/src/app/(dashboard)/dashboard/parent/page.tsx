@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -146,35 +146,35 @@ export default function ParentPage() {
   const selectedChild = children.find((c: any) => c.id === childId);
 
   // ── Child data queries (enabled only when a child is selected) ──────────
-  const { data: attendanceData, isLoading: attendanceLoading } = useQuery({
+  const { data: attendanceData, isLoading: attendanceLoading, isError: attendanceError } = useQuery({
     queryKey: ['parent', 'attendance', childId],
     queryFn: () => parentApi.getChildAttendance(childId),
     enabled: !!childId && activeTab === 'attendance',
     select: (data: any) => (Array.isArray(data) ? data : data?.data ?? []),
   });
 
-  const { data: gradesData, isLoading: gradesLoading } = useQuery({
+  const { data: gradesData, isLoading: gradesLoading, isError: gradesError } = useQuery({
     queryKey: ['parent', 'grades', childId],
     queryFn: () => parentApi.getChildGrades(childId),
     enabled: !!childId && activeTab === 'grades',
     select: (data: any) => (Array.isArray(data) ? data : data?.data ?? []),
   });
 
-  const { data: paymentsData, isLoading: paymentsLoading } = useQuery({
+  const { data: paymentsData, isLoading: paymentsLoading, isError: paymentsError } = useQuery({
     queryKey: ['parent', 'payments', childId],
     queryFn: () => parentApi.getChildPayments(childId),
     enabled: !!childId && activeTab === 'payments',
     select: (data: any) => (Array.isArray(data) ? data : data?.data ?? []),
   });
 
-  const { data: scheduleData, isLoading: scheduleLoading } = useQuery({
+  const { data: scheduleData, isLoading: scheduleLoading, isError: scheduleError } = useQuery({
     queryKey: ['parent', 'schedule', childId],
     queryFn: () => parentApi.getChildSchedule(childId),
     enabled: !!childId && activeTab === 'schedule',
     select: (data: any) => (Array.isArray(data) ? data : data?.data ?? []),
   });
 
-  const { data: leaveRequestsData, isLoading: leaveRequestsLoading } = useQuery({
+  const { data: leaveRequestsData, isLoading: leaveRequestsLoading, isError: leaveRequestsError } = useQuery({
     queryKey: ['parent', 'leave-requests', childId],
     queryFn: () => parentApi.getChildLeaveRequests(childId),
     enabled: !!childId && activeTab === 'leave',
@@ -212,49 +212,63 @@ export default function ParentPage() {
     submitLeaveMutation.mutate();
   };
 
-  // ── Derived stats ───────────────────────────────────────────────────────
+  // ── Derived stats (memoized) ─────────────────────────────────────────────────
 
   const attendanceList: any[] = attendanceData ?? [];
   const gradesList: any[] = gradesData ?? [];
   const paymentsList: any[] = paymentsData ?? [];
   const scheduleList: any[] = scheduleData ?? [];
 
-  // Attendance %
-  const attendancePct = attendanceList.length > 0
-    ? Math.round((attendanceList.filter((a: any) => a.status === 'present').length / attendanceList.length) * 100)
-    : null;
+  // Attendance % — H-9: useMemo
+  const attendancePct = useMemo(() => {
+    if (!attendanceList.length) return null;
+    return Math.round(
+      (attendanceList.filter((a: any) => a.status === 'present').length / attendanceList.length) * 100
+    );
+  }, [attendanceList]);
 
-  // Average grade
-  const avgGrade = gradesList.length > 0
-    ? (gradesList.reduce((sum: number, g: any) => sum + (g.score ?? 0), 0) / gradesList.length).toFixed(1)
-    : null;
+  // Average grade — H-9: useMemo
+  const avgGrade = useMemo(() => {
+    if (!gradesList.length) return null;
+    return (gradesList.reduce((sum: number, g: any) => sum + (g.score ?? 0), 0) / gradesList.length).toFixed(1);
+  }, [gradesList]);
 
-  // Last payment
-  const lastPayment: any = paymentsList.length > 0
-    ? [...paymentsList].sort((a: any, b: any) => new Date(b.createdAt ?? b.date ?? 0).getTime() - new Date(a.createdAt ?? a.date ?? 0).getTime())[0]
-    : null;
+  // Last payment — H-9: useMemo
+  const lastPayment: any = useMemo(() => {
+    if (!paymentsList.length) return null;
+    return [...paymentsList].sort(
+      (a: any, b: any) =>
+        new Date(b.createdAt ?? b.date ?? 0).getTime() - new Date(a.createdAt ?? a.date ?? 0).getTime()
+    )[0];
+  }, [paymentsList]);
 
-  // Today's lessons
-  const today = new Date().toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
-  const todayLessons = scheduleList.filter(
-    (s: any) => (s.dayOfWeek ?? s.day ?? '').toLowerCase() === today
-  );
+  // Today's lessons — H-9: useMemo
+  const todayLessons = useMemo(() => {
+    const today = new Date().toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+    return scheduleList.filter((s: any) => (s.dayOfWeek ?? s.day ?? '').toLowerCase() === today);
+  }, [scheduleList]);
 
-  // Group grades by subject
-  const gradesBySubject: Record<string, any[]> = {};
-  for (const g of gradesList) {
-    const subj = g.subject?.name ?? g.subjectName ?? 'Noma\'lum fan';
-    if (!gradesBySubject[subj]) gradesBySubject[subj] = [];
-    gradesBySubject[subj].push(g);
-  }
+  // Group grades by subject — H-9: useMemo
+  const gradesBySubject = useMemo(() => {
+    const map: Record<string, any[]> = {};
+    for (const g of gradesList) {
+      const subj = g.subject?.name ?? g.subjectName ?? "Noma'lum fan";
+      if (!map[subj]) map[subj] = [];
+      map[subj].push(g);
+    }
+    return map;
+  }, [gradesList]);
 
-  // Group schedule by day
-  const scheduleByDay: Record<string, any[]> = {};
-  for (const lesson of scheduleList) {
-    const day = (lesson.dayOfWeek ?? lesson.day ?? '').toLowerCase();
-    if (!scheduleByDay[day]) scheduleByDay[day] = [];
-    scheduleByDay[day].push(lesson);
-  }
+  // Group schedule by day — H-9: useMemo
+  const scheduleByDay = useMemo(() => {
+    const map: Record<string, any[]> = {};
+    for (const lesson of scheduleList) {
+      const day = (lesson.dayOfWeek ?? lesson.day ?? '').toLowerCase();
+      if (!map[day]) map[day] = [];
+      map[day].push(lesson);
+    }
+    return map;
+  }, [scheduleList]);
 
   // ── Loading / no user ────────────────────────────────────────────────────
 
@@ -507,6 +521,12 @@ export default function ParentPage() {
                 <CardContent className="p-0">
                   {attendanceLoading ? (
                     <ListSkeleton rows={6} />
+                  ) : attendanceError ? (
+                    <EmptyState
+                      icon={AlertCircle}
+                      title="Davomat yuklanmadi"
+                      description="Server bilan bog'lanishda xato yuz berdi"
+                    />
                   ) : attendanceList.length === 0 ? (
                     <EmptyState
                       icon={Calendar}
@@ -555,6 +575,16 @@ export default function ParentPage() {
             <TabsContent value="grades" className="mt-4 space-y-4">
               {gradesLoading ? (
                 <ListSkeleton rows={5} />
+              ) : gradesError ? (
+                <Card>
+                  <CardContent className="py-2">
+                    <EmptyState
+                      icon={AlertCircle}
+                      title="Baholar yuklanmadi"
+                      description="Server bilan bog'lanishda xato yuz berdi"
+                    />
+                  </CardContent>
+                </Card>
               ) : gradesList.length === 0 ? (
                 <Card>
                   <CardContent className="py-2">
@@ -627,6 +657,12 @@ export default function ParentPage() {
                 <CardContent className="p-0">
                   {paymentsLoading ? (
                     <ListSkeleton rows={5} />
+                  ) : paymentsError ? (
+                    <EmptyState
+                      icon={AlertCircle}
+                      title="To'lovlar yuklanmadi"
+                      description="Server bilan bog'lanishda xato yuz berdi"
+                    />
                   ) : paymentsList.length === 0 ? (
                     <EmptyState
                       icon={CreditCard}
@@ -691,6 +727,16 @@ export default function ParentPage() {
             <TabsContent value="schedule" className="mt-4 space-y-4">
               {scheduleLoading ? (
                 <ListSkeleton rows={6} />
+              ) : scheduleError ? (
+                <Card>
+                  <CardContent className="py-2">
+                    <EmptyState
+                      icon={AlertCircle}
+                      title="Dars jadvali yuklanmadi"
+                      description="Server bilan bog'lanishda xato yuz berdi"
+                    />
+                  </CardContent>
+                </Card>
               ) : scheduleList.length === 0 ? (
                 <Card>
                   <CardContent className="py-2">
@@ -832,6 +878,12 @@ export default function ParentPage() {
                 <CardContent className="p-0">
                   {leaveRequestsLoading ? (
                     <ListSkeleton rows={3} />
+                  ) : leaveRequestsError ? (
+                    <EmptyState
+                      icon={AlertCircle}
+                      title="So'rovlar yuklanmadi"
+                      description="Server bilan bog'lanishda xato yuz berdi"
+                    />
                   ) : !leaveRequestsData || (leaveRequestsData as any[]).length === 0 ? (
                     <EmptyState
                       icon={FileText}

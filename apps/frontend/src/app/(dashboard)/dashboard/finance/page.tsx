@@ -1,11 +1,12 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import {
   TrendingUp, TrendingDown, CreditCard, Clock, AlertTriangle,
   Users, Banknote, CheckCircle, ArrowUpRight, ArrowDownRight,
-  BarChart2, FileText, Wallet,
+  BarChart2, FileText, Wallet, MessageSquare,
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -135,6 +136,7 @@ function RevenueChart({ data }: { data: MonthlyRevenueItem[] }) {
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 export default function FinanceDashboardPage() {
+  const router = useRouter();
   const [chartMonths] = useState(12);
 
   const { data: stats, isLoading: statsLoading } = useQuery<FinanceDashboardStats>({
@@ -315,11 +317,12 @@ export default function FinanceDashboardPage() {
                         <th className="text-right py-3 px-4 font-medium text-muted-foreground">Qarzdorlik</th>
                         <th className="text-right py-3 px-4 font-medium text-muted-foreground">To&apos;lovlar</th>
                         <th className="text-right py-3 px-4 font-medium text-muted-foreground">Eng eski</th>
+                        <th className="py-3 px-4 w-10" />
                       </tr>
                     </thead>
                     <tbody>
                       {debtors.map((d, i) => (
-                        <tr key={d.student.id} className="border-t hover:bg-muted/30 transition-colors">
+                        <tr key={d.student.id} className="border-t hover:bg-muted/30 transition-colors group">
                           <td className="py-3 px-4 text-muted-foreground">{i + 1}</td>
                           <td className="py-3 px-4">
                             <div className="flex items-center gap-2">
@@ -347,6 +350,16 @@ export default function FinanceDashboardPage() {
                           </td>
                           <td className="py-3 px-4 text-right text-xs text-muted-foreground">
                             {new Date(d.oldestDue).toLocaleDateString('uz-UZ')}
+                          </td>
+                          {/* H-7: Tezkor xabar tugmasi */}
+                          <td className="py-3 px-4">
+                            <button
+                              onClick={() => router.push(`/dashboard/messages?userId=${d.student.id}`)}
+                              title="O'quvchiga xabar yuborish"
+                              className="opacity-0 group-hover:opacity-100 transition-opacity rounded-md p-1.5 text-muted-foreground hover:text-blue-600 hover:bg-blue-50"
+                            >
+                              <MessageSquare className="h-4 w-4" />
+                            </button>
                           </td>
                         </tr>
                       ))}

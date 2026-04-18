@@ -5,6 +5,7 @@ import { PrismaService } from '@/common/prisma/prisma.service';
 import { JwtPayload } from '@eduplatform/types';
 import { CreateExamDto, UpdateExamDto } from './dto/create-exam.dto';
 import { AuditService } from '@/common/audit/audit.service';
+import { EventsGateway } from '@/modules/gateway/events.gateway';
 
 export class BulkResultItemDto {
   @IsUUID()
@@ -52,6 +53,7 @@ export class ExamsService {
   constructor(
     private readonly prisma: PrismaService,
     @Optional() private readonly auditService: AuditService,
+    @Optional() private readonly eventsGateway: EventsGateway,
   ) {}
 
   async findAll(currentUser: JwtPayload, classId?: string, subjectId?: string) {
@@ -321,6 +323,65 @@ export class ExamsService {
       entityId: examId,
       newData: { count: dto.results.length, examId },
     });
+
+    // H-2: Imtihon natijasi → ota-onaga bildirishnoma
+    try {
+      const examInfo = await this.prisma.exam.findUnique({
+        where: { id: examId },
+        select: { title: true, maxScore: true },
+      });
+      const school = await this.prisma.school.findUnique({
+        where: { id: currentUser.schoolId! },
+        select: { name: true },
+      });
+
+      for (const result of dto.results) {
+        const pct = examInfo?.maxScore ? Math.round((result.score / examInfo.maxScore) * 100) : 0;
+        const notifTitle = `📝 Imtihon natijasi: ${examInfo?.title ?? 'Imtihon'}`;
+        const notifBody  = `${school?.name ?? 'Maktab'}: Ball — ${result.score}/${examInfo?.maxScore ?? '?'} (${pct}%)`;
+
+        // Notify the student
+        await this.prisma.notification.create({
+          data: {
+            schoolId: currentUser.schoolId!,
+            recipientId: result.studentId,
+            title: notifTitle,
+            body: notifBody,
+            type: 'in_app',
+          },
+        }).catch(() => { /* ignore */ });
+
+        this.eventsGateway?.emitToUser(result.studentId, 'notification:new', {
+          title: notifTitle,
+          body: notifBody,
+        });
+
+        // Also notify parents
+        const parents = await this.prisma.parentStudent.findMany({
+          where: { studentId: result.studentId },
+          select: { parentId: true },
+        });
+
+        for (const { parentId } of parents) {
+          const parentTitle = `📝 Farzandingiz imtihon natijasi`;
+          const parentBody  = `${examInfo?.title ?? 'Imtihon'}: ${result.score}/${examInfo?.maxScore ?? '?'} (${pct}%) — ${school?.name ?? ''}`;
+          await this.prisma.notification.create({
+            data: {
+              schoolId: currentUser.schoolId!,
+              recipientId: parentId,
+              title: parentTitle,
+              body: parentBody,
+              type: 'in_app',
+            },
+          }).catch(() => { /* ignore */ });
+
+          this.eventsGateway?.emitToUser(parentId, 'notification:new', {
+            title: parentTitle,
+            body: parentBody,
+          });
+        }
+      }
+    } catch { /* Bildirishnoma yuborilmasa ham asosiy natija qaytariladi */ }
 
     return { saved: dto.results.length };
   }

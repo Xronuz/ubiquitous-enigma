@@ -84,6 +84,20 @@ export class LibraryService {
   }
 
   async loanBook(dto: LoanBookDto, currentUser: JwtPayload) {
+    // H-4: To'lov qarzi bo'lsa kutubxona bloki
+    const overdueDebt = await this.prisma.payment.count({
+      where: {
+        studentId: dto.studentId,
+        schoolId: currentUser.schoolId!,
+        status: { in: ['overdue' as any] },
+      },
+    });
+    if (overdueDebt > 0) {
+      throw new BadRequestException(
+        `O'quvchining ${overdueDebt} ta muddati o'tgan to'lovi mavjud. To'lovlarni bajarib bo'lgach kitob olish mumkin.`,
+      );
+    }
+
     // Atomic transaction — race condition oldini oladi (double-booking mumkin emas)
     return this.prisma.$transaction(async (tx) => {
       const book = await tx.libraryBook.findFirst({ where: { id: dto.bookId, schoolId: currentUser.schoolId! } });

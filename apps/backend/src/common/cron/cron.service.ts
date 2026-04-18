@@ -442,6 +442,79 @@ export class CronService {
   }
 
   /**
+   * H-3: Har kuni soat 08:30 — Muddati o'tgan kitob qaytarish SMS eslatmasi
+   * Qaytarish muddati o'tgan (returnDate = null, dueDate < bugun) ijarachilarga SMS
+   */
+  @Cron('30 8 * * *', { name: 'overdue-library-reminder', timeZone: 'Asia/Tashkent' })
+  async sendOverdueLibraryReminders() {
+    this.logger.log('📖 Cron: Kech kitob eslatmasi');
+    try {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const overdueLoans = await this.prisma.libraryLoan.findMany({
+        where: {
+          returnDate: null,
+          dueDate: { lt: today },
+        },
+        include: {
+          book: { select: { title: true } },
+          school: { select: { name: true } },
+        },
+      });
+
+      if (!overdueLoans.length) {
+        this.logger.log('Muddati o\'tgan kitoblar yo\'q');
+        return;
+      }
+
+      // Enrich with student info
+      const studentIds = [...new Set(overdueLoans.map(l => l.studentId))];
+      const students = await this.prisma.user.findMany({
+        where: { id: { in: studentIds } },
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          phone: true,
+          childParents: {
+            include: { parent: { select: { phone: true } } },
+          },
+        },
+      });
+      const studentMap = Object.fromEntries(students.map(s => [s.id, s]));
+
+      let sent = 0;
+      for (const loan of overdueLoans) {
+        const student = studentMap[loan.studentId];
+        if (!student) continue;
+
+        const daysOverdue = Math.floor((Date.now() - new Date(loan.dueDate).getTime()) / 86_400_000);
+        const dueStr = new Date(loan.dueDate).toLocaleDateString('uz-UZ');
+        const msg = `${loan.school.name}: "${loan.book.title}" kitobini qaytarish muddati ${daysOverdue} kun o'tdi (muddati: ${dueStr}). Iltimos, tezda qaytaring. EduPlatform`;
+
+        // SMS to student directly
+        if (student.phone) {
+          await this.notificationQueue.queueSms({ to: student.phone, message: msg });
+          sent++;
+        }
+
+        // Also notify parents
+        for (const rel of student.childParents ?? []) {
+          if (rel.parent.phone) {
+            const parentMsg = `${loan.school.name}: Farzandingiz ${student.firstName} ${student.lastName} "${loan.book.title}" kitobini ${daysOverdue} kun kech qaytarmoqda. EduPlatform`;
+            await this.notificationQueue.queueSms({ to: rel.parent.phone, message: parentMsg });
+            sent++;
+          }
+        }
+      }
+      this.logger.log(`✅ ${sent} ta kech kitob SMS yuborildi (${overdueLoans.length} ta ijara)`);
+    } catch (err) {
+      this.logger.error('Kech kitob cron xatosi:', err);
+    }
+  }
+
+  /**
    * Har oyning 1-kuni soat 07:00 — Oylik to'lov yozuvlarini avtomatik yaratish
    * Aktiv FeeStructure lar bo'yicha har bir o'quvchi uchun payment generate qiladi
    */

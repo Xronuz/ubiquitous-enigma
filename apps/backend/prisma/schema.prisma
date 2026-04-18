@@ -444,6 +444,8 @@ model Attendance {
   @@unique([studentId, scheduleId, date])
   @@index([classId, date])
   @@index([schoolId, date])
+  @@index([studentId])              // D-3: talaba tarixi O(1)
+  @@index([schoolId, status])       // D-3: status bo'yicha filtr O(1)
   @@map("attendance")
 }
 
@@ -470,6 +472,7 @@ model Grade {
 
   @@index([studentId, subjectId])
   @@index([classId, type])
+  @@index([schoolId, date])         // D-3: chorak/sana filtr O(1)
   @@map("grades")
 }
 
@@ -714,6 +717,9 @@ model LeaveRequest {
   requester User    @relation("LeaveRequests", fields: [requesterId], references: [id], onDelete: Cascade)
   approvals LeaveApproval[]
 
+  @@index([schoolId, status])       // D-2: status filtr O(1)
+  @@index([requesterId])            // D-2: talaba/xodim so'rovlari O(1)
+  @@index([schoolId, startDate])    // D-2: sana oralig'i qidirish
   @@map("leave_requests")
 }
 
