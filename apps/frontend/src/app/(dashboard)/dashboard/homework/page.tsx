@@ -23,6 +23,30 @@ import { useAuthStore } from '@/store/auth.store';
 import { useToast } from '@/components/ui/use-toast';
 import { EmptyState } from '@/components/ui/empty-state';
 
+// ── Types (H-10) ─────────────────────────────────────────────────────────────
+export interface HomeworkSubmission {
+  id: string;
+  studentId: string;
+  content?: string;
+  fileUrl?: string;
+  score?: number | null;
+  submittedAt: string;
+  student?: { id: string; firstName: string; lastName: string };
+}
+
+export interface Homework {
+  id: string;
+  title: string;
+  description?: string;
+  dueDate: string;
+  classId: string;
+  subjectId: string;
+  class?: { id: string; name: string };
+  subject?: { id: string; name: string };
+  submissions?: HomeworkSubmission[];
+  mySubmission?: HomeworkSubmission | null;
+}
+
 const EMPTY = { classId: '', subjectId: '', title: '', description: '', dueDate: '' };
 
 // ── File upload constraints (modul darajasida — har renderda qayta yaratilmaydi) ──
@@ -291,7 +315,7 @@ export default function HomeworkPage() {
   const [gradingHw, setGradingHw] = useState<any | null>(null);
   const [viewSubmissionHw, setViewSubmissionHw] = useState<any | null>(null);
 
-  const { data: homeworks = [], isLoading, isError } = useQuery({ queryKey: ['homework'], queryFn: () => homeworkApi.getAll() });
+  const { data: homeworks = [], isLoading, isError } = useQuery<Homework[]>({ queryKey: ['homework'], queryFn: () => homeworkApi.getAll() });
   const { data: classes = [] } = useQuery({ queryKey: ['classes'], queryFn: () => classesApi.getAll(), enabled: open });
   const { data: subjects = [] } = useQuery({ queryKey: ['subjects'], queryFn: () => subjectsApi.getAll(), enabled: open });
 

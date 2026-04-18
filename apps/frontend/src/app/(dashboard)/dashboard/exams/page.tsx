@@ -27,6 +27,22 @@ import { useToast } from '@/components/ui/use-toast';
 import { useAuthStore } from '@/store/auth.store';
 import { EmptyState } from '@/components/ui/empty-state';
 
+// ── Types (H-10) ─────────────────────────────────────────────────────────────
+export interface Exam {
+  id: string;
+  title: string;
+  frequency: string;
+  maxScore: number;
+  duration?: number;
+  scheduledAt: string;
+  isPublished: boolean;
+  classId: string;
+  subjectId: string;
+  class?: { id: string; name: string };
+  subject?: { id: string; name: string };
+  _count?: { results: number };
+}
+
 const QTYPE_LABELS: Record<string, string> = {
   multiple_choice: "Ko'p variantli",
   true_false: "To'g'ri/Noto'g'ri",
@@ -357,7 +373,7 @@ export default function ExamsPage() {
 
   const anyOpen = singleOpen || bulkOpen;
 
-  const { data: exams = [], isLoading, isError } = useQuery({ queryKey: ['exams'], queryFn: () => examsApi.getAll() });
+  const { data: exams = [], isLoading, isError } = useQuery<Exam[]>({ queryKey: ['exams'], queryFn: () => examsApi.getAll() });
   const { data: classes = [] } = useQuery({ queryKey: ['classes'], queryFn: () => classesApi.getAll(), enabled: anyOpen });
   const { data: subjects = [] } = useQuery({ queryKey: ['subjects'], queryFn: () => subjectsApi.getAll(), enabled: anyOpen });
 

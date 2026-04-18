@@ -14,7 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuthStore } from '@/store/auth.store';
 import { useToast } from '@/components/ui/use-toast';
-import { libraryApi } from '@/lib/api/library';
+import { libraryApi, LibraryBook, LibraryLoan, LibraryStats } from '@/lib/api/library';
 import { usersApi } from '@/lib/api/users';
 
 const EMPTY_BOOK = { title: '', author: '', isbn: '', totalCopies: '1' };
@@ -35,9 +35,9 @@ export default function LibraryPage() {
   const [bookErrors, setBookErrors] = useState<Record<string, string>>({});
   const [loanErrors, setLoanErrors] = useState<Record<string, string>>({});
 
-  const { data: stats, isLoading: statsLoading } = useQuery({ queryKey: ['library', 'stats'], queryFn: libraryApi.getStats });
-  const { data: books = [], isLoading: booksLoading } = useQuery({ queryKey: ['library', 'books', search], queryFn: () => libraryApi.getBooks(search || undefined) });
-  const { data: loans = [], isLoading: loansLoading } = useQuery({ queryKey: ['library', 'loans'], queryFn: () => libraryApi.getLoans(true), enabled: tab === 'loans' });
+  const { data: stats, isLoading: statsLoading } = useQuery<LibraryStats>({ queryKey: ['library', 'stats'], queryFn: libraryApi.getStats });
+  const { data: books = [], isLoading: booksLoading } = useQuery<LibraryBook[]>({ queryKey: ['library', 'books', search], queryFn: () => libraryApi.getBooks(search || undefined) });
+  const { data: loans = [], isLoading: loansLoading } = useQuery<LibraryLoan[]>({ queryKey: ['library', 'loans'], queryFn: () => libraryApi.getLoans(true), enabled: tab === 'loans' });
 
   const { data: studentsData } = useQuery({ queryKey: ['users', 1], queryFn: () => usersApi.getAll({ page: 1, limit: 100 }), enabled: loanOpen });
   const students: any[] = (studentsData?.data ?? []).filter((u: any) => u.role === 'student');

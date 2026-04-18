@@ -23,6 +23,32 @@ import { AttendanceStatus } from '@eduplatform/types';
 import { ImportDialog } from '@/components/import/import-dialog';
 import { EmptyState } from '@/components/ui/empty-state';
 
+// ── Types (H-10) ─────────────────────────────────────────────────────────────
+export interface ClassInfo {
+  id: string;
+  name: string;
+  gradeLevel?: number;
+  academicYear?: string;
+  _count?: { students: number };
+}
+
+export interface AttendanceRecord {
+  id: string;
+  studentId: string;
+  classId: string;
+  date: string;
+  status: 'present' | 'absent' | 'late' | 'excused';
+  note?: string;
+  student?: { id: string; firstName: string; lastName: string };
+}
+
+export interface ClassStudent {
+  id: string;
+  studentId: string;
+  classId: string;
+  student?: { id: string; firstName: string; lastName: string };
+}
+
 // ── Constants ─────────────────────────────────────────────────────────────────
 const STATUS_CONFIG = {
   present: { label: 'Keldi', icon: CheckCircle2, color: 'text-green-600', ring: 'ring-green-500 bg-green-50 dark:bg-green-950', dot: 'bg-green-500' },
@@ -80,26 +106,28 @@ export default function AttendancePage() {
   const [view, setView] = useState<'mark' | 'history'>('mark');
 
   // ── Queries ──────────────────────────────────────────────────────────────────
-  const { data: classes, isError: classesError } = useQuery({ queryKey: ['classes'], queryFn: classesApi.getAll });
-  const classList: any[] = Array.isArray(classes) ? classes : [];
+  const { data: classes, isError: classesError } = useQuery<ClassInfo[]>({ queryKey: ['classes'], queryFn: classesApi.getAll });
+  const classList: ClassInfo[] = Array.isArray(classes) ? classes : [];
 
-  const { data: classStudents } = useQuery({
+  const { data: classStudents } = useQuery<ClassStudent[]>({
     queryKey: ['class-students', selectedClass],
     queryFn: () => classesApi.getStudents(selectedClass),
     enabled: !!selectedClass,
   });
-  const students: any[] = (Array.isArray(classStudents) ? classStudents : []).map((s: any) => s.student ?? s);
+  const students = (Array.isArray(classStudents) ? classStudents : []).map(
+    (s) => (s.student ?? s) as { id: string; firstName: string; lastName: string },
+  );
 
   // Today's report for current class
-  const { data: reportData, isLoading: reportLoading, isError: reportError } = useQuery({
+  const { data: reportData, isLoading: reportLoading, isError: reportError } = useQuery<AttendanceRecord[]>({
     queryKey: ['attendance', 'report', selectedClass, selectedDate],
     queryFn: () => attendanceApi.getReport({ classId: selectedClass || undefined, startDate: selectedDate, endDate: selectedDate }),
     enabled: !!selectedClass,
   });
-  const report: any[] = Array.isArray(reportData) ? reportData : [];
+  const report: AttendanceRecord[] = Array.isArray(reportData) ? reportData : [];
 
   // Last 28 days history for heat-map
-  const { data: historyData } = useQuery({
+  const { data: historyData } = useQuery<AttendanceRecord[]>({
     queryKey: ['attendance', 'history28', selectedClass],
     queryFn: () => attendanceApi.getReport({
       classId: selectedClass || undefined,

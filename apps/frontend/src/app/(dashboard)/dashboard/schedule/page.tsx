@@ -53,6 +53,26 @@ const SUBJECT_COLORS = [
   'bg-cyan-100 border-cyan-300 text-cyan-800 dark:bg-cyan-900/40 dark:border-cyan-700 dark:text-cyan-200',
 ];
 
+// ── Types (H-10) ─────────────────────────────────────────────────────────────
+export interface ScheduleSlot {
+  id: string;
+  classId: string;
+  subjectId: string;
+  teacherId?: string;
+  dayOfWeek: DayOfWeek;
+  timeSlot: number;
+  startTime: string;
+  endTime: string;
+  roomNumber?: string;
+  class?: { id: string; name: string };
+  subject?: { id: string; name: string; teacher?: { id: string; firstName: string; lastName: string } };
+}
+
+export interface ConflictResult {
+  hasConflict: boolean;
+  conflicts: { type: string; message: string }[];
+}
+
 const EMPTY = {
   classId: '', subjectId: '', teacherId: '', dayOfWeek: '' as DayOfWeek | '',
   timeSlot: '', startTime: '08:00', endTime: '08:45', roomNumber: '',
@@ -435,14 +455,14 @@ export default function SchedulePage() {
   const [form, setForm] = useState(EMPTY);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const { data: weekSchedule, isLoading } = useQuery({
+  const { data: weekSchedule, isLoading } = useQuery<ScheduleSlot[]>({
     queryKey: ['schedule', 'week'],
     queryFn: () => scheduleApi.getWeek(),
   });
 
   // Conflict check — runs when dayOfWeek + timeSlot are filled
   const canCheck = open && !!form.dayOfWeek && !!form.timeSlot;
-  const { data: conflictData } = useQuery({
+  const { data: conflictData } = useQuery<ConflictResult>({
     queryKey: ['schedule-conflict', form.dayOfWeek, form.timeSlot, form.teacherId, form.roomNumber, form.classId],
     queryFn: () => scheduleApi.checkConflict({
       dayOfWeek:  form.dayOfWeek as string,
