@@ -16,13 +16,13 @@ export class LibraryController {
   constructor(private readonly libraryService: LibraryService) {}
 
   @Get('stats')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.VICE_PRINCIPAL, UserRole.LIBRARIAN)
+  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.LIBRARIAN)
   getStats(@CurrentUser() user: JwtPayload) {
     return this.libraryService.getStats(user);
   }
 
   @Get('books')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.VICE_PRINCIPAL, UserRole.LIBRARIAN, UserRole.TEACHER, UserRole.CLASS_TEACHER, UserRole.STUDENT)
+  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.LIBRARIAN, UserRole.TEACHER, UserRole.CLASS_TEACHER, UserRole.STUDENT)
   getBooks(@CurrentUser() user: JwtPayload, @Query('search') search?: string) {
     return this.libraryService.getBooks(user, search);
   }
@@ -65,7 +65,7 @@ export class LibraryController {
   }
 
   @Get('loans/export/pdf')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.VICE_PRINCIPAL, UserRole.LIBRARIAN)
+  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.LIBRARIAN)
   @ApiOperation({ summary: 'Kitob berish tarixi PDF eksport' })
   @ApiQuery({ name: 'active', required: false, description: 'true = qaytarilmaganlar, false = qaytarilganlar' })
   async exportLoansPdf(

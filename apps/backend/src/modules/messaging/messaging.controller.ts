@@ -13,6 +13,7 @@ import { JwtPayload, UserRole } from '@eduplatform/types';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(
   UserRole.SCHOOL_ADMIN,
+  UserRole.DIRECTOR,
   UserRole.VICE_PRINCIPAL,
   UserRole.TEACHER,
   UserRole.CLASS_TEACHER,
@@ -70,5 +71,59 @@ export class MessagingController {
   @ApiOperation({ summary: 'Foydalanuvchi bilan suhbatni o\'chirish (faqat o\'z xabarlari)' })
   deleteConversation(@Param('userId') userId: string, @CurrentUser() user: JwtPayload) {
     return this.messagingService.deleteConversation(userId, user);
+  }
+
+  // ── Group chat endpoints ─────────────────────────────────────────────────
+
+  @Post('groups')
+  @ApiOperation({ summary: 'Guruh yaratish' })
+  createGroup(
+    @Body() dto: { name: string; description?: string; participantIds: string[] },
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.messagingService.createGroup(dto, user);
+  }
+
+  @Get('groups/list')
+  @ApiOperation({ summary: 'O\'z guruhlarim' })
+  getGroups(@CurrentUser() user: JwtPayload) {
+    return this.messagingService.getGroups(user);
+  }
+
+  @Get('groups/:groupId/messages')
+  @ApiOperation({ summary: 'Guruh xabarlari' })
+  getGroupMessages(
+    @Param('groupId') groupId: string,
+    @CurrentUser() user: JwtPayload,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+  ) {
+    return this.messagingService.getGroupMessages(groupId, user, page);
+  }
+
+  @Post('groups/:groupId/messages')
+  @ApiOperation({ summary: 'Guruhga xabar yuborish' })
+  sendGroupMessage(
+    @Param('groupId') groupId: string,
+    @Body('content') content: string,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.messagingService.sendGroupMessage(groupId, content, user);
+  }
+
+  @Post('groups/:groupId/participants')
+  @ApiOperation({ summary: 'Guruhga a\'zo qo\'shish (admin)' })
+  addParticipant(
+    @Param('groupId') groupId: string,
+    @Body('userId') userId: string,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.messagingService.addParticipant(groupId, userId, user);
+  }
+
+  @Delete('groups/:groupId/leave')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Guruhdan chiqish' })
+  leaveGroup(@Param('groupId') groupId: string, @CurrentUser() user: JwtPayload) {
+    return this.messagingService.leaveGroup(groupId, user);
   }
 }

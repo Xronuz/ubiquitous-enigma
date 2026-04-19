@@ -1,9 +1,10 @@
 export enum UserRole {
   SUPER_ADMIN = 'super_admin',
-  SCHOOL_ADMIN = 'school_admin',
+  SCHOOL_ADMIN = 'school_admin',   // Texnik admin: user management, tizim sozlamalari
+  DIRECTOR = 'director',           // Maktab direktori: nazorat, e'lon, tasdiqlash (read-heavy)
   VICE_PRINCIPAL = 'vice_principal',
   TEACHER = 'teacher',
-  CLASS_TEACHER = 'class_teacher',
+  CLASS_TEACHER = 'class_teacher', // Sinf rahbari (teacher ruxsatlarini ham meros oladi)
   ACCOUNTANT = 'accountant',
   LIBRARIAN = 'librarian',
   STUDENT = 'student',

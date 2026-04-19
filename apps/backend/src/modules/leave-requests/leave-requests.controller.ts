@@ -21,7 +21,7 @@ export class LeaveRequestsController {
   @Roles(
     UserRole.TEACHER, UserRole.CLASS_TEACHER,
     UserRole.ACCOUNTANT, UserRole.LIBRARIAN,
-    UserRole.SCHOOL_ADMIN, UserRole.VICE_PRINCIPAL,
+    UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL,
     UserRole.STUDENT,
   )
   @ApiOperation({ summary: "Ta'til so'rovi yuborish" })
@@ -32,7 +32,7 @@ export class LeaveRequestsController {
   @Get()
   @Roles(
     UserRole.TEACHER, UserRole.CLASS_TEACHER, UserRole.ACCOUNTANT,
-    UserRole.LIBRARIAN, UserRole.SCHOOL_ADMIN, UserRole.VICE_PRINCIPAL,
+    UserRole.LIBRARIAN, UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL,
     UserRole.STUDENT, UserRole.PARENT,
   )
   @ApiOperation({ summary: "Ta'til so'rovlari ro'yxati" })
@@ -43,7 +43,7 @@ export class LeaveRequestsController {
   @Get(':id')
   @Roles(
     UserRole.TEACHER, UserRole.CLASS_TEACHER, UserRole.ACCOUNTANT,
-    UserRole.LIBRARIAN, UserRole.SCHOOL_ADMIN, UserRole.VICE_PRINCIPAL,
+    UserRole.LIBRARIAN, UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL,
     UserRole.STUDENT, UserRole.PARENT,
   )
   @ApiOperation({ summary: "So'rov tafsiloti" })
@@ -52,7 +52,7 @@ export class LeaveRequestsController {
   }
 
   @Put(':id/review')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.VICE_PRINCIPAL)
+  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL)
   @ApiOperation({ summary: "So'rovni tasdiqlash yoki rad etish" })
   review(
     @Param('id') id: string,
@@ -66,7 +66,7 @@ export class LeaveRequestsController {
   @HttpCode(HttpStatus.OK)
   @Roles(
     UserRole.TEACHER, UserRole.CLASS_TEACHER, UserRole.ACCOUNTANT,
-    UserRole.LIBRARIAN, UserRole.SCHOOL_ADMIN, UserRole.VICE_PRINCIPAL,
+    UserRole.LIBRARIAN, UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL,
     UserRole.STUDENT,
   )
   @ApiOperation({ summary: "So'rovni bekor qilish" })

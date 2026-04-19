@@ -21,6 +21,11 @@ export const notificationsApi = {
     return data;
   },
 
+  broadcast: async (payload: { targetGroup: string; title: string; body: string }) => {
+    const { data } = await apiClient.post('/notifications/broadcast', payload);
+    return data;
+  },
+
   getPreferences: async (): Promise<{ preferences: Record<string, boolean> }> => {
     const { data } = await apiClient.get('/notifications/preferences');
     return data;

@@ -128,7 +128,7 @@ export class UsersController {
 
   @Post('import/csv')
   @HttpCode(HttpStatus.OK)
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.VICE_PRINCIPAL)
+  @Roles(UserRole.SCHOOL_ADMIN)
   @UseInterceptors(FileInterceptor('file', { storage: memoryStorage() }))
   @ApiOperation({ summary: 'CSV fayldan o\'quvchilarni ommaviy import qilish (max 500 ta)' })
   @ApiConsumes('multipart/form-data')

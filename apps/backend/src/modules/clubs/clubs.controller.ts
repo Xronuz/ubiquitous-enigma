@@ -12,7 +12,7 @@ import { RolesGuard } from '@/common/guards/roles.guard';
 import { JwtPayload, UserRole } from '@eduplatform/types';
 
 const ALL_SCHOOL = [
-  UserRole.SCHOOL_ADMIN, UserRole.VICE_PRINCIPAL,
+  UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL,
   UserRole.TEACHER, UserRole.CLASS_TEACHER,
   UserRole.ACCOUNTANT, UserRole.LIBRARIAN,
   UserRole.STUDENT,
@@ -43,7 +43,7 @@ export class ClubsController {
   }
 
   @Get('led')
-  @Roles(UserRole.TEACHER, UserRole.CLASS_TEACHER, UserRole.SCHOOL_ADMIN, UserRole.VICE_PRINCIPAL)
+  @Roles(UserRole.TEACHER, UserRole.CLASS_TEACHER, UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL)
   @ApiOperation({ summary: 'Men rahbar bo\'lgan to\'garaklar' })
   findLed(@CurrentUser() user: JwtPayload) {
     return this.clubsService.findLed(user);
@@ -57,14 +57,14 @@ export class ClubsController {
   }
 
   @Post()
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.VICE_PRINCIPAL)
+  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL)
   @ApiOperation({ summary: 'Yangi to\'garak yaratish' })
   create(@Body() dto: CreateClubDto, @CurrentUser() user: JwtPayload) {
     return this.clubsService.create(dto, user);
   }
 
   @Put(':id')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.VICE_PRINCIPAL, UserRole.TEACHER, UserRole.CLASS_TEACHER)
+  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.TEACHER, UserRole.CLASS_TEACHER)
   @ApiOperation({ summary: 'To\'garakni yangilash (admin yoki rahbar)' })
   update(
     @Param('id') id: string,
@@ -75,7 +75,7 @@ export class ClubsController {
   }
 
   @Delete(':id')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.VICE_PRINCIPAL)
+  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'To\'garakni o\'chirish' })
   remove(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
@@ -98,14 +98,14 @@ export class ClubsController {
   }
 
   @Get(':id/members')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.VICE_PRINCIPAL, UserRole.TEACHER, UserRole.CLASS_TEACHER)
+  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.TEACHER, UserRole.CLASS_TEACHER)
   @ApiOperation({ summary: 'To\'garak a\'zolari ro\'yxati' })
   getMembers(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
     return this.clubsService.getMembers(id, user);
   }
 
   @Delete(':id/members/:studentId')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.VICE_PRINCIPAL, UserRole.TEACHER, UserRole.CLASS_TEACHER)
+  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.TEACHER, UserRole.CLASS_TEACHER)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'A\'zoni to\'garakdan chiqarish' })
   removeMember(

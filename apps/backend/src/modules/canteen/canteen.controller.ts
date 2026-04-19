@@ -18,7 +18,7 @@ export class CanteenController {
 
   /** Barcha menyu yozuvlari ro'yxati (admin CRUD sahifasi uchun) */
   @Get()
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.VICE_PRINCIPAL)
+  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL)
   @ApiOperation({ summary: 'Barcha menyu yozuvlari ro\'yxati (admin)' })
   findAll(
     @CurrentUser() currentUser: JwtPayload,
@@ -60,7 +60,7 @@ export class CanteenController {
 
   /** Menyu yaratish / yangilash — faqat admin */
   @Post()
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.VICE_PRINCIPAL)
+  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL)
   @ApiOperation({ summary: 'Menyu yaratish yoki yangilash' })
   upsert(
     @Body() dto: CreateMenuDayDto,
@@ -71,7 +71,7 @@ export class CanteenController {
 
   /** Menyu o'chirish — faqat admin */
   @Delete(':id')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.VICE_PRINCIPAL)
+  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL)
   @ApiOperation({ summary: 'Menyu o\'chirish' })
   remove(
     @Param('id') id: string,

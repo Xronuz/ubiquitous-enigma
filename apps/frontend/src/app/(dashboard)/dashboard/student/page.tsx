@@ -40,6 +40,7 @@ import {
 } from '@/components/ui/tabs';
 import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis, ResponsiveContainer, Tooltip as ReTooltip,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend,
 } from 'recharts';
 import { useAuthStore } from '@/store/auth.store';
 import { apiClient } from '@/lib/api/client';
@@ -1171,6 +1172,63 @@ export default function StudentPortalPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Monthly attendance chart */}
+      {!attendanceLoading && attendanceData && attendanceData.length > 0 && (() => {
+        // Build last-6-months bar data
+        const now = new Date();
+        const MONTH_LABELS_UZ = ['Yan','Fev','Mar','Apr','May','Iyn','Iyl','Avg','Sen','Okt','Noy','Dek'];
+        const months: { month: string; keldi: number; kelmadi: number; kechikdi: number }[] = [];
+        for (let i = 5; i >= 0; i--) {
+          const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+          months.push({ month: MONTH_LABELS_UZ[d.getMonth()], keldi: 0, kelmadi: 0, kechikdi: 0 });
+        }
+        attendanceData.forEach((r) => {
+          const d = new Date(r.date);
+          const diffMonths = (now.getFullYear() - d.getFullYear()) * 12 + (now.getMonth() - d.getMonth());
+          if (diffMonths >= 0 && diffMonths <= 5) {
+            const idx = 5 - diffMonths;
+            if (r.status === 'present') months[idx].keldi++;
+            else if (r.status === 'absent') months[idx].kelmadi++;
+            else if (r.status === 'late') months[idx].kechikdi++;
+          }
+        });
+        const totalDays = attendanceData.length;
+        const presentDays = attendanceData.filter(r => r.status === 'present').length;
+        const yearPct = totalDays > 0 ? Math.round((presentDays / totalDays) * 100) : 0;
+
+        return (
+          <Card>
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Calendar className="h-5 w-5 text-purple-500" />
+                  Davomat grafigi (6 oy)
+                </CardTitle>
+                <span className={`text-sm font-bold ${yearPct >= 80 ? 'text-green-600' : yearPct >= 60 ? 'text-yellow-600' : 'text-red-600'}`}>
+                  Jami: {yearPct}%
+                </span>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={180}>
+                <BarChart data={months} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                  <XAxis dataKey="month" tick={{ fontSize: 11 }} />
+                  <YAxis tick={{ fontSize: 11 }} />
+                  <ReTooltip
+                    formatter={(value: number, name: string) => [value, name === 'keldi' ? 'Keldi' : name === 'kelmadi' ? 'Kelmadi' : 'Kechikdi']}
+                  />
+                  <Legend formatter={(v) => v === 'keldi' ? 'Keldi' : v === 'kelmadi' ? 'Kelmadi' : 'Kechikdi'} />
+                  <Bar dataKey="keldi" fill="#22c55e" radius={[3,3,0,0]} />
+                  <Bar dataKey="kelmadi" fill="#ef4444" radius={[3,3,0,0]} />
+                  <Bar dataKey="kechikdi" fill="#f59e0b" radius={[3,3,0,0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        );
+      })()}
 
       {/* Attendance summary */}
       {!attendanceLoading && attendanceData && attendanceData.length > 0 && (

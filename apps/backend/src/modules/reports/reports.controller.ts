@@ -18,7 +18,7 @@ export class ReportsController {
   // ─── JSON endpoints ────────────────────────────────────────────────────
 
   @Get('attendance')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.VICE_PRINCIPAL, UserRole.CLASS_TEACHER, UserRole.TEACHER)
+  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.CLASS_TEACHER, UserRole.TEACHER)
   @ApiOperation({ summary: 'Davomat xulosasi (JSON)' })
   @ApiQuery({ name: 'classId', required: false })
   @ApiQuery({ name: 'month',   required: false, description: 'YYYY-MM format' })
@@ -31,7 +31,7 @@ export class ReportsController {
   }
 
   @Get('grades')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.VICE_PRINCIPAL, UserRole.TEACHER, UserRole.CLASS_TEACHER)
+  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.TEACHER, UserRole.CLASS_TEACHER)
   @ApiOperation({ summary: 'Baholar xulosasi (JSON)' })
   @ApiQuery({ name: 'classId',   required: false })
   @ApiQuery({ name: 'subjectId', required: false })
@@ -53,7 +53,7 @@ export class ReportsController {
   // ─── PDF endpoints ─────────────────────────────────────────────────────
 
   @Get('attendance/pdf')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.VICE_PRINCIPAL, UserRole.CLASS_TEACHER, UserRole.TEACHER)
+  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.CLASS_TEACHER, UserRole.TEACHER)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Davomat hisoboti — PDF yuklab olish' })
   @ApiProduces('application/pdf')
@@ -76,7 +76,7 @@ export class ReportsController {
   }
 
   @Get('grades/pdf')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.VICE_PRINCIPAL, UserRole.TEACHER, UserRole.CLASS_TEACHER)
+  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.TEACHER, UserRole.CLASS_TEACHER)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Baholar hisoboti — PDF yuklab olish' })
   @ApiProduces('application/pdf')
@@ -99,7 +99,7 @@ export class ReportsController {
   }
 
   @Get('report-card/:studentId/pdf')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.VICE_PRINCIPAL, UserRole.CLASS_TEACHER)
+  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.CLASS_TEACHER)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Choraklik guvohnoma — PDF yuklab olish' })
   @ApiProduces('application/pdf')

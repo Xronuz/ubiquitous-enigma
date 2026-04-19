@@ -54,14 +54,21 @@ interface NavGroup {
   items: NavItem[];
 }
 
-const SCHOOL_ROLES = ['school_admin', 'vice_principal', 'teacher', 'class_teacher', 'accountant', 'librarian', 'student', 'parent'];
-const ALL_STAFF = ['school_admin', 'vice_principal', 'teacher', 'class_teacher', 'accountant', 'librarian'];
+// ── Rol konstantalari ──────────────────────────────────────────────────────────
+// SCHOOL_ROLES: maktab ichidagi barcha rollar (super_admin kiritmaydi)
+const SCHOOL_ROLES = ['director', 'school_admin', 'vice_principal', 'teacher', 'class_teacher', 'accountant', 'librarian', 'student', 'parent'];
+// ALL_STAFF: barcha xodimlar (o'quvchi va ota-ona kiritmaydi)
+const ALL_STAFF = ['director', 'school_admin', 'vice_principal', 'teacher', 'class_teacher', 'accountant', 'librarian'];
+// ACADEMIC_STAFF: ta'lim bilan ishlaydiganlar
+const ACADEMIC_STAFF = ['director', 'school_admin', 'vice_principal', 'teacher', 'class_teacher'];
 
 const navGroups: NavGroup[] = [
   {
     title: 'ASOSIY',
     items: [
-      { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, roles: ['school_admin', 'vice_principal', 'teacher', 'class_teacher', 'accountant', 'librarian'] },
+      // Director o'z dashboardini ko'radi, school_admin texnik dashboardini
+      { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, roles: ['director', 'school_admin', 'vice_principal', 'teacher', 'class_teacher', 'accountant', 'librarian'] },
+      // class_teacher ham teacher sifatida ishlashi mumkin — ikkalasi ham ko'radi
       { label: 'Mening sinfim', href: '/dashboard/my-class', icon: School, roles: ['class_teacher', 'teacher'] },
       { label: 'Mening portalim', href: '/dashboard/student', icon: UserCircle, roles: ['student'] },
       { label: 'Farzandlarim', href: '/dashboard/parent', icon: Heart, roles: ['parent'] },
@@ -70,56 +77,62 @@ const navGroups: NavGroup[] = [
   {
     title: "TA'LIM",
     items: [
-      { label: 'Sinflar', href: '/dashboard/classes', icon: School, roles: ['school_admin', 'vice_principal', 'teacher', 'class_teacher'] },
+      { label: 'Sinflar', href: '/dashboard/classes', icon: School, roles: ACADEMIC_STAFF },
       { label: 'Dars jadvali', href: '/dashboard/schedule', icon: Calendar, roles: SCHOOL_ROLES },
-      { label: 'Akademik kalendar', href: '/dashboard/academic-calendar', icon: CalendarDays, roles: ['school_admin', 'vice_principal', 'teacher', 'class_teacher'] },
-      { label: 'Fanlar', href: '/dashboard/subjects', icon: BookOpen, roles: ['school_admin', 'vice_principal', 'teacher'] },
+      { label: 'Akademik kalendar', href: '/dashboard/academic-calendar', icon: CalendarDays, roles: ACADEMIC_STAFF },
+      // Fanlar: faqat admin va VP boshqaradi — teacher ko'rishi kerak emas
+      { label: 'Fanlar', href: '/dashboard/subjects', icon: BookOpen, roles: ['school_admin', 'vice_principal'] },
     ],
   },
   {
     title: "O'QUVCHILAR",
     items: [
-      { label: 'Davomat', href: '/dashboard/attendance', icon: ClipboardCheck, roles: ['school_admin', 'vice_principal', 'teacher', 'class_teacher'] },
-      { label: 'Baholar', href: '/dashboard/grades', icon: BarChart2, roles: ['school_admin', 'vice_principal', 'teacher', 'class_teacher', 'student'] },
-      { label: 'Imtihonlar', href: '/dashboard/exams', icon: FileText, roles: ['school_admin', 'vice_principal', 'teacher', 'class_teacher', 'student'] },
-      { label: 'Uy vazifalari', href: '/dashboard/homework', icon: BookMarked, roles: ['school_admin', 'vice_principal', 'teacher', 'class_teacher', 'student'] },
+      { label: 'Davomat', href: '/dashboard/attendance', icon: ClipboardCheck, roles: ACADEMIC_STAFF },
+      { label: 'Baholar', href: '/dashboard/grades', icon: BarChart2, roles: [...ACADEMIC_STAFF, 'student'] },
+      { label: 'Imtihonlar', href: '/dashboard/exams', icon: FileText, roles: [...ACADEMIC_STAFF, 'student'] },
+      { label: 'Uy vazifalari', href: '/dashboard/homework', icon: BookMarked, roles: [...ACADEMIC_STAFF, 'student'] },
     ],
   },
   {
     title: 'MOLIYA',
     items: [
-      { label: 'Moliyaviy dashboard', href: '/dashboard/finance', icon: TrendingUp, roles: ['school_admin', 'vice_principal', 'accountant'] },
+      // Director moliya holatini faqat ko'radi (read-only)
+      { label: 'Moliyaviy dashboard', href: '/dashboard/finance', icon: TrendingUp, roles: ['director', 'school_admin', 'vice_principal', 'accountant'] },
       { label: "O'quvchilar to'lovi", href: '/dashboard/payments', icon: CreditCard, roles: ['school_admin', 'accountant'] },
       { label: "To'lov tartiblari", href: '/dashboard/fee-structures', icon: Banknote, roles: ['school_admin', 'accountant'] },
       { label: 'Maosh tizimi', href: '/dashboard/payroll', icon: Banknote, roles: ['school_admin', 'accountant'] },
-      { label: 'Hisobotlar', href: '/dashboard/reports', icon: BarChart3, roles: ['school_admin', 'vice_principal', 'accountant'] },
-      { label: 'Ish yuklamasi', href: '/dashboard/reports/workload', icon: TrendingUp, roles: ['school_admin', 'vice_principal'] },
+      { label: 'Hisobotlar', href: '/dashboard/reports', icon: BarChart3, roles: ['director', 'school_admin', 'vice_principal', 'accountant'] },
+      { label: 'Ish yuklamasi', href: '/dashboard/reports/workload', icon: TrendingUp, roles: ['director', 'school_admin', 'vice_principal'] },
     ],
   },
   {
     title: 'XODIMLAR',
     items: [
-      { label: 'Foydalanuvchilar', href: '/dashboard/users', icon: Users, roles: ['school_admin', 'vice_principal'] },
+      // Foydalanuvchilar: faqat texnik admin (school_admin) boshqaradi
+      { label: 'Foydalanuvchilar', href: '/dashboard/users', icon: Users, roles: ['school_admin'] },
       { label: "Ta'til so'rovlari", href: '/dashboard/leave-requests', icon: CalendarOff, roles: [...ALL_STAFF, 'student'] },
-      { label: 'Intizom jurnali', href: '/dashboard/discipline', icon: ShieldAlert, roles: ['school_admin', 'vice_principal', 'teacher', 'class_teacher'] },
-      { label: 'Ota-ona uchrashuvlari', href: '/dashboard/meetings', icon: CalendarCheck, roles: ['school_admin', 'vice_principal', 'teacher', 'class_teacher'] },
+      { label: 'Intizom jurnali', href: '/dashboard/discipline', icon: ShieldAlert, roles: ACADEMIC_STAFF },
+      { label: 'Ota-ona uchrashuvlari', href: '/dashboard/meetings', icon: CalendarCheck, roles: ACADEMIC_STAFF },
     ],
   },
   {
     title: 'RESURSLAR',
     items: [
-      { label: 'Kutubxona', href: '/dashboard/library', icon: Library, roles: ['school_admin', 'vice_principal', 'librarian'] },
-      { label: "O'quv markazi", href: '/dashboard/learning-center', icon: MonitorPlay, roles: ['school_admin', 'vice_principal', 'teacher', 'student'] },
-      { label: "To'garaklar", href: '/dashboard/clubs', icon: Puzzle, roles: ['school_admin', 'vice_principal', 'teacher', 'class_teacher', 'accountant', 'librarian', 'student'] },
-      { label: 'Ovqatxona', href: '/dashboard/canteen', icon: UtensilsCrossed, roles: ['school_admin', 'vice_principal', 'teacher', 'class_teacher', 'student'] },
-      { label: 'Transport', href: '/dashboard/transport', icon: Bus, roles: ['school_admin', 'vice_principal', 'student', 'parent'] },
+      { label: 'Kutubxona', href: '/dashboard/library', icon: Library, roles: ['director', 'school_admin', 'vice_principal', 'librarian'] },
+      { label: "O'quv markazi", href: '/dashboard/learning-center', icon: MonitorPlay, roles: ['director', 'school_admin', 'vice_principal', 'teacher', 'class_teacher', 'student'] },
+      { label: "To'garaklar", href: '/dashboard/clubs', icon: Puzzle, roles: ['director', 'school_admin', 'vice_principal', 'teacher', 'class_teacher', 'accountant', 'librarian', 'student'] },
+      { label: 'Ovqatxona', href: '/dashboard/canteen', icon: UtensilsCrossed, roles: ['director', 'school_admin', 'vice_principal', 'teacher', 'class_teacher', 'student'] },
+      { label: 'Transport', href: '/dashboard/transport', icon: Bus, roles: ['director', 'school_admin', 'vice_principal', 'student', 'parent'] },
     ],
   },
   {
     title: 'KOMMUNIKATSIYA',
     items: [
-      { label: 'Xabarlar', href: '/dashboard/messages', icon: MessageSquare, roles: SCHOOL_ROLES },
-      { label: 'Bildirishnomalar', href: '/dashboard/notifications', icon: Bell, roles: SCHOOL_ROLES },
+      // super_admin ham xabarlarni ko'ra olishi uchun alohida qo'shilgan
+      { label: 'Xabarlar', href: '/dashboard/messages', icon: MessageSquare, roles: [...SCHOOL_ROLES, 'super_admin'] },
+      { label: 'Bildirishnomalar', href: '/dashboard/notifications', icon: Bell, roles: [...SCHOOL_ROLES, 'super_admin'] },
+      // Director uchun alohida e'lon sahifasi (Sprint 3 da to'liq qilinadi)
+      { label: "E'lonlar", href: '/dashboard/announcements', icon: Bell, roles: ['director'] },
     ],
   },
 ];
@@ -127,7 +140,7 @@ const navGroups: NavGroup[] = [
 const adminItems: NavItem[] = [
   { label: 'Maktablar', href: '/dashboard/schools', icon: GraduationCap, roles: ['super_admin'] },
   { label: 'Tizim holati', href: '/dashboard/system-health', icon: Activity, roles: ['super_admin'] },
-  { label: 'Audit Log', href: '/dashboard/audit-log', icon: ShieldAlert, roles: ['school_admin', 'vice_principal', 'super_admin'] },
+  { label: 'Audit Log', href: '/dashboard/audit-log', icon: ShieldAlert, roles: ['director', 'school_admin', 'vice_principal', 'super_admin'] },
   { label: 'Sozlamalar', href: '/dashboard/settings', icon: Settings },
   { label: 'Profil', href: '/dashboard/profile', icon: UserCircle, roles: SCHOOL_ROLES },
 ];
@@ -140,7 +153,13 @@ export function Sidebar() {
   const canSee = (item: NavItem) => {
     if (!item.roles) return true;
     if (!user) return false;
-    return item.roles.includes(user.role);
+    // class_teacher bir vaqtda fan o'qituvchisi ham bo'lishi mumkin —
+    // shuning uchun class_teacher teacher ruxsatlarini ham meros oladi
+    const effectiveRoles =
+      user.role === 'class_teacher'
+        ? ['class_teacher', 'teacher']
+        : [user.role];
+    return item.roles.some(r => effectiveRoles.includes(r));
   };
 
   const NavLink = ({ item }: { item: NavItem }) => {

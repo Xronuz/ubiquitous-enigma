@@ -182,4 +182,195 @@ export class MessagingService {
     });
     return { message: `${count} ta xabar o'chirildi`, count };
   }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  //  GROUP CHAT
+  // ══════════════════════════════════════════════════════════════════════════
+
+  /** Guruh yaratish */
+  async createGroup(
+    dto: { name: string; description?: string; participantIds: string[] },
+    currentUser: JwtPayload,
+  ) {
+    const schoolId = currentUser.schoolId!;
+    const creatorId = currentUser.sub;
+
+    // Ensure creator is in participants
+    const allIds = Array.from(new Set([creatorId, ...dto.participantIds]));
+
+    const conversation = await this.prisma.conversation.create({
+      data: {
+        schoolId,
+        name: dto.name,
+        description: dto.description,
+        createdById: creatorId,
+        participants: {
+          create: allIds.map(uid => ({
+            userId: uid,
+            isAdmin: uid === creatorId,
+          })),
+        },
+      },
+      include: {
+        participants: {
+          include: { user: { select: { id: true, firstName: true, lastName: true, role: true } } },
+        },
+      },
+    });
+
+    // Notify participants via WebSocket
+    allIds.forEach(uid => {
+      if (uid !== creatorId) {
+        this.eventsGateway?.emitToUser(uid, 'group:created', {
+          id: conversation.id,
+          name: conversation.name,
+        });
+      }
+    });
+
+    return conversation;
+  }
+
+  /** Foydalanuvchi ishtirokidagi barcha guruhlar */
+  async getGroups(currentUser: JwtPayload) {
+    const groups = await this.prisma.conversation.findMany({
+      where: {
+        schoolId: currentUser.schoolId!,
+        participants: { some: { userId: currentUser.sub } },
+      },
+      orderBy: { updatedAt: 'desc' },
+      include: {
+        participants: {
+          include: { user: { select: { id: true, firstName: true, lastName: true, role: true } } },
+        },
+        messages: {
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+          include: { sender: { select: { id: true, firstName: true, lastName: true } } },
+        },
+      },
+    });
+
+    return groups.map(g => {
+      const me = g.participants.find(p => p.userId === currentUser.sub);
+      const lastMessage = g.messages[0] ?? null;
+      const unreadCount = 0; // computed separately if needed
+      return {
+        id: g.id,
+        name: g.name,
+        description: g.description,
+        participantCount: g.participants.length,
+        participants: g.participants,
+        lastMessage,
+        unreadCount,
+        isAdmin: me?.isAdmin ?? false,
+        createdAt: g.createdAt,
+        updatedAt: g.updatedAt,
+      };
+    });
+  }
+
+  /** Guruh xabarlarini olish */
+  async getGroupMessages(
+    groupId: string,
+    currentUser: JwtPayload,
+    page = 1,
+    limit = 30,
+  ) {
+    // Check membership
+    const member = await this.prisma.conversationParticipant.findFirst({
+      where: { conversationId: groupId, userId: currentUser.sub },
+    });
+    if (!member) throw new Error('Siz bu guruh a\'zosi emassiz');
+
+    const skip = (page - 1) * limit;
+    const [messages, total] = await Promise.all([
+      this.prisma.groupMessage.findMany({
+        where: { conversationId: groupId },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+        include: { sender: { select: { id: true, firstName: true, lastName: true, role: true } } },
+      }),
+      this.prisma.groupMessage.count({ where: { conversationId: groupId } }),
+    ]);
+
+    // Update lastReadAt
+    await this.prisma.conversationParticipant.update({
+      where: { conversationId_userId: { conversationId: groupId, userId: currentUser.sub } },
+      data: { lastReadAt: new Date() },
+    });
+
+    return {
+      data: messages.reverse(),
+      meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
+    };
+  }
+
+  /** Guruhga xabar yuborish */
+  async sendGroupMessage(
+    groupId: string,
+    content: string,
+    currentUser: JwtPayload,
+  ) {
+    const member = await this.prisma.conversationParticipant.findFirst({
+      where: { conversationId: groupId, userId: currentUser.sub },
+    });
+    if (!member) throw new Error('Siz bu guruh a\'zosi emassiz');
+
+    const message = await this.prisma.groupMessage.create({
+      data: { conversationId: groupId, senderId: currentUser.sub, content },
+      include: { sender: { select: { id: true, firstName: true, lastName: true, role: true } } },
+    });
+
+    // Update conversation updatedAt
+    await this.prisma.conversation.update({
+      where: { id: groupId },
+      data: { updatedAt: new Date() },
+    });
+
+    // Real-time: Broadcast to all group members
+    const participants = await this.prisma.conversationParticipant.findMany({
+      where: { conversationId: groupId },
+      select: { userId: true },
+    });
+    participants.forEach(p => {
+      this.eventsGateway?.emitToUser(p.userId, 'group:message', {
+        conversationId: groupId,
+        id: message.id,
+        content: message.content,
+        sender: message.sender,
+        createdAt: message.createdAt,
+      });
+    });
+
+    return message;
+  }
+
+  /** Guruhga yangi a'zo qo'shish (faqat admin) */
+  async addParticipant(
+    groupId: string,
+    userId: string,
+    currentUser: JwtPayload,
+  ) {
+    const admin = await this.prisma.conversationParticipant.findFirst({
+      where: { conversationId: groupId, userId: currentUser.sub, isAdmin: true },
+    });
+    if (!admin) throw new Error('Faqat guruh admini a\'zo qo\'sha oladi');
+
+    await this.prisma.conversationParticipant.upsert({
+      where: { conversationId_userId: { conversationId: groupId, userId } },
+      create: { conversationId: groupId, userId },
+      update: {},
+    });
+    return { message: 'A\'zo qo\'shildi' };
+  }
+
+  /** Guruhdan chiqish */
+  async leaveGroup(groupId: string, currentUser: JwtPayload) {
+    await this.prisma.conversationParticipant.deleteMany({
+      where: { conversationId: groupId, userId: currentUser.sub },
+    });
+    return { message: 'Guruhdan chiqdingiz' };
+  }
 }

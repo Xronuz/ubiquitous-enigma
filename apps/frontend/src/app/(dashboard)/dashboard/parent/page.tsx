@@ -129,6 +129,7 @@ export default function ParentPage() {
 
   const [selectedChildId, setSelectedChildId] = useState<string>('');
   const [activeTab, setActiveTab] = useState('attendance');
+  const [subjectFilter, setSubjectFilter] = useState<string>('all');
 
   // Leave request form state
   const [leaveForm, setLeaveForm] = useState({ startDate: '', endDate: '', reason: '' });
@@ -573,6 +574,29 @@ export default function ParentPage() {
 
             {/* ── Baholar ── */}
             <TabsContent value="grades" className="mt-4 space-y-4">
+              {/* Subject filter */}
+              {!gradesLoading && gradesList.length > 0 && (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground shrink-0">Fan bo&apos;yicha:</span>
+                  <Select value={subjectFilter} onValueChange={setSubjectFilter}>
+                    <SelectTrigger className="h-8 w-52 text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Barcha fanlar</SelectItem>
+                      {Object.keys(gradesBySubject).map(name => (
+                        <SelectItem key={name} value={name}>{name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {subjectFilter !== 'all' && (
+                    <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => setSubjectFilter('all')}>
+                      × Tozalash
+                    </Button>
+                  )}
+                </div>
+              )}
+
               {gradesLoading ? (
                 <ListSkeleton rows={5} />
               ) : gradesError ? (
@@ -596,7 +620,9 @@ export default function ParentPage() {
                   </CardContent>
                 </Card>
               ) : (
-                Object.entries(gradesBySubject).map(([subjectName, subjectGrades]) => {
+                Object.entries(gradesBySubject)
+                  .filter(([name]) => subjectFilter === 'all' || name === subjectFilter)
+                  .map(([subjectName, subjectGrades]) => {
                   const subjectAvg = (
                     subjectGrades.reduce((s: number, g: any) => s + (g.score ?? 0), 0) / subjectGrades.length
                   ).toFixed(1);

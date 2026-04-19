@@ -10,7 +10,7 @@ import { FinanceService } from './finance.service';
 @ApiTags('finance')
 @ApiBearerAuth('JWT')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(UserRole.SCHOOL_ADMIN, UserRole.VICE_PRINCIPAL, UserRole.ACCOUNTANT)
+@Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.ACCOUNTANT)
 @Controller({ path: 'finance', version: '1' })
 export class FinanceController {
   constructor(private readonly financeService: FinanceService) {}

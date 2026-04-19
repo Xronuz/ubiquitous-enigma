@@ -16,14 +16,14 @@ export class AttendanceController {
   constructor(private readonly attendanceService: AttendanceService) {}
 
   @Post('mark')
-  @Roles(UserRole.TEACHER, UserRole.CLASS_TEACHER, UserRole.VICE_PRINCIPAL)
+  @Roles(UserRole.TEACHER, UserRole.CLASS_TEACHER)
   @ApiOperation({ summary: 'Davomat belgilash' })
   mark(@Body() dto: MarkAttendanceDto, @CurrentUser() user: JwtPayload) {
     return this.attendanceService.markAttendance(dto, user);
   }
 
   @Get('report')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.VICE_PRINCIPAL, UserRole.CLASS_TEACHER, UserRole.TEACHER)
+  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.CLASS_TEACHER, UserRole.TEACHER)
   @ApiOperation({ summary: 'Davomat hisoboti' })
   getReport(
     @CurrentUser() user: JwtPayload,
@@ -35,14 +35,14 @@ export class AttendanceController {
   }
 
   @Get('today/summary')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.VICE_PRINCIPAL, UserRole.CLASS_TEACHER, UserRole.TEACHER)
+  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.CLASS_TEACHER, UserRole.TEACHER)
   @ApiOperation({ summary: 'Bugungi davomat xulosasi (dashboard widget)' })
   getTodaySummary(@CurrentUser() user: JwtPayload) {
     return this.attendanceService.getTodaySummary(user);
   }
 
   @Get('student/:id/history')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.VICE_PRINCIPAL, UserRole.CLASS_TEACHER, UserRole.TEACHER)
+  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.CLASS_TEACHER, UserRole.TEACHER)
   @ApiOperation({ summary: 'O\'quvchi davomat tarixi' })
   getStudentHistory(
     @Param('id') studentId: string,

@@ -7,7 +7,7 @@ import {
   AlertCircle, Globe, CheckCircle2, Building2, LayoutGrid,
   BookOpen, BookMarked, ClipboardCheck, Calendar, GraduationCap, ChevronRight,
   Rocket, X, Library, BookCopy, Hourglass, DollarSign, BarChart2,
-  CalendarOff, ShieldAlert, CalendarCheck, Activity,
+  CalendarOff, ShieldAlert, CalendarCheck, Activity, Bell,
 } from 'lucide-react';
 import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid,
@@ -31,6 +31,11 @@ import { subjectsApi } from '@/lib/api/subjects';
 import { gradesApi } from '@/lib/api/grades';
 import { leaveRequestsApi } from '@/lib/api/leave-requests';
 import { disciplineApi } from '@/lib/api/discipline';
+import { financeApi } from '@/lib/api/finance';
+import { notificationsApi } from '@/lib/api/notifications';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuthStore } from '@/store/auth.store';
 import { formatCurrency, getRoleLabel } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
@@ -689,6 +694,7 @@ function TeacherKPISection() {
 
 function VicePrincipalSection() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10);
   const today = new Date().toISOString().slice(0, 10);
 
@@ -704,6 +710,12 @@ function VicePrincipalSection() {
   const pendingLeaves: any[] = leaveData?.data ?? (Array.isArray(leaveData) ? leaveData : []);
   const disciplineList: any[] = disciplineData?.data ?? [];
   const unresolvedDiscipline = disciplineList.filter((d: any) => !d.resolved);
+
+  const reviewMutation = useMutation({
+    mutationFn: ({ id, action }: { id: string; action: 'approve' | 'reject' }) =>
+      leaveRequestsApi.review(id, { action }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['leave-requests'] }),
+  });
 
   const items = [
     {
@@ -745,7 +757,7 @@ function VicePrincipalSection() {
   ];
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       <h2 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">O'rinbosar ko'rsatkichlari</h2>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {items.map(({ title, value, desc, icon: Icon, color, href, alert }) => (
@@ -767,6 +779,72 @@ function VicePrincipalSection() {
           </Card>
         ))}
       </div>
+
+      {/* Quick leave approval widget */}
+      {pendingLeaves.length > 0 && (
+        <Card className="border-orange-200 dark:border-orange-900">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <CalendarOff className="h-4 w-4 text-orange-500" />
+                Tezkor tasdiqlash — Ta&apos;til so&apos;rovlari
+              </CardTitle>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-xs h-7"
+                onClick={() => router.push('/dashboard/leave-requests')}
+              >
+                Barchasini ko&apos;rish →
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {pendingLeaves.slice(0, 5).map((leave: any) => {
+              const name = `${leave.user?.firstName ?? ''} ${leave.user?.lastName ?? ''}`.trim() || 'Noma\'lum';
+              const from = leave.startDate ? new Date(leave.startDate).toLocaleDateString('uz-UZ', { day: '2-digit', month: 'short' }) : '—';
+              const to   = leave.endDate   ? new Date(leave.endDate).toLocaleDateString('uz-UZ', { day: '2-digit', month: 'short' }) : '—';
+              const isPending = reviewMutation.isPending;
+              return (
+                <div
+                  key={leave.id}
+                  className="flex items-center gap-3 rounded-lg border bg-card px-3 py-2"
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{name}</p>
+                    <p className="text-xs text-muted-foreground">{from} – {to} · {leave.reason?.slice(0, 30) ?? '—'}</p>
+                  </div>
+                  <div className="flex gap-1.5 shrink-0">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 px-2 text-xs text-green-600 border-green-300 hover:bg-green-50"
+                      disabled={isPending}
+                      onClick={() => reviewMutation.mutate({ id: leave.id, action: 'approve' })}
+                    >
+                      ✓ Tasdiqlash
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 px-2 text-xs text-red-500 border-red-300 hover:bg-red-50"
+                      disabled={isPending}
+                      onClick={() => reviewMutation.mutate({ id: leave.id, action: 'reject' })}
+                    >
+                      ✕ Rad
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
+            {pendingLeaves.length > 5 && (
+              <p className="text-xs text-muted-foreground text-center pt-1">
+                +{pendingLeaves.length - 5} ta boshqa so&apos;rov
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
@@ -1685,6 +1763,287 @@ function ParentDashboard() {
   );
 }
 
+// ─── Director Dashboard ────────────────────────────────────────────────────
+function DirectorDashboard() {
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const { toast } = (useAuthStore as any)._toast ?? { toast: () => {} };
+  const [annTitle, setAnnTitle] = useState('');
+  const [annBody, setAnnBody] = useState('');
+  const [annTarget, setAnnTarget] = useState('all_staff');
+
+  const { data: attendanceSummary, isLoading: attLoading } = useQuery({
+    queryKey: ['attendance', 'today-summary'],
+    queryFn: attendanceApi.getTodaySummary,
+  });
+
+  const { data: classesData } = useQuery({
+    queryKey: ['classes'],
+    queryFn: classesApi.getAll,
+  });
+
+  const { data: usersData } = useQuery({
+    queryKey: ['users', 'all'],
+    queryFn: () => usersApi.getAll({ limit: 200 }),
+  });
+
+  const { data: pendingLeaves } = useQuery({
+    queryKey: ['leave-requests', 'pending'],
+    queryFn: () => leaveRequestsApi.getAll({ status: 'pending' }),
+  });
+
+  const { data: financeData } = useQuery({
+    queryKey: ['finance', 'dashboard'],
+    queryFn: financeApi.getDashboard,
+  });
+
+  const { data: pendingDiscipline } = useQuery({
+    queryKey: ['discipline', 'unresolved'],
+    queryFn: () => disciplineApi.getAll().catch(() => ({ data: [] })),
+  });
+
+  const classList: any[] = Array.isArray(classesData) ? classesData : (classesData as any)?.data ?? [];
+  const allUsers: any[] = (usersData as any)?.data ?? [];
+  const teacherCount = allUsers.filter((u: any) => ['teacher', 'class_teacher'].includes(u.role)).length;
+  const studentCount = allUsers.filter((u: any) => u.role === 'student').length;
+  const pendingLeaveList: any[] = (pendingLeaves as any)?.data ?? pendingLeaves ?? [];
+  const pendingDisciplineList: any[] = (pendingDiscipline as any)?.data ?? [];
+
+  const reviewMutation = useMutation({
+    mutationFn: ({ id, action }: { id: string; action: 'approve' | 'reject' }) =>
+      leaveRequestsApi.review(id, { action }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['leave-requests'] }),
+  });
+
+  const broadcastMutation = useMutation({
+    mutationFn: notificationsApi.broadcast,
+    onSuccess: (res: any) => {
+      setAnnTitle('');
+      setAnnBody('');
+    },
+  });
+
+  const handleBroadcast = () => {
+    if (!annTitle.trim() || !annBody.trim()) return;
+    broadcastMutation.mutate({ targetGroup: annTarget, title: annTitle, body: annBody });
+  };
+
+  const presentPct = (attendanceSummary as any)?.presentPct ?? 0;
+  const totalStudents = (attendanceSummary as any)?.totalStudents ?? 0;
+
+  return (
+    <div className="space-y-6 p-6">
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl font-bold">Direktor paneli</h1>
+        <p className="text-sm text-muted-foreground">Maktab umumiy holati va boshqaruv</p>
+      </div>
+
+      {/* KPI Cards */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard
+          title="Bugungi davomat"
+          value={`${presentPct}%`}
+          description={`${totalStudents} ta o'quvchidan`}
+          icon={ClipboardCheck}
+          trend={presentPct >= 90 ? 'up' : 'down'}
+          loading={attLoading}
+          color="bg-green-500"
+        />
+        <StatCard
+          title="Sinflar soni"
+          value={classList.length}
+          description="Faol sinflar"
+          icon={School}
+          color="bg-blue-500"
+        />
+        <StatCard
+          title="O'qituvchilar"
+          value={teacherCount}
+          description="Faol xodimlar"
+          icon={Users}
+          color="bg-purple-500"
+        />
+        <StatCard
+          title="Oylik tushum"
+          value={formatCurrency((financeData as any)?.thisMonthRevenue ?? 0)}
+          description="Joriy oy"
+          icon={TrendingUp}
+          color="bg-orange-500"
+        />
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Ta'til so'rovlari tasdiqlash */}
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base flex items-center gap-2">
+                <CalendarOff className="h-4 w-4 text-orange-500" />
+                Ta'til so'rovlari
+              </CardTitle>
+              <Badge variant={pendingLeaveList.length > 0 ? 'destructive' : 'secondary'}>
+                {pendingLeaveList.length} ta kutilmoqda
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-2 max-h-64 overflow-y-auto">
+            {pendingLeaveList.length === 0 ? (
+              <p className="text-center text-sm text-muted-foreground py-6">Kutilayotgan so'rovlar yo'q ✓</p>
+            ) : (
+              pendingLeaveList.slice(0, 8).map((req: any) => (
+                <div key={req.id} className="flex items-center justify-between rounded-lg border p-3 gap-2">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium truncate">
+                      {req.requester?.firstName} {req.requester?.lastName}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(req.startDate).toLocaleDateString('uz-UZ')} –{' '}
+                      {new Date(req.endDate).toLocaleDateString('uz-UZ')}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate">{req.reason}</p>
+                  </div>
+                  <div className="flex gap-1 shrink-0">
+                    <Button
+                      size="sm" variant="outline"
+                      className="h-7 px-2 text-xs text-green-600 border-green-200 hover:bg-green-50"
+                      onClick={() => reviewMutation.mutate({ id: req.id, action: 'approve' })}
+                      disabled={reviewMutation.isPending}
+                    >
+                      ✓ Tasdiqlash
+                    </Button>
+                    <Button
+                      size="sm" variant="outline"
+                      className="h-7 px-2 text-xs text-red-600 border-red-200 hover:bg-red-50"
+                      onClick={() => reviewMutation.mutate({ id: req.id, action: 'reject' })}
+                      disabled={reviewMutation.isPending}
+                    >
+                      ✗ Rad
+                    </Button>
+                  </div>
+                </div>
+              ))
+            )}
+            {pendingLeaveList.length > 8 && (
+              <Button variant="ghost" size="sm" className="w-full text-xs" onClick={() => router.push('/dashboard/leave-requests')}>
+                Barchasini ko'rish ({pendingLeaveList.length}) →
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* E'lon yuborish widget */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Bell className="h-4 w-4 text-blue-500" />
+              E'lon va xabar yuborish
+            </CardTitle>
+            <CardDescription className="text-xs">Maktab xodimlari yoki ota-onalarga toplu xabar</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <Select value={annTarget} onValueChange={setAnnTarget}>
+              <SelectTrigger className="h-8 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all_staff">Barcha xodimlar</SelectItem>
+                <SelectItem value="all_teachers">Barcha o'qituvchilar</SelectItem>
+                <SelectItem value="class_teachers">Sinf rahbarlari</SelectItem>
+                <SelectItem value="all_parents">Barcha ota-onalar</SelectItem>
+                <SelectItem value="all_students">Barcha o'quvchilar</SelectItem>
+                <SelectItem value="vice_principal">O'rinbosarlar</SelectItem>
+                <SelectItem value="accountant">Moliya bo'limi</SelectItem>
+                <SelectItem value="librarian">Kutubxonachi</SelectItem>
+              </SelectContent>
+            </Select>
+            <input
+              className="w-full rounded-md border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              placeholder="E'lon sarlavhasi..."
+              value={annTitle}
+              onChange={e => setAnnTitle(e.target.value)}
+            />
+            <Textarea
+              placeholder="E'lon matni..."
+              value={annBody}
+              onChange={e => setAnnBody(e.target.value)}
+              className="resize-none text-sm"
+              rows={3}
+            />
+            <Button
+              className="w-full"
+              onClick={handleBroadcast}
+              disabled={!annTitle.trim() || !annBody.trim() || broadcastMutation.isPending}
+            >
+              {broadcastMutation.isPending ? 'Yuborilmoqda...' : (
+                broadcastMutation.isSuccess ? `✓ Yuborildi` : '📢 E\'lon yuborish'
+              )}
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Intizom holati */}
+        {pendingDisciplineList.length > 0 && (
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <ShieldAlert className="h-4 w-4 text-red-500" />
+                Hal qilinmagan intizom holatlari
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 max-h-48 overflow-y-auto">
+              {pendingDisciplineList.slice(0, 5).map((d: any) => (
+                <div key={d.id} className="flex items-center gap-3 rounded-lg border p-2.5">
+                  <div className="h-2 w-2 rounded-full bg-red-500 shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium truncate">
+                      {d.student?.firstName} {d.student?.lastName}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate">{d.description}</p>
+                  </div>
+                </div>
+              ))}
+              <Button variant="ghost" size="sm" className="w-full text-xs" onClick={() => router.push('/dashboard/discipline')}>
+                Barchasini ko'rish →
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Tezkor havolalar */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Tezkor havolalar</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { label: 'Davomat hisoboti', href: '/dashboard/attendance', icon: ClipboardCheck, color: 'text-green-600' },
+                { label: 'Baholar', href: '/dashboard/grades', icon: BarChart2, color: 'text-blue-600' },
+                { label: 'Moliya xulosasi', href: '/dashboard/finance', icon: TrendingUp, color: 'text-orange-600' },
+                { label: 'Dars jadvali', href: '/dashboard/schedule', icon: Calendar, color: 'text-purple-600' },
+                { label: 'Xodimlar', href: '/dashboard/users', icon: Users, color: 'text-gray-600' },
+                { label: 'Hisobotlar', href: '/dashboard/reports', icon: BarChart2, color: 'text-indigo-600' },
+              ].map(item => (
+                <button
+                  key={item.href}
+                  onClick={() => router.push(item.href)}
+                  className="flex items-center gap-2 rounded-lg border p-3 text-left hover:bg-accent transition-colors"
+                >
+                  <item.icon className={`h-4 w-4 shrink-0 ${item.color}`} />
+                  <span className="text-xs font-medium">{item.label}</span>
+                </button>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
 // ─── Student redirect ──────────────────────────────────────────────────────
 function StudentRedirect() {
   const router = useRouter();
@@ -1710,6 +2069,7 @@ export default function DashboardPage() {
   }
 
   if (user?.role === 'super_admin') return <SuperAdminDashboard />;
+  if (user?.role === 'director') return <DirectorDashboard />;
   if (user?.role === 'parent') return <ParentDashboard />;
   if (user?.role === 'student') return <StudentRedirect />;
   if (user?.role === 'accountant') return <AccountantDashboard />;

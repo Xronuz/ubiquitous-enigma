@@ -11,7 +11,7 @@ import { Roles } from '@/common/decorators/roles.decorator';
 import { JwtPayload, UserRole } from '@eduplatform/types';
 
 const MANAGERS = [
-  UserRole.SCHOOL_ADMIN, UserRole.VICE_PRINCIPAL,
+  UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL,
   UserRole.TEACHER, UserRole.CLASS_TEACHER,
 ];
 
@@ -23,7 +23,7 @@ export class DisciplineController {
   constructor(private readonly service: DisciplineService) {}
 
   @Get('stats')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.VICE_PRINCIPAL)
+  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL)
   @ApiOperation({ summary: 'Intizom statistikasi' })
   getStats(@CurrentUser() user: JwtPayload) {
     return this.service.getStats(user);

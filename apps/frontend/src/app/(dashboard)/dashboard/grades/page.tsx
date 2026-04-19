@@ -231,12 +231,18 @@ function BulkGradeDialog({ open, onClose }: { open: boolean; onClose: () => void
 
   const handleBulkSubmit = () => {
     const items = students
-      .filter(s => bulkScores[s.id] !== undefined && bulkScores[s.id] !== '')
-      .map(s => ({
-        studentId: s.id,
-        score: Math.max(0, Math.min(Number(bulkMaxScore), Number(bulkScores[s.id]))),
-        comment: bulkComments[s.id] || undefined,
-      }));
+      .filter(s => {
+        const st = s.student ?? s;
+        return bulkScores[st.id] !== undefined && bulkScores[st.id] !== '';
+      })
+      .map(s => {
+        const st = s.student ?? s;
+        return {
+          studentId: st.id,
+          score: Math.max(0, Math.min(Number(bulkMaxScore), Number(bulkScores[st.id]))),
+          comment: bulkComments[st.id] || undefined,
+        };
+      });
     if (!bulkClassId || !bulkSubjectId) {
       toast({ variant: 'destructive', title: 'Sinf va fanni tanlang' });
       return;
@@ -255,7 +261,10 @@ function BulkGradeDialog({ open, onClose }: { open: boolean; onClose: () => void
     });
   };
 
-  const filledCount = students.filter(s => bulkScores[s.id] !== undefined && bulkScores[s.id] !== '').length;
+  const filledCount = students.filter(s => {
+    const st = s.student ?? s;
+    return bulkScores[st.id] !== undefined && bulkScores[st.id] !== '';
+  }).length;
 
   return (
     <Dialog open={open} onOpenChange={onClose}>

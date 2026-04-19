@@ -133,6 +133,60 @@ export class NotificationsService {
     return { message: 'Sozlamalar saqlandi', preferences: prefs };
   }
 
+  /**
+   * Direktor va adminlar uchun: maktab ichida rol yoki guruh bo'yicha toplu e'lon yuborish
+   * targetGroup: 'all_staff' | 'all_teachers' | 'class_teachers' | 'all_parents' | 'all_students' | rol nomi
+   */
+  async broadcast(
+    payload: { targetGroup: string; title: string; body: string },
+    currentUser: JwtPayload,
+  ) {
+    const schoolId = currentUser.schoolId!;
+
+    // Maqsadli foydalanuvchilarni aniqlash
+    const roleMap: Record<string, string[]> = {
+      all_staff:      ['school_admin', 'director', 'vice_principal', 'teacher', 'class_teacher', 'accountant', 'librarian'],
+      all_teachers:   ['teacher', 'class_teacher'],
+      class_teachers: ['class_teacher'],
+      all_parents:    ['parent'],
+      all_students:   ['student'],
+    };
+
+    const roles = roleMap[payload.targetGroup]
+      ? roleMap[payload.targetGroup]
+      : [payload.targetGroup]; // to'g'ridan-to'g'ri rol nomi berilgan bo'lsa
+
+    const recipients = await this.prisma.user.findMany({
+      where: { schoolId, role: { in: roles as any }, isActive: true },
+      select: { id: true },
+    });
+
+    if (recipients.length === 0) {
+      return { sent: 0, message: 'Maqsadli foydalanuvchilar topilmadi' };
+    }
+
+    // Toplu notification yaratish
+    await this.prisma.notification.createMany({
+      data: recipients.map(r => ({
+        schoolId,
+        recipientId: r.id,
+        title: payload.title,
+        body: payload.body,
+        type: 'in_app' as any,
+      })),
+    });
+
+    // WebSocket orqali real-time yuborish
+    this.eventsGateway?.emitToSchool(schoolId, 'notification:broadcast', {
+      title: payload.title,
+      body: payload.body,
+      targetGroup: payload.targetGroup,
+    });
+
+    this.logger.log(`Broadcast: "${payload.title}" → ${payload.targetGroup} (${recipients.length} ta)`);
+    return { sent: recipients.length, message: `${recipients.length} ta foydalanuvchiga e'lon yuborildi` };
+  }
+
   async createInApp(data: {
     schoolId: string;
     recipientId: string;

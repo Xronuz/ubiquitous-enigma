@@ -17,7 +17,7 @@ export class GradesController {
 
   @Get()
   @Roles(
-    UserRole.SCHOOL_ADMIN, UserRole.VICE_PRINCIPAL,
+    UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL,
     UserRole.TEACHER, UserRole.CLASS_TEACHER,
     UserRole.STUDENT,
   )

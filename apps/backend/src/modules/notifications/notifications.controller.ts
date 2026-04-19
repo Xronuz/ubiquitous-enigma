@@ -18,11 +18,21 @@ export class NotificationsController {
     private readonly queueService: NotificationQueueService,
   ) {}
 
-  @Post('send')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.VICE_PRINCIPAL, UserRole.CLASS_TEACHER, UserRole.TEACHER)
-  @ApiOperation({ summary: 'Bildirishnoma yuborish' })
+  @Post()
+  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.CLASS_TEACHER, UserRole.TEACHER)
+  @ApiOperation({ summary: 'Bildirishnoma yuborish (yakka)' })
   send(@Body() dto: SendNotificationDto, @CurrentUser() user: JwtPayload) {
     return this.notificationsService.send(dto, user);
+  }
+
+  @Post('broadcast')
+  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL)
+  @ApiOperation({ summary: "E'lon: rol/guruh bo'yicha toplu bildirishnoma (direktor/admin)" })
+  broadcast(
+    @Body() dto: { targetGroup: string; title: string; body: string },
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.notificationsService.broadcast(dto, user);
   }
 
   @Get()
