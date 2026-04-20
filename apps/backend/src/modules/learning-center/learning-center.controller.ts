@@ -7,6 +7,7 @@ import {
   EnrollStudentDto, UpdateEnrollmentDto,
 } from './learning-center.service';
 import { CurrentUser } from '@/common/decorators/current-user.decorator';
+import { BranchContext } from '@/common/decorators/branch-context.decorator';
 import { Roles } from '@/common/decorators/roles.decorator';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
@@ -41,31 +42,43 @@ export class LearningCenterController {
 
   @Get('courses')
   @Roles(
-    UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL,
+    UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.BRANCH_ADMIN, UserRole.VICE_PRINCIPAL,
     UserRole.TEACHER, UserRole.CLASS_TEACHER,
     UserRole.STUDENT,
   )
   @ApiOperation({ summary: 'Kurslar ro\'yxati' })
   @ApiQuery({ name: 'search', required: false })
-  getCourses(@CurrentUser() user: JwtPayload, @Query('search') search?: string) {
-    return this.service.getCourses(user, search);
+  getCourses(
+    @CurrentUser() user: JwtPayload,
+    @BranchContext() branchCtx: string | null,
+    @Query('search') search?: string,
+  ) {
+    return this.service.getCourses(user, branchCtx, search);
   }
 
   @Get('courses/:id')
   @Roles(
-    UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL,
+    UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.BRANCH_ADMIN, UserRole.VICE_PRINCIPAL,
     UserRole.TEACHER, UserRole.CLASS_TEACHER,
   )
   @ApiOperation({ summary: 'Kurs tafsilotlari (o\'quvchilar bilan)' })
-  getCourseById(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
-    return this.service.getCourseById(id, user);
+  getCourseById(
+    @Param('id') id: string,
+    @CurrentUser() user: JwtPayload,
+    @BranchContext() branchCtx: string | null,
+  ) {
+    return this.service.getCourseById(id, user, branchCtx);
   }
 
   @Post('courses')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL)
+  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.BRANCH_ADMIN, UserRole.VICE_PRINCIPAL)
   @ApiOperation({ summary: 'Yangi kurs yaratish' })
-  createCourse(@Body() dto: CreateCourseDto, @CurrentUser() user: JwtPayload) {
-    return this.service.createCourse(dto, user);
+  createCourse(
+    @Body() dto: CreateCourseDto,
+    @CurrentUser() user: JwtPayload,
+    @BranchContext() branchCtx: string | null,
+  ) {
+    return this.service.createCourse(dto, user, branchCtx);
   }
 
   @Put('courses/:id')

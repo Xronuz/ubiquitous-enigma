@@ -5,6 +5,7 @@ import { PrismaService } from '@/common/prisma/prisma.service';
 import { JwtPayload, UserRole } from '@eduplatform/types';
 import { AuditService } from '@/common/audit/audit.service';
 import { EventsGateway } from '@/modules/gateway/events.gateway';
+import { branchFilter } from '@/common/utils/branch-filter.util';
 
 export class CreateLeaveRequestDto {
   @ApiProperty({ example: 'Kasal bo\'lgani uchun ta\'til so\'ralmoqda', minLength: 5, maxLength: 500 })
@@ -51,7 +52,7 @@ export class LeaveRequestsService {
     @Optional() private readonly eventsGateway: EventsGateway,
   ) {}
 
-  async create(dto: CreateLeaveRequestDto, currentUser: JwtPayload) {
+  async create(dto: CreateLeaveRequestDto, currentUser: JwtPayload, branchCtx: string | null = null) {
     const start = new Date(dto.startDate);
     const end = new Date(dto.endDate);
     if (end < start) throw new BadRequestException("Tugash sanasi boshlanish sanasidan oldin bo'lishi mumkin emas");
@@ -76,6 +77,7 @@ export class LeaveRequestsService {
     const leaveRequest = await this.prisma.leaveRequest.create({
       data: {
         schoolId,
+        branchId: branchCtx ?? currentUser.branchId ?? undefined,
         requesterId: currentUser.sub,
         reason: dto.reason,
         startDate: start,
@@ -133,11 +135,10 @@ export class LeaveRequestsService {
     return leaveRequest;
   }
 
-  async findAll(currentUser: JwtPayload, query?: { status?: string }) {
-    const schoolId = currentUser.schoolId!;
-    const isApprover = [UserRole.SCHOOL_ADMIN, UserRole.VICE_PRINCIPAL].includes(currentUser.role as any);
+  async findAll(currentUser: JwtPayload, branchCtx: string | null = null, query?: { status?: string }) {
+    const isApprover = [UserRole.SCHOOL_ADMIN, UserRole.VICE_PRINCIPAL, UserRole.BRANCH_ADMIN].includes(currentUser.role as any);
 
-    const where: any = { schoolId };
+    const where: any = { ...branchFilter(currentUser, branchCtx) };
     if (query?.status) where.status = query.status;
 
     // Non-approver sees only their own requests
@@ -159,9 +160,9 @@ export class LeaveRequestsService {
     });
   }
 
-  async findOne(id: string, currentUser: JwtPayload) {
+  async findOne(id: string, currentUser: JwtPayload, branchCtx: string | null = null) {
     const req = await this.prisma.leaveRequest.findFirst({
-      where: { id, schoolId: currentUser.schoolId! },
+      where: { id, ...branchFilter(currentUser, branchCtx) },
       include: {
         requester: { select: { id: true, firstName: true, lastName: true, role: true } },
         approvals: {

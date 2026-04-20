@@ -10,6 +10,7 @@ import { UserRole, JwtPayload } from '@eduplatform/types';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { branchFilter } from '@/common/utils/branch-filter.util';
 
 @Injectable()
 export class UsersService {
@@ -20,15 +21,17 @@ export class UsersService {
 
   async findAll(
     currentUser: JwtPayload,
+    branchCtx: string | null = null,
     page = 1,
     limit = 20,
     search?: string,
     role?: string,
   ) {
-    const schoolId = currentUser.isSuperAdmin ? undefined : currentUser.schoolId;
     const skip = (page - 1) * limit;
 
-    const where: any = schoolId ? { schoolId } : {};
+    // super_admin can see all users; others get branchFilter
+    const baseFilter = currentUser.isSuperAdmin ? {} : branchFilter(currentUser, branchCtx);
+    const where: any = { ...baseFilter };
     if (role) where.role = role;
     if (search) {
       where.OR = [

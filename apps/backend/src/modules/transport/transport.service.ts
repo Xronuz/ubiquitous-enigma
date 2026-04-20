@@ -7,6 +7,7 @@ import {
 import { Type } from 'class-transformer';
 import { PrismaService } from '@/common/prisma/prisma.service';
 import { JwtPayload, UserRole } from '@eduplatform/types';
+import { branchFilter } from '@/common/utils/branch-filter.util';
 
 // ─── DTOs ────────────────────────────────────────────────────────────────────
 
@@ -94,9 +95,9 @@ export class TransportService {
 
   // ── Routes CRUD ──────────────────────────────────────────────────────────
 
-  async getRoutes(currentUser: JwtPayload) {
+  async getRoutes(currentUser: JwtPayload, branchCtx: string | null = null) {
     const routes = await this.prisma.transportRoute.findMany({
-      where: { schoolId: currentUser.schoolId! },
+      where: branchFilter(currentUser, branchCtx),
       include: {
         _count: { select: { assignments: true } },
       },
@@ -108,9 +109,9 @@ export class TransportService {
     }));
   }
 
-  async getRoute(id: string, currentUser: JwtPayload) {
+  async getRoute(id: string, currentUser: JwtPayload, branchCtx: string | null = null) {
     const route = await this.prisma.transportRoute.findFirst({
-      where: { id, schoolId: currentUser.schoolId! },
+      where: { id, ...branchFilter(currentUser, branchCtx) },
       include: {
         assignments: {
           include: {
@@ -126,7 +127,7 @@ export class TransportService {
     return route;
   }
 
-  async createRoute(dto: CreateRouteDto, currentUser: JwtPayload) {
+  async createRoute(dto: CreateRouteDto, currentUser: JwtPayload, branchCtx: string | null = null) {
     const schoolId = currentUser.schoolId!;
 
     // Check duplicate name
@@ -138,6 +139,7 @@ export class TransportService {
     return this.prisma.transportRoute.create({
       data: {
         schoolId,
+        branchId: branchCtx ?? currentUser.branchId ?? undefined,
         name: dto.name,
         description: dto.description,
         stops: (dto.stops ?? []) as any,

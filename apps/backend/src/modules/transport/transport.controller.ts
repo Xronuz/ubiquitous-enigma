@@ -6,6 +6,7 @@ import {
   TransportService, CreateRouteDto, UpdateRouteDto, AssignStudentDto,
 } from './transport.service';
 import { CurrentUser } from '@/common/decorators/current-user.decorator';
+import { BranchContext } from '@/common/decorators/branch-context.decorator';
 import { Roles } from '@/common/decorators/roles.decorator';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
@@ -43,29 +44,29 @@ export class TransportController {
 
   @Get('routes')
   @Roles(
-    UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL,
+    UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.BRANCH_ADMIN, UserRole.VICE_PRINCIPAL,
     UserRole.CLASS_TEACHER,
   )
   @ApiOperation({ summary: 'Barcha marshrutlar ro\'yxati' })
-  getRoutes(@CurrentUser() user: JwtPayload) {
-    return this.transportService.getRoutes(user);
+  getRoutes(@CurrentUser() user: JwtPayload, @BranchContext() branchCtx: string | null) {
+    return this.transportService.getRoutes(user, branchCtx);
   }
 
   @Get('routes/:id')
   @Roles(
-    UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL,
+    UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.BRANCH_ADMIN, UserRole.VICE_PRINCIPAL,
     UserRole.TEACHER, UserRole.CLASS_TEACHER,
   )
   @ApiOperation({ summary: 'Marshrut tafsiloti (o\'quvchilar bilan)' })
-  getRoute(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
-    return this.transportService.getRoute(id, user);
+  getRoute(@Param('id') id: string, @CurrentUser() user: JwtPayload, @BranchContext() branchCtx: string | null) {
+    return this.transportService.getRoute(id, user, branchCtx);
   }
 
   @Post('routes')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL)
+  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.BRANCH_ADMIN, UserRole.VICE_PRINCIPAL)
   @ApiOperation({ summary: 'Yangi marshrut yaratish' })
-  createRoute(@Body() dto: CreateRouteDto, @CurrentUser() user: JwtPayload) {
-    return this.transportService.createRoute(dto, user);
+  createRoute(@Body() dto: CreateRouteDto, @CurrentUser() user: JwtPayload, @BranchContext() branchCtx: string | null) {
+    return this.transportService.createRoute(dto, user, branchCtx);
   }
 
   @Put('routes/:id')

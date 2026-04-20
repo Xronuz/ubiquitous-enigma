@@ -6,13 +6,14 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { ClubsService } from './clubs.service';
 import { CreateClubDto, UpdateClubDto } from './dto/clubs.dto';
 import { CurrentUser } from '@/common/decorators/current-user.decorator';
+import { BranchContext } from '@/common/decorators/branch-context.decorator';
 import { Roles } from '@/common/decorators/roles.decorator';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
 import { JwtPayload, UserRole } from '@eduplatform/types';
 
 const ALL_SCHOOL = [
-  UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL,
+  UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.BRANCH_ADMIN, UserRole.VICE_PRINCIPAL,
   UserRole.TEACHER, UserRole.CLASS_TEACHER,
   UserRole.ACCOUNTANT, UserRole.LIBRARIAN,
   UserRole.STUDENT,
@@ -30,9 +31,10 @@ export class ClubsController {
   @ApiOperation({ summary: 'Barcha to\'garaklar ro\'yxati' })
   findAll(
     @CurrentUser() user: JwtPayload,
+    @BranchContext() branchCtx: string | null,
     @Query('category') category?: string,
   ) {
-    return this.clubsService.findAll(user, category);
+    return this.clubsService.findAll(user, branchCtx, category);
   }
 
   @Get('my-clubs')
@@ -57,10 +59,14 @@ export class ClubsController {
   }
 
   @Post()
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL)
+  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.BRANCH_ADMIN, UserRole.VICE_PRINCIPAL)
   @ApiOperation({ summary: 'Yangi to\'garak yaratish' })
-  create(@Body() dto: CreateClubDto, @CurrentUser() user: JwtPayload) {
-    return this.clubsService.create(dto, user);
+  create(
+    @Body() dto: CreateClubDto,
+    @CurrentUser() user: JwtPayload,
+    @BranchContext() branchCtx: string | null,
+  ) {
+    return this.clubsService.create(dto, user, branchCtx);
   }
 
   @Put(':id')

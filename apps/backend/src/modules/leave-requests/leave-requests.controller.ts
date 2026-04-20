@@ -7,6 +7,7 @@ import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
 import { LeaveRequestsService, CreateLeaveRequestDto, ReviewLeaveDto } from './leave-requests.service';
 import { CurrentUser } from '@/common/decorators/current-user.decorator';
+import { BranchContext } from '@/common/decorators/branch-context.decorator';
 import { Roles } from '@/common/decorators/roles.decorator';
 import { JwtPayload, UserRole } from '@eduplatform/types';
 
@@ -21,38 +22,50 @@ export class LeaveRequestsController {
   @Roles(
     UserRole.TEACHER, UserRole.CLASS_TEACHER,
     UserRole.ACCOUNTANT, UserRole.LIBRARIAN,
-    UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL,
+    UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.BRANCH_ADMIN, UserRole.VICE_PRINCIPAL,
     UserRole.STUDENT,
   )
   @ApiOperation({ summary: "Ta'til so'rovi yuborish" })
-  create(@Body() dto: CreateLeaveRequestDto, @CurrentUser() user: JwtPayload) {
-    return this.service.create(dto, user);
+  create(
+    @Body() dto: CreateLeaveRequestDto,
+    @CurrentUser() user: JwtPayload,
+    @BranchContext() branchCtx: string | null,
+  ) {
+    return this.service.create(dto, user, branchCtx);
   }
 
   @Get()
   @Roles(
     UserRole.TEACHER, UserRole.CLASS_TEACHER, UserRole.ACCOUNTANT,
-    UserRole.LIBRARIAN, UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL,
-    UserRole.STUDENT, UserRole.PARENT,
+    UserRole.LIBRARIAN, UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.BRANCH_ADMIN,
+    UserRole.VICE_PRINCIPAL, UserRole.STUDENT, UserRole.PARENT,
   )
   @ApiOperation({ summary: "Ta'til so'rovlari ro'yxati" })
-  findAll(@CurrentUser() user: JwtPayload, @Query('status') status?: string) {
-    return this.service.findAll(user, { status });
+  findAll(
+    @CurrentUser() user: JwtPayload,
+    @BranchContext() branchCtx: string | null,
+    @Query('status') status?: string,
+  ) {
+    return this.service.findAll(user, branchCtx, { status });
   }
 
   @Get(':id')
   @Roles(
     UserRole.TEACHER, UserRole.CLASS_TEACHER, UserRole.ACCOUNTANT,
-    UserRole.LIBRARIAN, UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL,
-    UserRole.STUDENT, UserRole.PARENT,
+    UserRole.LIBRARIAN, UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.BRANCH_ADMIN,
+    UserRole.VICE_PRINCIPAL, UserRole.STUDENT, UserRole.PARENT,
   )
   @ApiOperation({ summary: "So'rov tafsiloti" })
-  findOne(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
-    return this.service.findOne(id, user);
+  findOne(
+    @Param('id') id: string,
+    @CurrentUser() user: JwtPayload,
+    @BranchContext() branchCtx: string | null,
+  ) {
+    return this.service.findOne(id, user, branchCtx);
   }
 
   @Put(':id/review')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL)
+  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.BRANCH_ADMIN, UserRole.VICE_PRINCIPAL)
   @ApiOperation({ summary: "So'rovni tasdiqlash yoki rad etish" })
   review(
     @Param('id') id: string,
@@ -66,8 +79,8 @@ export class LeaveRequestsController {
   @HttpCode(HttpStatus.OK)
   @Roles(
     UserRole.TEACHER, UserRole.CLASS_TEACHER, UserRole.ACCOUNTANT,
-    UserRole.LIBRARIAN, UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL,
-    UserRole.STUDENT,
+    UserRole.LIBRARIAN, UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.BRANCH_ADMIN,
+    UserRole.VICE_PRINCIPAL, UserRole.STUDENT,
   )
   @ApiOperation({ summary: "So'rovni bekor qilish" })
   cancel(@Param('id') id: string, @CurrentUser() user: JwtPayload) {

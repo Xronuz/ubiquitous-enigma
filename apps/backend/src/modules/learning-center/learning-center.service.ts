@@ -8,6 +8,7 @@ import {
 import { Type } from 'class-transformer';
 import { PrismaService } from '@/common/prisma/prisma.service';
 import { JwtPayload, UserRole } from '@eduplatform/types';
+import { branchFilter } from '@/common/utils/branch-filter.util';
 
 // ─── DTOs ────────────────────────────────────────────────────────────────────
 
@@ -105,8 +106,8 @@ export class LearningCenterService {
 
   // ── Courses ───────────────────────────────────────────────────────────────
 
-  async getCourses(currentUser: JwtPayload, search?: string) {
-    const where: any = { schoolId: currentUser.schoolId! };
+  async getCourses(currentUser: JwtPayload, branchCtx: string | null = null, search?: string) {
+    const where: any = { ...branchFilter(currentUser, branchCtx) };
     if (search) {
       where.OR = [
         { name: { contains: search, mode: 'insensitive' } },
@@ -129,9 +130,9 @@ export class LearningCenterService {
     }));
   }
 
-  async getCourseById(id: string, currentUser: JwtPayload) {
+  async getCourseById(id: string, currentUser: JwtPayload, branchCtx: string | null = null) {
     const course = await this.prisma.course.findFirst({
-      where: { id, schoolId: currentUser.schoolId! },
+      where: { id, ...branchFilter(currentUser, branchCtx) },
       include: {
         teacher: { select: { id: true, firstName: true, lastName: true } },
         enrollments: {
@@ -147,7 +148,7 @@ export class LearningCenterService {
     return { ...course, enrolledCount: course._count.enrollments };
   }
 
-  async createCourse(dto: CreateCourseDto, currentUser: JwtPayload) {
+  async createCourse(dto: CreateCourseDto, currentUser: JwtPayload, branchCtx: string | null = null) {
     const schoolId = currentUser.schoolId!;
 
     if (dto.teacherId) {
@@ -164,6 +165,7 @@ export class LearningCenterService {
     return this.prisma.course.create({
       data: {
         schoolId,
+        branchId: branchCtx ?? currentUser.branchId ?? undefined,
         name: dto.name,
         description: dto.description,
         teacherId: dto.teacherId,

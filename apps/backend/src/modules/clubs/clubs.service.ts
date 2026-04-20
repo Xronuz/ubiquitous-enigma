@@ -6,6 +6,7 @@ import { PrismaService } from '@/common/prisma/prisma.service';
 import { JwtPayload, UserRole } from '@eduplatform/types';
 import { AuditService, AuditAction } from '@/common/audit/audit.service';
 import { CreateClubDto, UpdateClubDto } from './dto/clubs.dto';
+import { branchFilter } from '@/common/utils/branch-filter.util';
 
 const CLUB_INCLUDE = {
   leader: { select: { id: true, firstName: true, lastName: true, avatarUrl: true } },
@@ -20,8 +21,8 @@ export class ClubsService {
   ) {}
 
   // ─── List all clubs ───────────────────────────────────────────────────────
-  async findAll(currentUser: JwtPayload, category?: string) {
-    const where: any = { schoolId: currentUser.schoolId!, isActive: true };
+  async findAll(currentUser: JwtPayload, branchCtx: string | null = null, category?: string) {
+    const where: any = { ...branchFilter(currentUser, branchCtx), isActive: true };
     if (category) where.category = category;
 
     // Teacher faqat o'zi rahbar bo'lgan to'garaklarni ko'radi (agar teacher bo'lsa)
@@ -56,9 +57,9 @@ export class ClubsService {
   }
 
   // ─── Single club detail ───────────────────────────────────────────────────
-  async findOne(id: string, currentUser: JwtPayload) {
+  async findOne(id: string, currentUser: JwtPayload, branchCtx: string | null = null) {
     const club = await this.prisma.club.findFirst({
-      where: { id, schoolId: currentUser.schoolId! },
+      where: { id, ...branchFilter(currentUser, branchCtx) },
       include: {
         leader: { select: { id: true, firstName: true, lastName: true, avatarUrl: true } },
         members: {
@@ -75,9 +76,9 @@ export class ClubsService {
   }
 
   // ─── Create ───────────────────────────────────────────────────────────────
-  async create(dto: CreateClubDto, currentUser: JwtPayload) {
+  async create(dto: CreateClubDto, currentUser: JwtPayload, branchCtx: string | null = null) {
     const club = await this.prisma.club.create({
-      data: { ...dto, schoolId: currentUser.schoolId! },
+      data: { ...dto, schoolId: currentUser.schoolId!, branchId: branchCtx ?? currentUser.branchId ?? undefined },
       include: CLUB_INCLUDE,
     });
 
@@ -96,7 +97,7 @@ export class ClubsService {
   // ─── Update ───────────────────────────────────────────────────────────────
   async update(id: string, dto: UpdateClubDto, currentUser: JwtPayload) {
     const club = await this.prisma.club.findFirst({
-      where: { id, schoolId: currentUser.schoolId! },
+      where: { id, ...branchFilter(currentUser) },
     });
     if (!club) throw new NotFoundException('To\'garak topilmadi');
 
@@ -115,7 +116,7 @@ export class ClubsService {
   // ─── Delete ───────────────────────────────────────────────────────────────
   async remove(id: string, currentUser: JwtPayload) {
     const club = await this.prisma.club.findFirst({
-      where: { id, schoolId: currentUser.schoolId! },
+      where: { id, ...branchFilter(currentUser) },
     });
     if (!club) throw new NotFoundException('To\'garak topilmadi');
 
@@ -192,7 +193,7 @@ export class ClubsService {
   // ─── Get members list ─────────────────────────────────────────────────────
   async getMembers(id: string, currentUser: JwtPayload) {
     const club = await this.prisma.club.findFirst({
-      where: { id, schoolId: currentUser.schoolId! },
+      where: { id, ...branchFilter(currentUser) },
     });
     if (!club) throw new NotFoundException('To\'garak topilmadi');
 
