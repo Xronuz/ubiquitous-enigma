@@ -57,7 +57,7 @@ export class AuthService {
     const user = await this.prisma.user.findUnique({
       where: { email },
       select: {
-        id: true, email: true, role: true, schoolId: true,
+        id: true, email: true, role: true, schoolId: true, branchId: true,
         passwordHash: true, isActive: true, firstName: true, lastName: true,
       },
     });
@@ -123,7 +123,7 @@ export class AuthService {
 
     const user = await this.prisma.user.findUnique({
       where: { id: userId, isActive: true },
-      select: { id: true, email: true, role: true, schoolId: true },
+      select: { id: true, email: true, role: true, schoolId: true, branchId: true },
     });
 
     if (!user) throw new UnauthorizedException('Foydalanuvchi topilmadi');
@@ -192,6 +192,7 @@ export class AuthService {
     email: string;
     role: string;
     schoolId: string | null;
+    branchId?: string | null;
   }): Promise<TokenPair> {
     const isSuperAdmin = user.role === UserRole.SUPER_ADMIN;
     const payload: JwtPayload = {
@@ -199,6 +200,7 @@ export class AuthService {
       email: user.email,
       role: user.role as UserRole,
       schoolId: user.schoolId,
+      branchId: user.branchId ?? null,
       isSuperAdmin,
     };
 

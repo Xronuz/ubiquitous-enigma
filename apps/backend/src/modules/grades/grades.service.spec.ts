@@ -13,6 +13,7 @@ const mockUser: JwtPayload = {
   email: 'admin@test.com',
   role: UserRole.TEACHER,
   schoolId: SCHOOL_ID,
+  branchId: null,
   isSuperAdmin: false,
 };
 

@@ -10,12 +10,27 @@ export const apiClient = axios.create({
   withCredentials: false,
 });
 
-// Attach access token from localStorage
+// Attach access token + branch context header
 apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   if (typeof window !== 'undefined') {
     const token = localStorage.getItem('accessToken');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+    }
+
+    // x-branch-id: Zustand store dan aktiv branchId ni qo'shish.
+    // Director/admin boshqa filialga "switch" qilganda bu header override qilinadi.
+    // Lazy import — circular dep dan qochish uchun runtime require
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { useAuthStore } = require('@/store/auth.store');
+      const activeBranchId: string | null =
+        useAuthStore.getState().activeBranchId ?? useAuthStore.getState().user?.branchId ?? null;
+      if (activeBranchId) {
+        config.headers['x-branch-id'] = activeBranchId;
+      }
+    } catch {
+      // store henüz yüklenmemiş — skip
     }
   }
   return config;

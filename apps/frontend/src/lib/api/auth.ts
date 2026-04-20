@@ -14,6 +14,7 @@ export interface AuthResponse {
     lastName: string;
     role: string;
     schoolId: string | null;
+    branchId: string | null;
   };
   tokens: TokenPair;
 }
