@@ -39,6 +39,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useAuthStore } from '@/store/auth.store';
 import { formatCurrency, getRoleLabel } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
+import { useToast } from '@/components/ui/use-toast';
 
 function StatCard({
   title, value, description, icon: Icon, trend, loading, color,
@@ -1767,7 +1768,7 @@ function ParentDashboard() {
 function DirectorDashboard() {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { toast } = (useAuthStore as any)._toast ?? { toast: () => {} };
+  const { toast } = useToast();
   const [annTitle, setAnnTitle] = useState('');
   const [annBody, setAnnBody] = useState('');
   const [annTarget, setAnnTarget] = useState('all_staff');

@@ -23,8 +23,7 @@ async function main() {
   // If a student somehow got enrolled in the same class twice (e.g. seed ran
   // without the upsert guard), deduplicate by keeping only the latest row.
   const allEnrollments = await prisma.classStudent.findMany({
-    select: { id: true, classId: true, studentId: true, createdAt: true },
-    orderBy: { createdAt: 'asc' },
+    select: { id: true, classId: true, studentId: true },
   });
   const seen = new Map<string, string>(); // key → keep id
   const toDelete: string[] = [];
@@ -122,6 +121,20 @@ async function main() {
     },
   });
 
+  const director = await prisma.user.upsert({
+    where: { email: 'director@demo-school.uz' },
+    update: {},
+    create: {
+      email: 'director@demo-school.uz',
+      firstName: 'Alisher',
+      lastName: 'Rahimov',
+      passwordHash: await pw('Director123!'),
+      role: 'director',
+      schoolId: school.id,
+      phone: '+998901999999',
+    },
+  });
+
   const vicePrincipal = await prisma.user.upsert({
     where: { email: 'vice@demo-school.uz' },
     update: {},
@@ -204,6 +217,21 @@ async function main() {
       role: 'teacher',
       schoolId: school.id,
       phone: '+998907777777',
+    },
+  });
+
+  // class_teacher roli — ham sinf rahbari, ham fan o'qituvchisi
+  const classTeacher = await prisma.user.upsert({
+    where: { email: 'classteacher@demo-school.uz' },
+    update: {},
+    create: {
+      email: 'classteacher@demo-school.uz',
+      firstName: 'Sherzod',
+      lastName: 'Tursunov',
+      passwordHash: await pw('ClassTeacher123!'),
+      role: 'class_teacher',
+      schoolId: school.id,
+      phone: '+998908888888',
     },
   });
 
@@ -1042,14 +1070,16 @@ async function main() {
   // ─── Final ───────────────────────────────────────────────────────────────
   console.log('\n🎉 To\'liq seeding tugadi!');
   console.log('\n📋 Test akkauntlar:');
-  console.log('  Super admin:   super@eduplatform.uz      / SuperAdmin123!');
-  console.log('  Maktab admin:  admin@demo-school.uz      / SchoolAdmin123!');
-  console.log('  Direktor o\'r.: vice@demo-school.uz       / Vice123!');
+  console.log('  Super admin:   super@eduplatform.uz         / SuperAdmin123!');
+  console.log('  Maktab admin:  admin@demo-school.uz         / SchoolAdmin123!');
+  console.log('  Direktor:      director@demo-school.uz      / Director123!');
+  console.log('  Direktor o\'r.: vice@demo-school.uz          / Vice123!');
   console.log('  Buxgalter:     accountant@demo-school.uz / Accountant123!');
   console.log('  Kutubxonachi:  librarian@demo-school.uz  / Librarian123!');
-  console.log("  O'qituvchi 1:  teacher@demo-school.uz    / Teacher123!");
-  console.log("  O'qituvchi 2:  teacher2@demo-school.uz   / Teacher123!");
-  console.log("  O'qituvchi 3:  teacher3@demo-school.uz   / Teacher123!");
+  console.log("  O'qituvchi 1:  teacher@demo-school.uz          / Teacher123!");
+  console.log("  O'qituvchi 2:  teacher2@demo-school.uz         / Teacher123!");
+  console.log("  O'qituvchi 3:  teacher3@demo-school.uz         / Teacher123!");
+  console.log("  Sinf rahbari:  classteacher@demo-school.uz     / ClassTeacher123!");
   console.log("  O'quvchi 1:    student@demo-school.uz    / Student123!");
   console.log("  O'quvchi 2:    student2@demo-school.uz   / Student123!");
   console.log('  Ota-ona:       parent@demo-school.uz     / Parent123!');

@@ -86,13 +86,6 @@ export class NotificationsController {
     return this.notificationsService.deleteAll(userId);
   }
 
-  @Delete(':id')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Bitta bildirishnomani o\'chirish' })
-  deleteOne(@Param('id') id: string, @CurrentUser('sub') userId: string) {
-    return this.notificationsService.deleteOne(id, userId);
-  }
-
   @Delete('queue-failed')
   @Roles(UserRole.SUPER_ADMIN)
   @HttpCode(HttpStatus.OK)
@@ -100,5 +93,12 @@ export class NotificationsController {
   async cleanFailedJobs() {
     const count = await this.queueService.cleanFailedJobs();
     return { cleaned: count, message: `${count} ta failed job tozalandi` };
+  }
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Bitta bildirishnomani o\'chirish' })
+  deleteOne(@Param('id') id: string, @CurrentUser('sub') userId: string) {
+    return this.notificationsService.deleteOne(id, userId);
   }
 }
