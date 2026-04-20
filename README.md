@@ -93,10 +93,10 @@ pnpm format           # Kod formatlash
 
 | Rol | Email | Parol | Imkoniyatlar |
 |-----|-------|-------|--------------|
-| **Super Admin** | `super_admin@eduplatform.uz` | `SuperAdmin123!` | Barcha maktablar, global sozlamalar |
+| **Super Admin** | `super@eduplatform.uz` | `SuperAdmin123!` | Barcha maktablar, global sozlamalar |
 | **Director** | `director@demo-school.uz` | `Director123!` | Maktab boshqaruvi, statistika, e'lonlar |
-| **School Admin** | `admin@demo-school.uz` | `Admin123!` | Foydalanuvchilar, dars jadvali, sozlamalar |
-| **Vice Principal** | `vice_principal@demo-school.uz` | `VicePrincipal123!` | Ta'til so'rovlarini tasdiqlash, intizom |
+| **School Admin** | `admin@demo-school.uz` | `SchoolAdmin123!` | Foydalanuvchilar, dars jadvali, sozlamalar |
+| **Vice Principal** | `vice@demo-school.uz` | `Vice123!` | Ta'til so'rovlarini tasdiqlash, intizom |
 | **Teacher** | `teacher@demo-school.uz` | `Teacher123!` | Baholar, davomat, uy vazifasi |
 | **Class Teacher** | `classteacher@demo-school.uz` | `ClassTeacher123!` | Sinf boshqaruvi + o'qituvchi funksiyalari |
 | **Accountant** | `accountant@demo-school.uz` | `Accountant123!` | To'lovlar, moliya hisobotlari |

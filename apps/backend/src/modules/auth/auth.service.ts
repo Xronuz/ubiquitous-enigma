@@ -145,11 +145,16 @@ export class AuthService {
     }
 
     const resetToken = uuidv4();
-    await this.redis.setEx(
-      `${PASSWORD_RESET_PREFIX}${resetToken}`,
-      PASSWORD_RESET_TTL,
-      user.id,
-    );
+    try {
+      await this.redis.setEx(
+        `${PASSWORD_RESET_PREFIX}${resetToken}`,
+        PASSWORD_RESET_TTL,
+        user.id,
+      );
+    } catch (err: any) {
+      this.logger.error(`Parol tiklash tokeni Redis ga yozilmadi: ${err.message}`);
+      throw new BadRequestException('Tizimda vaqtinchalik muammo. Iltimos qayta urinib ko\'ring.');
+    }
 
     // TODO: Send SMS/email with reset link
     this.logger.log(`Parol tiklash tokeni yaratildi: ${user.email}`);
@@ -158,7 +163,14 @@ export class AuthService {
   }
 
   async resetPassword(dto: ResetPasswordDto): Promise<{ message: string }> {
-    const userId = await this.redis.get(`${PASSWORD_RESET_PREFIX}${dto.token}`);
+    let userId: string | null;
+    try {
+      userId = await this.redis.get(`${PASSWORD_RESET_PREFIX}${dto.token}`);
+    } catch (err: any) {
+      this.logger.error(`Parol tiklash token tekshiruvi xato: ${err.message}`);
+      throw new BadRequestException('Tizimda vaqtinchalik muammo. Iltimos qayta urinib ko\'ring.');
+    }
+
     if (!userId) {
       throw new BadRequestException('Token yaroqsiz yoki muddati o\'tgan');
     }
@@ -169,7 +181,9 @@ export class AuthService {
       data: { passwordHash },
     });
 
-    await this.redis.del(`${PASSWORD_RESET_PREFIX}${dto.token}`);
+    await this.redis.del(`${PASSWORD_RESET_PREFIX}${dto.token}`).catch(err =>
+      this.logger.warn(`Reset token o'chirishda Redis xato: ${err.message}`),
+    );
     return { message: 'Parol muvaffaqiyatli yangilandi' };
   }
 
