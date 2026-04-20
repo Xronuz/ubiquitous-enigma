@@ -43,4 +43,14 @@ export const authApi = {
     const { data } = await apiClient.post('/auth/reset-password', { token, password });
     return data;
   },
+
+  /**
+   * Director/admin aktiv filialga switch qiladi.
+   * Yangi JWT tokenlar qaytariladi — auth store yangilanishi kerak.
+   * @param branchId - Filial IDsi. null = barcha filiallar (school-wide).
+   */
+  switchBranch: async (branchId: string | null): Promise<TokenPair> => {
+    const { data } = await apiClient.post<TokenPair>('/auth/switch-branch', { branchId });
+    return data;
+  },
 };
