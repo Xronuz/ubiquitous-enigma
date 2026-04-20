@@ -17,6 +17,7 @@ import {
   UpdatePayrollItemDto,
 } from './payroll.service';
 import { CurrentUser } from '@/common/decorators/current-user.decorator';
+import { BranchContext } from '@/common/decorators/branch-context.decorator';
 import { Roles } from '@/common/decorators/roles.decorator';
 import { JwtPayload, UserRole } from '@eduplatform/types';
 
@@ -66,8 +67,8 @@ export class PayrollController {
   @Get('staff')
   @Roles(...MANAGERS)
   @ApiOperation({ summary: 'Barcha xodimlar maosh konfiguratsiyasi' })
-  getAllSalaryConfigs(@CurrentUser() user: JwtPayload) {
-    return this.service.getAllSalaryConfigs(user);
+  getAllSalaryConfigs(@CurrentUser() user: JwtPayload, @BranchContext() branchCtx: string | null) {
+    return this.service.getAllSalaryConfigs(user, branchCtx);
   }
 
   @Get('staff/unconfigured')
@@ -80,8 +81,12 @@ export class PayrollController {
   @Post('staff')
   @Roles(...MANAGERS)
   @ApiOperation({ summary: 'Xodim maosh konfiguratsiyasi yaratish' })
-  createSalaryConfig(@Body() dto: CreateStaffSalaryDto, @CurrentUser() user: JwtPayload) {
-    return this.service.createSalaryConfig(dto, user);
+  createSalaryConfig(
+    @Body() dto: CreateStaffSalaryDto,
+    @CurrentUser() user: JwtPayload,
+    @BranchContext() branchCtx: string | null,
+  ) {
+    return this.service.createSalaryConfig(dto, user, branchCtx);
   }
 
   @Put('staff/:id')
@@ -91,16 +96,21 @@ export class PayrollController {
     @Param('id') id: string,
     @Body() dto: UpdateStaffSalaryDto,
     @CurrentUser() user: JwtPayload,
+    @BranchContext() branchCtx: string | null,
   ) {
-    return this.service.updateSalaryConfig(id, dto, user);
+    return this.service.updateSalaryConfig(id, dto, user, branchCtx);
   }
 
   @Delete('staff/:id')
   @Roles(UserRole.SCHOOL_ADMIN)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "Maosh konfiguratsiyasini o'chirish" })
-  deleteSalaryConfig(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
-    return this.service.deleteSalaryConfig(id, user);
+  deleteSalaryConfig(
+    @Param('id') id: string,
+    @CurrentUser() user: JwtPayload,
+    @BranchContext() branchCtx: string | null,
+  ) {
+    return this.service.deleteSalaryConfig(id, user, branchCtx);
   }
 
   // ── Advances ──────────────────────────────────────────────────────────────

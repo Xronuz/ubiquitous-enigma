@@ -6,6 +6,7 @@ import { PrismaService } from '@/common/prisma/prisma.service';
 import { JwtPayload, PaymentStatus } from '@eduplatform/types';
 import { AuditService } from '@/common/audit/audit.service';
 import { EventsGateway } from '@/modules/gateway/events.gateway';
+import { branchFilter } from '@/common/utils/branch-filter.util';
 
 // ─── Payme JSON-RPC error codes ────────────────────────────────────────────
 const PAYME_ERRORS = {
@@ -37,10 +38,11 @@ export class PaymentsService {
     @Optional() private readonly eventsGateway: EventsGateway,
   ) {}
 
-  async create(dto: CreatePaymentDto, currentUser: JwtPayload) {
+  async create(dto: CreatePaymentDto, currentUser: JwtPayload, branchCtx: string | null = null) {
     const payment = await this.prisma.payment.create({
       data: {
         schoolId: currentUser.schoolId!,
+        branchId: branchCtx ?? currentUser.branchId ?? undefined,
         studentId: dto.studentId,
         amount: dto.amount,
         currency: dto.currency ?? 'UZS',
@@ -68,6 +70,7 @@ export class PaymentsService {
 
   async getHistory(
     currentUser: JwtPayload,
+    branchCtx: string | null = null,
     studentId?: string,
     classId?: string,
     status?: string,
@@ -77,7 +80,7 @@ export class PaymentsService {
     limit = 20,
   ) {
     const skip = (page - 1) * limit;
-    const where: any = { schoolId: currentUser.schoolId! };
+    const where: any = { ...branchFilter(currentUser, branchCtx) };
     if (studentId) where.studentId = studentId;
     if (status) where.status = status;
     if (from || to) {
@@ -110,31 +113,31 @@ export class PaymentsService {
     return { data: payments, meta: { total, page, limit, totalPages: Math.ceil(total / limit) } };
   }
 
-  async getReport(currentUser: JwtPayload) {
-    const schoolId = currentUser.schoolId!;
+  async getReport(currentUser: JwtPayload, branchCtx: string | null = null) {
+    const filter = branchFilter(currentUser, branchCtx);
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
     const [totalPaid, totalPending, totalOverdue, debtors, classes] = await this.prisma.$transaction([
       this.prisma.payment.aggregate({
-        where: { schoolId, status: 'paid' as any, paidAt: { gte: monthStart } },
+        where: { ...filter, status: 'paid' as any, paidAt: { gte: monthStart } },
         _sum: { amount: true },
       }),
       this.prisma.payment.aggregate({
-        where: { schoolId, status: 'pending' as any },
+        where: { ...filter, status: 'pending' as any },
         _sum: { amount: true },
       }),
       this.prisma.payment.aggregate({
-        where: { schoolId, status: 'overdue' as any },
+        where: { ...filter, status: 'overdue' as any },
         _sum: { amount: true },
       }),
       this.prisma.payment.findMany({
-        where: { schoolId, status: { in: ['pending', 'overdue'] as any } },
+        where: { ...filter, status: { in: ['pending', 'overdue'] as any } },
         include: { student: { select: { id: true, firstName: true, lastName: true } } },
         orderBy: { dueDate: 'asc' },
       }),
       this.prisma.class.findMany({
-        where: { schoolId },
+        where: { ...filter },
         include: {
           students: { select: { studentId: true } },
           _count: { select: { students: true } },
@@ -181,8 +184,8 @@ export class PaymentsService {
     };
   }
 
-  async markAsPaid(id: string, currentUser: JwtPayload) {
-    const payment = await this.prisma.payment.findFirst({ where: { id, schoolId: currentUser.schoolId! } });
+  async markAsPaid(id: string, currentUser: JwtPayload, branchCtx: string | null = null) {
+    const payment = await this.prisma.payment.findFirst({ where: { id, ...branchFilter(currentUser, branchCtx) } });
     if (!payment) throw new NotFoundException('To\'lov topilmadi');
     const updated = await this.prisma.payment.update({
       where: { id },

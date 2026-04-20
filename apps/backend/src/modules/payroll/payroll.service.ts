@@ -9,6 +9,7 @@ import { Type } from 'class-transformer';
 import * as PDFDocument from 'pdfkit';
 import { PrismaService } from '@/common/prisma/prisma.service';
 import { JwtPayload, UserRole } from '@eduplatform/types';
+import { branchFilter } from '@/common/utils/branch-filter.util';
 import { TariffCalculatorService, LanguageCert } from './tariff-calculator.service';
 import { SystemConfigService } from '@/modules/system-config/system-config.service';
 import { MailService } from '@/modules/notifications/mail.service';
@@ -136,10 +137,9 @@ export class PayrollService {
 
   // ── Staff Salary Config ────────────────────────────────────────────────────
 
-  async getAllSalaryConfigs(currentUser: JwtPayload) {
-    const schoolId = currentUser.schoolId!;
+  async getAllSalaryConfigs(currentUser: JwtPayload, branchCtx: string | null = null) {
     return this.prisma.staffSalary.findMany({
-      where: { schoolId },
+      where: branchFilter(currentUser, branchCtx),
       include: {
         user: {
           select: { id: true, firstName: true, lastName: true, email: true, role: true, avatarUrl: true },
@@ -149,7 +149,7 @@ export class PayrollService {
     });
   }
 
-  async createSalaryConfig(dto: CreateStaffSalaryDto, currentUser: JwtPayload) {
+  async createSalaryConfig(dto: CreateStaffSalaryDto, currentUser: JwtPayload, branchCtx: string | null = null) {
     const schoolId = currentUser.schoolId!;
 
     // Verify user belongs to this school
@@ -198,6 +198,7 @@ export class PayrollService {
         position:            dto.position,
         startDate:           new Date(dto.startDate),
         currency:            dto.currency ?? 'UZS',
+        branchId:            branchCtx ?? currentUser.branchId ?? undefined,
       },
       include: {
         user: { select: { id: true, firstName: true, lastName: true, email: true, role: true } },
@@ -205,9 +206,9 @@ export class PayrollService {
     });
   }
 
-  async updateSalaryConfig(id: string, dto: UpdateStaffSalaryDto, currentUser: JwtPayload) {
+  async updateSalaryConfig(id: string, dto: UpdateStaffSalaryDto, currentUser: JwtPayload, branchCtx: string | null = null) {
     const config = await this.prisma.staffSalary.findFirst({
-      where: { id, schoolId: currentUser.schoolId! },
+      where: { id, ...branchFilter(currentUser, branchCtx) },
     });
     if (!config) throw new NotFoundException('Maosh konfiguratsiyasi topilmadi');
 
@@ -243,9 +244,9 @@ export class PayrollService {
     });
   }
 
-  async deleteSalaryConfig(id: string, currentUser: JwtPayload) {
+  async deleteSalaryConfig(id: string, currentUser: JwtPayload, branchCtx: string | null = null) {
     const config = await this.prisma.staffSalary.findFirst({
-      where: { id, schoolId: currentUser.schoolId! },
+      where: { id, ...branchFilter(currentUser, branchCtx) },
     });
     if (!config) throw new NotFoundException('Maosh konfiguratsiyasi topilmadi');
     await this.prisma.staffSalary.delete({ where: { id } });

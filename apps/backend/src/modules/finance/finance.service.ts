@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@/common/prisma/prisma.service';
 import { JwtPayload } from '@eduplatform/types';
+import { branchFilter } from '@/common/utils/branch-filter.util';
 
 @Injectable()
 export class FinanceService {
@@ -16,8 +17,8 @@ export class FinanceService {
 
   // ── Dashboard stats ───────────────────────────────────────────────────────
 
-  async getDashboardStats(currentUser: JwtPayload) {
-    const schoolId = currentUser.schoolId!;
+  async getDashboardStats(currentUser: JwtPayload, branchCtx: string | null = null) {
+    const filter = branchFilter(currentUser, branchCtx);
     const now = new Date();
     const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const thisMonthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
@@ -36,46 +37,46 @@ export class FinanceService {
     ] = await this.prisma.$transaction([
       // Total paid ever
       this.prisma.payment.aggregate({
-        where: { schoolId, status: 'paid' },
+        where: { ...filter, status: 'paid' },
         _sum: { amount: true },
         _count: true,
       }),
       // This month paid
       this.prisma.payment.aggregate({
-        where: { schoolId, status: 'paid', paidAt: { gte: thisMonthStart, lte: thisMonthEnd } },
+        where: { ...filter, status: 'paid', paidAt: { gte: thisMonthStart, lte: thisMonthEnd } },
         _sum: { amount: true },
         _count: true,
       }),
       // Last month paid
       this.prisma.payment.aggregate({
-        where: { schoolId, status: 'paid', paidAt: { gte: lastMonthStart, lte: lastMonthEnd } },
+        where: { ...filter, status: 'paid', paidAt: { gte: lastMonthStart, lte: lastMonthEnd } },
         _sum: { amount: true },
         _count: true,
       }),
       // Pending
       this.prisma.payment.aggregate({
-        where: { schoolId, status: 'pending' },
+        where: { ...filter, status: 'pending' },
         _sum: { amount: true },
         _count: true,
       }),
       // Overdue
       this.prisma.payment.aggregate({
-        where: { schoolId, status: 'overdue' },
+        where: { ...filter, status: 'overdue' },
         _sum: { amount: true },
         _count: true,
       }),
       // Total students
-      this.prisma.user.count({ where: { schoolId, role: 'student', isActive: true } }),
+      this.prisma.user.count({ where: { ...filter, role: 'student', isActive: true } }),
       // Last 10 payments
       this.prisma.payment.findMany({
-        where: { schoolId },
+        where: { ...filter },
         include: { student: { select: { id: true, firstName: true, lastName: true } } },
         orderBy: { createdAt: 'desc' },
         take: 10,
       }),
-      // Latest approved payroll total
+      // Latest approved payroll total (school-level, not branch-filtered)
       this.prisma.monthlyPayroll.findFirst({
-        where: { schoolId, status: 'paid' },
+        where: { schoolId: currentUser.schoolId!, status: 'paid' },
         orderBy: [{ year: 'desc' }, { month: 'desc' }],
         select: { id: true, year: true, month: true, totalNet: true, status: true },
       }),
@@ -105,8 +106,8 @@ export class FinanceService {
 
   // ── Monthly revenue chart (12 months) ────────────────────────────────────
 
-  async getMonthlyRevenue(currentUser: JwtPayload, months = 12) {
-    const schoolId = currentUser.schoolId!;
+  async getMonthlyRevenue(currentUser: JwtPayload, branchCtx: string | null = null, months = 12) {
+    const filter = branchFilter(currentUser, branchCtx);
     const now = new Date();
     const result: { year: number; month: number; label: string; revenue: number; count: number }[] = [];
 
@@ -117,7 +118,7 @@ export class FinanceService {
       const { start, end } = this.getMonthRange(year, month);
 
       const agg = await this.prisma.payment.aggregate({
-        where: { schoolId, status: 'paid', paidAt: { gte: start, lte: end } },
+        where: { ...filter, status: 'paid', paidAt: { gte: start, lte: end } },
         _sum: { amount: true },
         _count: true,
       });
@@ -137,13 +138,13 @@ export class FinanceService {
 
   // ── Debtors list (overdue / pending past due date) ────────────────────────
 
-  async getDebtors(currentUser: JwtPayload) {
-    const schoolId = currentUser.schoolId!;
+  async getDebtors(currentUser: JwtPayload, branchCtx: string | null = null) {
+    const filter = branchFilter(currentUser, branchCtx);
     const now = new Date();
 
     const overduePayments = await this.prisma.payment.findMany({
       where: {
-        schoolId,
+        ...filter,
         status: { in: ['overdue', 'pending'] },
         dueDate: { lt: now },
       },
