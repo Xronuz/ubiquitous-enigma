@@ -3,7 +3,12 @@ import { IsArray, IsDateString, IsEnum, IsNumber, IsOptional, IsString, IsUUID, 
 import { Type } from 'class-transformer';
 import { Queue } from 'bullmq';
 import { PrismaService } from '@/common/prisma/prisma.service';
+import { RedisService } from '@/common/redis/redis.service';
 import { GradeType, JwtPayload, UserRole } from '@eduplatform/types';
+import { branchFilter } from '@/common/utils/branch-filter.util';
+
+const GRADE_TTL = 5 * 60;     // 5 min — baholar tez-tez yangilanishi mumkin
+const GPA_TTL   = 3 * 60;     // 3 min — GPA hisobi qimmat, qisqaroq TTL
 import { CreateGradeDto } from './dto/create-grade.dto';
 import { NotificationsService } from '@/modules/notifications/notifications.service';
 import { NOTIFICATION_QUEUE, NotificationJobType, GradeNotificationData } from '@/common/queue/queue.constants';
@@ -32,13 +37,23 @@ export class BulkGradesDto {
 export class GradesService {
   constructor(
     private readonly prisma: PrismaService,
+    private readonly redis: RedisService,
     @Optional() private readonly notificationsService: NotificationsService,
     @Optional() @Inject(NOTIFICATION_QUEUE) private readonly queue: Queue,
     @Optional() private readonly auditService: AuditService,
     @Optional() private readonly eventsGateway: EventsGateway,
   ) {}
 
-  async create(dto: CreateGradeDto, currentUser: JwtPayload) {
+  private ck(schoolId: string, branchCtx: string | null, suffix: string) {
+    return `grades:${schoolId}:${branchCtx ?? 'all'}:${suffix}`;
+  }
+
+  private async invalidate(schoolId: string) {
+    const keys = await this.redis.keys(`grades:${schoolId}:*`);
+    if (keys.length > 0) await this.redis.del(...keys);
+  }
+
+  async create(dto: CreateGradeDto, currentUser: JwtPayload, branchCtx: string | null = null) {
     const grade = await this.prisma.grade.create({
       data: {
         ...dto,
@@ -46,6 +61,7 @@ export class GradesService {
         maxScore: dto.maxScore ?? 100,
         type: dto.type as any,
         schoolId: currentUser.schoolId!,
+        branchId: branchCtx ?? currentUser.branchId ?? undefined,
       },
       include: {
         student: { select: { id: true, firstName: true, lastName: true } },
@@ -62,6 +78,9 @@ export class GradesService {
       entityId: grade.id,
       newData: { score: grade.score, maxScore: grade.maxScore, type: grade.type, studentId: grade.studentId },
     });
+
+    // ── Cache invalidation ────────────────────────────────────────────────────
+    await this.invalidate(currentUser.schoolId!);
 
     // ── Real-time broadcast ───────────────────────────────────────────────────
     if (currentUser.schoolId) {
@@ -124,11 +143,13 @@ export class GradesService {
   }
 
   /** Bir vaqtda butun sinf uchun baho kiritish */
-  async bulkCreate(dto: BulkGradesDto, currentUser: JwtPayload) {
+  async bulkCreate(dto: BulkGradesDto, currentUser: JwtPayload, branchCtx: string | null = null) {
     const date = new Date(dto.date);
+    const branchId = branchCtx ?? currentUser.branchId ?? undefined;
     await this.prisma.grade.createMany({
       data: dto.items.map(item => ({
         schoolId: currentUser.schoolId!,
+        branchId,
         classId: dto.classId,
         subjectId: dto.subjectId,
         studentId: item.studentId,
@@ -149,15 +170,23 @@ export class GradesService {
       newData: { classId: dto.classId, subjectId: dto.subjectId, type: dto.type, count: dto.items.length },
     });
 
+    // ── Cache invalidation ────────────────────────────────────────────────────
+    await this.invalidate(currentUser.schoolId!);
+
     return { saved: dto.items.length };
   }
 
-  async getStudentGrades(studentId: string, currentUser: JwtPayload, subjectId?: string) {
+  async getStudentGrades(studentId: string, currentUser: JwtPayload, branchCtx: string | null = null, subjectId?: string) {
     // Students may only access their own grades
     const resolvedStudentId =
       currentUser.role === UserRole.STUDENT ? currentUser.sub : studentId;
 
-    const where: any = { studentId: resolvedStudentId, schoolId: currentUser.schoolId! };
+    const schoolId = currentUser.schoolId!;
+    const key = this.ck(schoolId, branchCtx, `student:${resolvedStudentId}:${subjectId ?? 'all'}`);
+    const cached = await this.redis.getJson<any>(key);
+    if (cached) return cached;
+
+    const where: any = { studentId: resolvedStudentId, ...branchFilter(currentUser, branchCtx) };
     if (subjectId) where.subjectId = subjectId;
 
     const grades = await this.prisma.grade.findMany({
@@ -167,17 +196,25 @@ export class GradesService {
     });
 
     const gpa = this.calculateGpa(grades);
-    return { grades, gpa };
+    const result = { grades, gpa };
+    await this.redis.setJson(key, result, GRADE_TTL);
+    return result;
   }
 
   async getClassReport(
     classId: string,
     currentUser: JwtPayload,
+    branchCtx: string | null = null,
     subjectId?: string,
     page = 1,
     limit = 50,
   ) {
-    const where: any = { classId, schoolId: currentUser.schoolId! };
+    const schoolId = currentUser.schoolId!;
+    const key = this.ck(schoolId, branchCtx, `class:${classId}:${subjectId ?? 'all'}:${page}:${limit}`);
+    const cached = await this.redis.getJson<any>(key);
+    if (cached) return cached;
+
+    const where: any = { classId, ...branchFilter(currentUser, branchCtx) };
     if (subjectId) where.subjectId = subjectId;
     const skip = (page - 1) * limit;
 
@@ -195,14 +232,16 @@ export class GradesService {
       this.prisma.grade.count({ where }),
     ]);
 
-    return {
+    const result = {
       data: grades,
       meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
     };
+    await this.redis.setJson(key, result, GRADE_TTL);
+    return result;
   }
 
-  async update(id: string, dto: Partial<CreateGradeDto>, currentUser: JwtPayload) {
-    const grade = await this.prisma.grade.findFirst({ where: { id, schoolId: currentUser.schoolId! } });
+  async update(id: string, dto: Partial<CreateGradeDto>, currentUser: JwtPayload, branchCtx: string | null = null) {
+    const grade = await this.prisma.grade.findFirst({ where: { id, ...branchFilter(currentUser, branchCtx) } });
     if (!grade) throw new NotFoundException('Baho topilmadi');
     const updated = await this.prisma.grade.update({
       where: { id },
@@ -220,11 +259,14 @@ export class GradesService {
       newData: dto as any,
     });
 
+    // ── Cache invalidation ────────────────────────────────────────────────────
+    await this.invalidate(currentUser.schoolId!);
+
     return updated;
   }
 
-  async remove(id: string, currentUser: JwtPayload) {
-    const grade = await this.prisma.grade.findFirst({ where: { id, schoolId: currentUser.schoolId! } });
+  async remove(id: string, currentUser: JwtPayload, branchCtx: string | null = null) {
+    const grade = await this.prisma.grade.findFirst({ where: { id, ...branchFilter(currentUser, branchCtx) } });
     if (!grade) throw new NotFoundException('Baho topilmadi');
     await this.prisma.grade.delete({ where: { id } });
 
@@ -238,13 +280,16 @@ export class GradesService {
       oldData: { score: grade.score, maxScore: grade.maxScore, studentId: grade.studentId },
     });
 
+    // ── Cache invalidation ────────────────────────────────────────────────────
+    await this.invalidate(currentUser.schoolId!);
+
     return { message: 'Baho o\'chirildi' };
   }
 
   /** Returns just the GPA number for a student */
-  async getStudentGpa(studentId: string, currentUser: JwtPayload) {
+  async getStudentGpa(studentId: string, currentUser: JwtPayload, branchCtx: string | null = null) {
     const grades = await this.prisma.grade.findMany({
-      where: { studentId, schoolId: currentUser.schoolId! },
+      where: { studentId, ...branchFilter(currentUser, branchCtx) },
       select: { score: true, maxScore: true },
     });
     const gpa = this.calculateGpa(grades);
@@ -252,33 +297,48 @@ export class GradesService {
   }
 
   /** Returns GPA for every student in a class, sorted desc */
-  async getClassGpa(classId: string, currentUser: JwtPayload) {
+  async getClassGpa(classId: string, currentUser: JwtPayload, branchCtx: string | null = null) {
+    const schoolId = currentUser.schoolId!;
+    const key = this.ck(schoolId, branchCtx, `classGpa:${classId}`);
+    const cached = await this.redis.getJson<any>(key);
+    if (cached) return cached;
+
+    const filter = branchFilter(currentUser, branchCtx);
     const members = await this.prisma.classStudent.findMany({
-      where: { classId, class: { schoolId: currentUser.schoolId! } },
+      where: { classId, class: filter },
       include: { student: { select: { id: true, firstName: true, lastName: true } } },
     });
 
-    const gpas = await Promise.all(
-      members.map(async (m) => {
-        const grades = await this.prisma.grade.findMany({
-          where: { studentId: m.studentId, classId, schoolId: currentUser.schoolId! },
-          select: { score: true, maxScore: true },
-        });
-        return {
-          studentId: m.studentId,
-          name: `${m.student.firstName} ${m.student.lastName}`,
-          gpa: this.calculateGpa(grades),
-          gradeCount: grades.length,
-        };
-      }),
-    );
+    // Batch: fetch all grades for all students in one query (avoids N+1)
+    const allGrades = await this.prisma.grade.findMany({
+      where: { classId, ...filter, studentId: { in: members.map(m => m.studentId) } },
+      select: { studentId: true, score: true, maxScore: true },
+    });
+    const gradesByStudent = new Map<string, { score: number; maxScore: number }[]>();
+    for (const g of allGrades) {
+      const arr = gradesByStudent.get(g.studentId) ?? [];
+      arr.push({ score: g.score, maxScore: g.maxScore });
+      gradesByStudent.set(g.studentId, arr);
+    }
+
+    const gpas = members.map((m) => {
+      const grades = gradesByStudent.get(m.studentId) ?? [];
+      return {
+        studentId: m.studentId,
+        name: `${m.student.firstName} ${m.student.lastName}`,
+        gpa: this.calculateGpa(grades),
+        gradeCount: grades.length,
+      };
+    });
 
     const sorted = gpas.sort((a, b) => b.gpa - a.gpa);
     const classAvg = sorted.length > 0
       ? Math.round((sorted.reduce((s, x) => s + x.gpa, 0) / sorted.length) * 100) / 100
       : 0;
 
-    return { students: sorted, classAvg };
+    const result = { students: sorted, classAvg };
+    await this.redis.setJson(key, result, GPA_TTL);
+    return result;
   }
 
   /**
@@ -290,6 +350,7 @@ export class GradesService {
    */
   async findAll(
     currentUser: JwtPayload,
+    branchCtx: string | null = null,
     query?: { classId?: string; subjectId?: string; studentId?: string; page?: number; limit?: number },
   ) {
     const schoolId = currentUser.schoolId!;
@@ -297,7 +358,7 @@ export class GradesService {
     const limit = Math.min(query?.limit ?? 50, 200);
     const skip  = (page - 1) * limit;
 
-    const where: any = { schoolId };
+    const where: any = { ...branchFilter(currentUser, branchCtx) };
 
     if (query?.classId)   where.classId   = query.classId;
     if (query?.subjectId) where.subjectId = query.subjectId;
@@ -315,7 +376,7 @@ export class GradesService {
       currentUser.role === UserRole.CLASS_TEACHER
     ) {
       const mySubjects = await this.prisma.subject.findMany({
-        where: { schoolId, teacherId: currentUser.sub },
+        where: { schoolId: currentUser.schoolId!, teacherId: currentUser.sub },
         select: { id: true },
       });
       where.subjectId = { in: mySubjects.map((s) => s.id) };

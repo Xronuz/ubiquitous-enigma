@@ -24,7 +24,7 @@ export class SubjectsController {
 
   @Get()
   @Roles(
-    UserRole.SCHOOL_ADMIN,
+    UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.BRANCH_ADMIN,
     UserRole.VICE_PRINCIPAL,
     UserRole.TEACHER,
     UserRole.CLASS_TEACHER,

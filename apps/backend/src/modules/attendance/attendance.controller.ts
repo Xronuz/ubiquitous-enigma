@@ -5,6 +5,7 @@ import { RolesGuard } from '@/common/guards/roles.guard';
 import { AttendanceService } from './attendance.service';
 import { MarkAttendanceDto } from './dto/mark-attendance.dto';
 import { CurrentUser } from '@/common/decorators/current-user.decorator';
+import { BranchContext } from '@/common/decorators/branch-context.decorator';
 import { Roles } from '@/common/decorators/roles.decorator';
 import { JwtPayload, UserRole } from '@eduplatform/types';
 
@@ -18,37 +19,43 @@ export class AttendanceController {
   @Post('mark')
   @Roles(UserRole.TEACHER, UserRole.CLASS_TEACHER)
   @ApiOperation({ summary: 'Davomat belgilash' })
-  mark(@Body() dto: MarkAttendanceDto, @CurrentUser() user: JwtPayload) {
-    return this.attendanceService.markAttendance(dto, user);
+  mark(
+    @Body() dto: MarkAttendanceDto,
+    @CurrentUser() user: JwtPayload,
+    @BranchContext() branchCtx: string | null,
+  ) {
+    return this.attendanceService.markAttendance(dto, user, branchCtx);
   }
 
   @Get('report')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.CLASS_TEACHER, UserRole.TEACHER)
+  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.BRANCH_ADMIN, UserRole.VICE_PRINCIPAL, UserRole.CLASS_TEACHER, UserRole.TEACHER)
   @ApiOperation({ summary: 'Davomat hisoboti' })
   getReport(
     @CurrentUser() user: JwtPayload,
+    @BranchContext() branchCtx: string | null,
     @Query('classId') classId?: string,
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
   ) {
-    return this.attendanceService.getReport(user, classId, startDate, endDate);
+    return this.attendanceService.getReport(user, branchCtx, classId, startDate, endDate);
   }
 
   @Get('today/summary')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.CLASS_TEACHER, UserRole.TEACHER)
+  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.BRANCH_ADMIN, UserRole.VICE_PRINCIPAL, UserRole.CLASS_TEACHER, UserRole.TEACHER)
   @ApiOperation({ summary: 'Bugungi davomat xulosasi (dashboard widget)' })
-  getTodaySummary(@CurrentUser() user: JwtPayload) {
-    return this.attendanceService.getTodaySummary(user);
+  getTodaySummary(@CurrentUser() user: JwtPayload, @BranchContext() branchCtx: string | null) {
+    return this.attendanceService.getTodaySummary(user, branchCtx);
   }
 
   @Get('student/:id/history')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.CLASS_TEACHER, UserRole.TEACHER)
+  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.BRANCH_ADMIN, UserRole.VICE_PRINCIPAL, UserRole.CLASS_TEACHER, UserRole.TEACHER)
   @ApiOperation({ summary: 'O\'quvchi davomat tarixi' })
   getStudentHistory(
     @Param('id') studentId: string,
     @CurrentUser() user: JwtPayload,
+    @BranchContext() branchCtx: string | null,
     @Query('limit') limit = 30,
   ) {
-    return this.attendanceService.getStudentHistory(studentId, user, +limit);
+    return this.attendanceService.getStudentHistory(studentId, user, branchCtx, +limit);
   }
 }

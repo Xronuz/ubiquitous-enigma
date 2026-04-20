@@ -1,21 +1,37 @@
 import { Injectable, Optional } from '@nestjs/common';
 import { PrismaService } from '@/common/prisma/prisma.service';
+import { RedisService } from '@/common/redis/redis.service';
 import { JwtPayload } from '@eduplatform/types';
 import { MarkAttendanceDto } from './dto/mark-attendance.dto';
 import { NotificationQueueService } from '@/modules/notifications/notification-queue.service';
 import { AuditService } from '@/common/audit/audit.service';
 import { EventsGateway } from '@/modules/gateway/events.gateway';
+import { branchFilter } from '@/common/utils/branch-filter.util';
+
+const ATTENDANCE_TTL = 3 * 60;   // 3 min — nisbatan tez-tez o'zgaradi
+const SUMMARY_TTL   = 2 * 60;   // 2 min — joriy kun xulosasi
+const HISTORY_TTL   = 5 * 60;   // 5 min — o'quvchi tarixi
 
 @Injectable()
 export class AttendanceService {
   constructor(
     private readonly prisma: PrismaService,
+    private readonly redis: RedisService,
     @Optional() private readonly notificationQueue: NotificationQueueService,
     @Optional() private readonly auditService: AuditService,
     @Optional() private readonly eventsGateway: EventsGateway,
   ) {}
 
-  async markAttendance(dto: MarkAttendanceDto, currentUser: JwtPayload) {
+  private ck(schoolId: string, branchCtx: string | null, suffix: string) {
+    return `attendance:${schoolId}:${branchCtx ?? 'all'}:${suffix}`;
+  }
+
+  private async invalidate(schoolId: string) {
+    const keys = await this.redis.keys(`attendance:${schoolId}:*`);
+    if (keys.length > 0) await this.redis.del(...keys);
+  }
+
+  async markAttendance(dto: MarkAttendanceDto, currentUser: JwtPayload, branchCtx: string | null = null) {
     const schoolId = currentUser.schoolId!;
     const date = new Date(dto.date);
 
@@ -31,6 +47,7 @@ export class AttendanceService {
         },
         create: {
           schoolId,
+          branchId: branchCtx ?? currentUser.branchId ?? undefined,
           classId: dto.classId,
           studentId: entry.studentId,
           scheduleId: dto.scheduleId,
@@ -46,6 +63,9 @@ export class AttendanceService {
     );
 
     await this.prisma.$transaction(operations);
+
+    // ── Cache invalidation ────────────────────────────────────────────────────
+    await this.invalidate(schoolId);
 
     // ── Audit log ────────────────────────────────────────────────────────────
     const absentCount = dto.entries.filter(e => e.status === 'absent').length;
@@ -130,13 +150,18 @@ export class AttendanceService {
     }
   }
 
-  async getReport(currentUser: JwtPayload, classId?: string, startDate?: string, endDate?: string) {
-    const where: any = { schoolId: currentUser.schoolId! };
+  async getReport(currentUser: JwtPayload, branchCtx: string | null = null, classId?: string, startDate?: string, endDate?: string) {
+    const schoolId = currentUser.schoolId!;
+    const key = this.ck(schoolId, branchCtx, `report:${classId ?? 'all'}:${startDate ?? ''}:${endDate ?? ''}`);
+    const cached = await this.redis.getJson<any[]>(key);
+    if (cached) return cached;
+
+    const where: any = { ...branchFilter(currentUser, branchCtx) };
     if (classId) where.classId = classId;
     if (startDate) where.date = { gte: new Date(startDate) };
     if (endDate) where.date = { ...where.date, lte: new Date(endDate) };
 
-    return this.prisma.attendance.findMany({
+    const result = await this.prisma.attendance.findMany({
       where,
       include: {
         student: { select: { id: true, firstName: true, lastName: true } },
@@ -146,11 +171,18 @@ export class AttendanceService {
       },
       orderBy: [{ date: 'desc' }, { student: { lastName: 'asc' } }],
     });
+    await this.redis.setJson(key, result, ATTENDANCE_TTL);
+    return result;
   }
 
-  async getStudentHistory(studentId: string, currentUser: JwtPayload, limit = 30) {
-    return this.prisma.attendance.findMany({
-      where: { studentId, schoolId: currentUser.schoolId! },
+  async getStudentHistory(studentId: string, currentUser: JwtPayload, branchCtx: string | null = null, limit = 30) {
+    const schoolId = currentUser.schoolId!;
+    const key = this.ck(schoolId, branchCtx, `history:${studentId}:${limit}`);
+    const cached = await this.redis.getJson<any[]>(key);
+    if (cached) return cached;
+
+    const result = await this.prisma.attendance.findMany({
+      where: { studentId, ...branchFilter(currentUser, branchCtx) },
       include: {
         schedule: {
           include: { subject: { select: { id: true, name: true } } },
@@ -159,23 +191,31 @@ export class AttendanceService {
       orderBy: { date: 'desc' },
       take: limit,
     });
+    await this.redis.setJson(key, result, HISTORY_TTL);
+    return result;
   }
 
-  /** Dashboard widget: today's school-wide attendance percentages */
-  async getTodaySummary(currentUser: JwtPayload) {
+  /** Dashboard widget: today's attendance percentages (branch-aware) */
+  async getTodaySummary(currentUser: JwtPayload, branchCtx: string | null = null) {
     const schoolId = currentUser.schoolId!;
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const key = this.ck(schoolId, branchCtx, `today-summary:${todayStr}`);
+    const cached = await this.redis.getJson<any>(key);
+    if (cached) return cached;
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
+    const filter = branchFilter(currentUser, branchCtx);
     const [records, totalStudents] = await Promise.all([
       this.prisma.attendance.findMany({
-        where: { schoolId, date: { gte: today, lt: tomorrow } },
+        where: { ...filter, date: { gte: today, lt: tomorrow } },
         select: { status: true },
       }),
       this.prisma.user.count({
-        where: { schoolId, role: 'student' as any, isActive: true },
+        where: { ...filter, role: 'student' as any, isActive: true },
       }),
     ]);
 
@@ -187,6 +227,8 @@ export class AttendanceService {
     const marked = records.length;
     const presentPct = marked > 0 ? Math.round((counts.present / marked) * 100) : 0;
 
-    return { ...counts, marked, totalStudents, presentPct };
+    const result = { ...counts, marked, totalStudents, presentPct };
+    await this.redis.setJson(key, result, SUMMARY_TTL);
+    return result;
   }
 }

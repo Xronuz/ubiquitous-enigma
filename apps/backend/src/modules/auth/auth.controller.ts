@@ -1,12 +1,18 @@
-import { Controller, Post, Body, HttpCode, HttpStatus, Version } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { Controller, Post, Body, HttpCode, HttpStatus, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { SwitchBranchDto } from './dto/switch-branch.dto';
 import { Public } from '@/common/decorators/public.decorator';
+import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
+import { RolesGuard } from '@/common/guards/roles.guard';
+import { Roles } from '@/common/decorators/roles.decorator';
+import { CurrentUser } from '@/common/decorators/current-user.decorator';
+import { JwtPayload, UserRole } from '@eduplatform/types';
 
 @ApiTags('auth')
 @Controller({ path: 'auth', version: '1' })
@@ -54,5 +60,20 @@ export class AuthController {
   @ApiOperation({ summary: 'Yangi parol o\'rnatish' })
   resetPassword(@Body() dto: ResetPasswordDto) {
     return this.authService.resetPassword(dto);
+  }
+
+  /**
+   * Director/admin aktiv filialga switch qiladi.
+   * Yangi JWT tokenlar qaytariladi — frontend ularni saqlashi kerak.
+   */
+  @Post('switch-branch')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @ApiBearerAuth('JWT')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.BRANCH_ADMIN)
+  @ApiOperation({ summary: 'Aktiv filialni almashtirish (director/admin)' })
+  @ApiResponse({ status: 200, description: 'Yangi tokenlar qaytarildi' })
+  switchBranch(@Body() dto: SwitchBranchDto, @CurrentUser() user: JwtPayload) {
+    return this.authService.switchBranch(dto, user);
   }
 }

@@ -226,7 +226,8 @@ model Branch {
   courses     Course[]
   clubs       Club[]
   transportRoutes TransportRoute[]
-  modules     BranchModule[]
+  modules         BranchModule[]
+  userAssignments UserBranchAssignment[]
 
   @@unique([schoolId, name])
   @@index([schoolId])
@@ -249,6 +250,28 @@ model BranchModule {
   @@unique([branchId, moduleName])
   @@index([branchId])
   @@map("branch_modules")
+}
+
+// ─── User-Branch Assignment (multi-branch staff) ──────────────────────────
+// Teacher/staff may belong to multiple branches simultaneously.
+// user.branchId = asosiy (default) filial; bu jadval qo'shimcha filiallarni belgilaydi.
+
+model UserBranchAssignment {
+  id        String   @id @default(uuid())
+  userId    String
+  branchId  String
+  role      UserRole // Bu filial uchun roli (asosiy roldan farq qilishi mumkin)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  branch Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, branchId])
+  @@index([userId])
+  @@index([branchId])
+  @@map("user_branch_assignments")
 }
 
 // ─── Subscriptions ────────────────────────────────────────────────────────
@@ -368,6 +391,9 @@ model User {
 
   // Notification preferences (stored as JSON)
   notifPreferences Json?
+
+  // Multi-branch assignments (teacher can teach in 2 branches)
+  branchAssignments UserBranchAssignment[]
 
   @@map("users")
 }
