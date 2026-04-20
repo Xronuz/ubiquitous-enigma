@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "turbo run dev",
-    "dev:light": "docker compose -f docker-compose.dev.yml up -d && turbo run dev",
-    "dev:setup": "docker compose -f docker-compose.dev.yml up -d && pnpm db:migrate && pnpm db:seed",
+    "dev:light": "docker compose -f docker-compose.dev.yml up -d --wait && turbo run dev",
+    "dev:setup": "docker compose -f docker-compose.dev.yml up -d --wait && pnpm db:migrate && pnpm db:seed",
     "build": "turbo run build",
     "test": "turbo run test",
     "lint": "turbo run lint",

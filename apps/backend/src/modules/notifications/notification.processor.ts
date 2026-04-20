@@ -25,29 +25,41 @@ export class NotificationProcessor implements OnModuleInit, OnModuleDestroy {
   ) {}
 
   onModuleInit() {
-    this.worker = new Worker(
-      NOTIFICATION_QUEUE,
-      async (job: Job) => this.processJob(job),
-      {
-        connection: {
-          host: this.config.get('REDIS_HOST', 'localhost'),
-          port: this.config.get<number>('REDIS_PORT', 6379),
-          password: this.config.get('REDIS_PASSWORD') || undefined,
-          db: this.config.get<number>('REDIS_DB', 0),
+    try {
+      this.worker = new Worker(
+        NOTIFICATION_QUEUE,
+        async (job: Job) => this.processJob(job),
+        {
+          connection: {
+            host: this.config.get('REDIS_HOST', 'localhost'),
+            port: this.config.get<number>('REDIS_PORT', 6379),
+            password: this.config.get('REDIS_PASSWORD') || undefined,
+            db: this.config.get<number>('REDIS_DB', 0),
+          },
+          concurrency: 5,
         },
-        concurrency: 5,
-      },
-    );
+      );
 
-    this.worker.on('completed', (job) => {
-      this.logger.debug(`Job bajarildi: [${job.name}] ID=${job.id}`);
-    });
+      this.worker.on('completed', (job) => {
+        this.logger.debug(`Job bajarildi: [${job.name}] ID=${job.id}`);
+      });
 
-    this.worker.on('failed', (job, err) => {
-      this.logger.error(`Job xato: [${job?.name}] ID=${job?.id} — ${err.message}`);
-    });
+      this.worker.on('failed', (job, err) => {
+        this.logger.error(`Job xato: [${job?.name}] ID=${job?.id} — ${err.message}`);
+      });
 
-    this.logger.log('Notification Worker ishga tushdi');
+      this.worker.on('error', (err) => {
+        this.logger.error(`Worker xatosi (Redis muammo bo'lishi mumkin): ${err.message}`);
+      });
+
+      this.logger.log('Notification Worker ishga tushdi');
+    } catch (err: any) {
+      this.logger.warn(
+        `Notification Worker ishga tushmadi (Redis mavjud emas): ${err.message}. ` +
+        `Email/SMS queue o'chiq rejimda ishlaydi.`,
+      );
+      this.worker = null;
+    }
   }
 
   async onModuleDestroy() {

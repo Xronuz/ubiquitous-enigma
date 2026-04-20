@@ -41,12 +41,17 @@ export class AuthService {
     const { email, password } = dto;
     const attemptsKey = `${LOGIN_ATTEMPTS_PREFIX}${email}`;
 
-    // Check rate limit
-    const attempts = await this.redis.get(attemptsKey);
-    if (attempts && parseInt(attempts) >= MAX_LOGIN_ATTEMPTS) {
-      throw new UnauthorizedException(
-        'Juda ko\'p urinish. 15 daqiqadan so\'ng qayta urinib ko\'ring',
-      );
+    // Check rate limit (Redis bo'lmasa skip qilinadi — xavfsizlik murosasi)
+    try {
+      const attempts = await this.redis.get(attemptsKey);
+      if (attempts && parseInt(attempts) >= MAX_LOGIN_ATTEMPTS) {
+        throw new UnauthorizedException(
+          'Juda ko\'p urinish. 15 daqiqadan so\'ng qayta urinib ko\'ring',
+        );
+      }
+    } catch (err: any) {
+      if (err instanceof UnauthorizedException) throw err;
+      this.logger.warn(`Redis rate-limit tekshiruvi o'tkazib yuborildi: ${err.message}`);
     }
 
     const user = await this.prisma.user.findUnique({
@@ -58,18 +63,18 @@ export class AuthService {
     });
 
     if (!user || !user.isActive) {
-      await this.incrementLoginAttempts(attemptsKey);
+      await this.incrementLoginAttempts(attemptsKey).catch(() => null);
       throw new UnauthorizedException('Email yoki parol noto\'g\'ri');
     }
 
     const passwordValid = await bcrypt.compare(password, user.passwordHash);
     if (!passwordValid) {
-      await this.incrementLoginAttempts(attemptsKey);
+      await this.incrementLoginAttempts(attemptsKey).catch(() => null);
       throw new UnauthorizedException('Email yoki parol noto\'g\'ri');
     }
 
     // Reset login attempts
-    await this.redis.del(attemptsKey);
+    await this.redis.del(attemptsKey).catch(() => null);
 
     const tokens = await this.generateTokens(user);
 
@@ -93,15 +98,28 @@ export class AuthService {
     const redisKey = `${REFRESH_TOKEN_PREFIX}${refreshToken}`;
 
     // Check if token exists and not revoked
-    const stored = await this.redis.get(redisKey);
-    if (!stored) {
-      throw new UnauthorizedException('Refresh token yaroqsiz yoki muddati o\'tgan');
+    let userId: string;
+    try {
+      const stored = await this.redis.get(redisKey);
+      if (!stored) {
+        throw new UnauthorizedException('Refresh token yaroqsiz yoki muddati o\'tgan');
+      }
+      userId = stored;
+      // Delete old token (rotation)
+      await this.redis.del(redisKey);
+    } catch (err: any) {
+      if (err instanceof UnauthorizedException) throw err;
+      // Redis mavjud emas — JWT dan userId ni olamiz (rotation olmaydi)
+      this.logger.warn(`Redis refresh token tekshiruvi o'tkazib yuborildi: ${err.message}`);
+      try {
+        const payload = this.jwtService.verify(refreshToken, {
+          secret: this.config.get('JWT_REFRESH_SECRET'),
+        }) as any;
+        userId = payload.sub;
+      } catch {
+        throw new UnauthorizedException('Refresh token yaroqsiz yoki muddati o\'tgan');
+      }
     }
-
-    const userId = stored;
-
-    // Delete old token (rotation)
-    await this.redis.del(redisKey);
 
     const user = await this.prisma.user.findUnique({
       where: { id: userId, isActive: true },
@@ -114,7 +132,9 @@ export class AuthService {
   }
 
   async logout(refreshToken: string): Promise<void> {
-    await this.redis.del(`${REFRESH_TOKEN_PREFIX}${refreshToken}`);
+    await this.redis.del(`${REFRESH_TOKEN_PREFIX}${refreshToken}`).catch(err =>
+      this.logger.warn(`Logout — Redis token o'chirishda xato: ${err.message}`),
+    );
   }
 
   async forgotPassword(dto: ForgotPasswordDto): Promise<{ message: string }> {
@@ -173,11 +193,11 @@ export class AuthService {
     });
 
     const refreshToken = uuidv4();
-    await this.redis.setEx(
-      `${REFRESH_TOKEN_PREFIX}${refreshToken}`,
-      REFRESH_TOKEN_TTL,
-      user.id,
-    );
+    await this.redis
+      .setEx(`${REFRESH_TOKEN_PREFIX}${refreshToken}`, REFRESH_TOKEN_TTL, user.id)
+      .catch(err =>
+        this.logger.warn(`Refresh token Redis ga yozilmadi: ${err.message}`),
+      );
 
     return {
       accessToken,
@@ -187,9 +207,13 @@ export class AuthService {
   }
 
   private async incrementLoginAttempts(key: string): Promise<void> {
-    const current = await this.redis.incr(key);
-    if (current === 1) {
-      await this.redis.expire(key, LOGIN_BLOCK_TTL);
+    try {
+      const current = await this.redis.incr(key);
+      if (current === 1) {
+        await this.redis.expire(key, LOGIN_BLOCK_TTL);
+      }
+    } catch {
+      // Redis mavjud emas — rate limit tracking o'tkazib yuboriladi
     }
   }
 }
