@@ -17,11 +17,20 @@ export const scheduleApi = {
     return data;
   },
 
+  /** O'qituvchining barcha filiallardagi darslarini olish (greyed-out UI uchun) */
+  getTeacherCrossBranch: async (teacherId: string, viewerBranchId?: string) => {
+    const { data } = await apiClient.get(`/schedule/teacher/${teacherId}/cross-branch`, {
+      params: { viewerBranchId },
+    });
+    return data;
+  },
+
   create: async (payload: {
     classId: string;
     subjectId: string;
     teacherId?: string;
     roomNumber?: string;
+    roomId?: string;
     dayOfWeek: DayOfWeek;
     timeSlot: number;
     startTime: string;
@@ -31,8 +40,15 @@ export const scheduleApi = {
     return data;
   },
 
-  update: async (id: string, payload: Partial<{ roomNumber: string; startTime: string; endTime: string }>) => {
-    const { data } = await apiClient.patch(`/schedule/${id}`, payload);
+  update: async (id: string, payload: Partial<{
+    roomNumber: string;
+    roomId: string;
+    startTime: string;
+    endTime: string;
+    dayOfWeek: DayOfWeek;
+    timeSlot: number;
+  }>) => {
+    const { data } = await apiClient.put(`/schedule/${id}`, payload);
     return data;
   },
 
@@ -46,8 +62,10 @@ export const scheduleApi = {
     timeSlot: number;
     teacherId?: string;
     roomNumber?: string;
+    roomId?: string;
     classId?: string;
     excludeId?: string;
+    branchId?: string;
   }): Promise<{ hasConflict: boolean; conflicts: { type: string; message: string }[] }> => {
     const { data } = await apiClient.get('/schedule/check-conflict', { params });
     return data;

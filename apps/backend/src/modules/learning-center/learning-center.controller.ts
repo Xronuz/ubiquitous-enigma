@@ -5,6 +5,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger'
 import {
   LearningCenterService, CreateCourseDto, UpdateCourseDto,
   EnrollStudentDto, UpdateEnrollmentDto,
+  CreateCourseMaterialDto, UpdateCourseMaterialDto,
 } from './learning-center.service';
 import { CurrentUser } from '@/common/decorators/current-user.decorator';
 import { BranchContext } from '@/common/decorators/branch-context.decorator';
@@ -133,5 +134,65 @@ export class LearningCenterController {
     @CurrentUser() user: JwtPayload,
   ) {
     return this.service.removeEnrollment(courseId, enrollmentId, user);
+  }
+
+  // ── Course Materials ─────────────────────────────────────────────────────
+
+  /**
+   * Kurs materiallari — schoolId ga asoslanadi.
+   * Barcha filial o'qituvchilari GLOBAL kurs materiallarini ko'ra oladi.
+   */
+  @Get('courses/:id/materials')
+  @Roles(
+    UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.BRANCH_ADMIN,
+    UserRole.VICE_PRINCIPAL, UserRole.TEACHER, UserRole.CLASS_TEACHER,
+    UserRole.STUDENT,
+  )
+  @ApiOperation({ summary: 'Kurs materiallarini olish (filialdan mustaqil)' })
+  getMaterials(@Param('id') courseId: string, @CurrentUser() user: JwtPayload) {
+    return this.service.getMaterials(courseId, user);
+  }
+
+  @Post('courses/:id/materials')
+  @Roles(
+    UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.BRANCH_ADMIN,
+    UserRole.VICE_PRINCIPAL, UserRole.TEACHER, UserRole.CLASS_TEACHER,
+  )
+  @ApiOperation({ summary: 'Kursga material qo\'shish' })
+  createMaterial(
+    @Param('id') courseId: string,
+    @Body() dto: CreateCourseMaterialDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.service.createMaterial(courseId, dto, user);
+  }
+
+  @Put('courses/:id/materials/:materialId')
+  @Roles(
+    UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.BRANCH_ADMIN,
+    UserRole.VICE_PRINCIPAL, UserRole.TEACHER, UserRole.CLASS_TEACHER,
+  )
+  @ApiOperation({ summary: 'Materialni yangilash' })
+  updateMaterial(
+    @Param('id') courseId: string,
+    @Param('materialId') materialId: string,
+    @Body() dto: UpdateCourseMaterialDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.service.updateMaterial(courseId, materialId, dto, user);
+  }
+
+  @Delete('courses/:id/materials/:materialId')
+  @Roles(
+    UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.BRANCH_ADMIN,
+    UserRole.VICE_PRINCIPAL, UserRole.TEACHER, UserRole.CLASS_TEACHER,
+  )
+  @ApiOperation({ summary: 'Materialni o\'chirish' })
+  removeMaterial(
+    @Param('id') courseId: string,
+    @Param('materialId') materialId: string,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.service.removeMaterial(courseId, materialId, user);
   }
 }

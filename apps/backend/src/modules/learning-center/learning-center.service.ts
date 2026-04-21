@@ -1,14 +1,18 @@
 import {
-  Injectable, NotFoundException, BadRequestException, ConflictException,
+  Injectable, NotFoundException, BadRequestException, ConflictException, ForbiddenException,
 } from '@nestjs/common';
 import {
-  IsString, IsOptional, IsInt, IsBoolean, IsNumber, IsDateString,
+  IsString, IsNotEmpty, IsOptional, IsInt, IsBoolean, IsNumber, IsDateString, IsEnum,
   Min, Max, MaxLength, MinLength,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { PrismaService } from '@/common/prisma/prisma.service';
 import { JwtPayload, UserRole } from '@eduplatform/types';
 import { branchFilter } from '@/common/utils/branch-filter.util';
+
+// CourseScope — GLOBAL: barcha filiallarga ko'rinadi, LOCAL: faqat yaratgan filial
+enum CourseScope { GLOBAL = 'GLOBAL', LOCAL = 'LOCAL' }
 
 // ─── DTOs ────────────────────────────────────────────────────────────────────
 
@@ -42,6 +46,86 @@ export class CreateCourseDto {
 
   @IsOptional() @IsDateString()
   endDate?: string;
+
+  /** GLOBAL — barcha filiallarga ko'rinadi; LOCAL — faqat yaratgan filial ko'radi */
+  @ApiPropertyOptional({ enum: CourseScope, default: CourseScope.GLOBAL })
+  @IsOptional()
+  @IsEnum(CourseScope)
+  scope?: CourseScope;
+}
+
+// ─── CourseMaterial DTOs ──────────────────────────────────────────────────────
+
+export class CreateCourseMaterialDto {
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(200)
+  title: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  description?: string;
+
+  @ApiPropertyOptional({ description: 'Fayl URL (CDN/S3 dan upload qilingan)' })
+  @IsOptional()
+  @IsString()
+  fileUrl?: string;
+
+  @ApiPropertyOptional({ example: 'document', description: 'document | video | image | link | other' })
+  @IsOptional()
+  @IsString()
+  type?: string;
+
+  @ApiPropertyOptional({ default: true })
+  @IsOptional()
+  @IsBoolean()
+  isPublic?: boolean;
+
+  @ApiPropertyOptional({ default: 0 })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Type(() => Number)
+  sortOrder?: number;
+}
+
+export class UpdateCourseMaterialDto {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  title?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  description?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  fileUrl?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  type?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  isPublic?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Type(() => Number)
+  sortOrder?: number;
 }
 
 export class UpdateCourseDto {
@@ -107,19 +191,53 @@ export class LearningCenterService {
   // ── Courses ───────────────────────────────────────────────────────────────
 
   async getCourses(currentUser: JwtPayload, branchCtx: string | null = null, search?: string) {
-    const where: any = { ...branchFilter(currentUser, branchCtx) };
+    const schoolId  = currentUser.schoolId!;
+    const viewerBranchId = branchCtx ?? currentUser.branchId ?? null;
+
+    // CourseScope logikasi:
+    //   GLOBAL kurslar — schoolId ga tegishli barcha filiallarga ko'rinadi
+    //   LOCAL kurslar  — faqat o'sha filialning kurslari
+    // Director/school_admin barcha kurslarni ko'radi.
+    const SCHOOL_WIDE = new Set(['super_admin', 'school_admin', 'director']);
+    let where: any;
+
+    if (SCHOOL_WIDE.has(currentUser.role) && !branchCtx) {
+      // Barcha kurslar: GLOBAL + LOCAL (filialga qaramay)
+      where = { schoolId };
+    } else if (viewerBranchId) {
+      // GLOBAL kurslar (barcha filiallarga) YOKI LOCAL kurslar (faqat shu filialniki)
+      where = {
+        schoolId,
+        OR: [
+          { scope: 'GLOBAL' },
+          { scope: 'LOCAL', branchId: viewerBranchId },
+        ],
+      };
+    } else {
+      // branchId yo'q — faqat GLOBAL kurslar
+      where = { schoolId, scope: 'GLOBAL' };
+    }
+
     if (search) {
-      where.OR = [
+      const searchFilter = [
         { name: { contains: search, mode: 'insensitive' } },
         { description: { contains: search, mode: 'insensitive' } },
       ];
+      // Mavjud OR bilan birlashtirish
+      if (where.OR) {
+        where = { ...where, AND: [{ OR: where.OR }, { OR: searchFilter }] };
+        delete where.OR;
+      } else {
+        where.OR = searchFilter;
+      }
     }
 
     const courses = await this.prisma.course.findMany({
       where,
       include: {
         teacher: { select: { id: true, firstName: true, lastName: true } },
-        _count: { select: { enrollments: true } },
+        branch:  { select: { id: true, name: true, code: true } },
+        _count:  { select: { enrollments: true, materials: true } },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -127,6 +245,7 @@ export class LearningCenterService {
     return courses.map(c => ({
       ...c,
       enrolledCount: c._count.enrollments,
+      materialsCount: c._count.materials,
     }));
   }
 
@@ -166,18 +285,20 @@ export class LearningCenterService {
       data: {
         schoolId,
         branchId: branchCtx ?? currentUser.branchId ?? undefined,
-        name: dto.name,
+        name:        dto.name,
         description: dto.description,
-        teacherId: dto.teacherId,
-        duration: dto.duration,
-        price: dto.price,
+        teacherId:   dto.teacherId,
+        duration:    dto.duration,
+        price:       dto.price,
         maxStudents: dto.maxStudents ?? 30,
-        isActive: dto.isActive ?? true,
-        startDate: dto.startDate ? new Date(dto.startDate) : undefined,
-        endDate: dto.endDate ? new Date(dto.endDate) : undefined,
+        isActive:    dto.isActive ?? true,
+        scope:       dto.scope ?? 'GLOBAL',
+        startDate:   dto.startDate ? new Date(dto.startDate) : undefined,
+        endDate:     dto.endDate   ? new Date(dto.endDate)   : undefined,
       },
       include: {
         teacher: { select: { id: true, firstName: true, lastName: true } },
+        branch:  { select: { id: true, name: true, code: true } },
       },
     });
   }
@@ -360,5 +481,97 @@ export class LearningCenterService {
       },
       orderBy: { enrolledAt: 'desc' },
     });
+  }
+
+  // ── CourseMaterials ───────────────────────────────────────────────────────
+
+  /**
+   * Kurs materiallarini olish.
+   * schoolId ga asoslanadi — filialdan mustaqil (barcha filial o'qituvchilari ko'radi).
+   */
+  async getMaterials(courseId: string, currentUser: JwtPayload) {
+    const schoolId = currentUser.schoolId!;
+
+    // Kurs mavjudligini tekshirish (schoolId bo'yicha — branchId yoki scope e'tiborsiz)
+    const course = await this.prisma.course.findFirst({
+      where: { id: courseId, schoolId },
+    });
+    if (!course) throw new NotFoundException('Kurs topilmadi');
+
+    return this.prisma.courseMaterial.findMany({
+      where: { courseId, schoolId },
+      include: {
+        createdBy: { select: { id: true, firstName: true, lastName: true, role: true } },
+      },
+      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
+    });
+  }
+
+  async createMaterial(
+    courseId: string,
+    dto: CreateCourseMaterialDto,
+    currentUser: JwtPayload,
+  ) {
+    const schoolId = currentUser.schoolId!;
+
+    const course = await this.prisma.course.findFirst({
+      where: { id: courseId, schoolId },
+    });
+    if (!course) throw new NotFoundException('Kurs topilmadi');
+
+    return this.prisma.courseMaterial.create({
+      data: {
+        schoolId,
+        courseId,
+        title:       dto.title,
+        description: dto.description,
+        fileUrl:     dto.fileUrl,
+        type:        dto.type ?? 'document',
+        isPublic:    dto.isPublic ?? true,
+        sortOrder:   dto.sortOrder ?? 0,
+        createdById: currentUser.sub,
+      },
+      include: {
+        createdBy: { select: { id: true, firstName: true, lastName: true } },
+      },
+    });
+  }
+
+  async updateMaterial(
+    courseId: string,
+    materialId: string,
+    dto: UpdateCourseMaterialDto,
+    currentUser: JwtPayload,
+  ) {
+    const material = await this.prisma.courseMaterial.findFirst({
+      where: { id: materialId, courseId, schoolId: currentUser.schoolId! },
+    });
+    if (!material) throw new NotFoundException('Material topilmadi');
+
+    const data: any = {};
+    if (dto.title       !== undefined) data.title       = dto.title;
+    if (dto.description !== undefined) data.description = dto.description;
+    if (dto.fileUrl     !== undefined) data.fileUrl     = dto.fileUrl;
+    if (dto.type        !== undefined) data.type        = dto.type;
+    if (dto.isPublic    !== undefined) data.isPublic    = dto.isPublic;
+    if (dto.sortOrder   !== undefined) data.sortOrder   = dto.sortOrder;
+
+    return this.prisma.courseMaterial.update({
+      where: { id: materialId },
+      data,
+      include: {
+        createdBy: { select: { id: true, firstName: true, lastName: true } },
+      },
+    });
+  }
+
+  async removeMaterial(courseId: string, materialId: string, currentUser: JwtPayload) {
+    const material = await this.prisma.courseMaterial.findFirst({
+      where: { id: materialId, courseId, schoolId: currentUser.schoolId! },
+    });
+    if (!material) throw new NotFoundException('Material topilmadi');
+
+    await this.prisma.courseMaterial.delete({ where: { id: materialId } });
+    return { message: 'Material o\'chirildi' };
   }
 }

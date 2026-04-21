@@ -64,8 +64,14 @@ export interface ScheduleSlot {
   startTime: string;
   endTime: string;
   roomNumber?: string;
-  class?: { id: string; name: string };
+  roomId?: string;
+  branchId?: string;
+  /** true — bu slot boshqa filialdagi dars (school-wide admin uchun greyed-out) */
+  isCrossBranch?: boolean;
+  class?: { id: string; name: string; branchId?: string };
+  branch?: { id: string; name: string; code?: string };
   subject?: { id: string; name: string; teacher?: { id: string; firstName: string; lastName: string } };
+  room?: { id: string; name: string };
 }
 
 export interface ConflictResult {
@@ -172,19 +178,36 @@ function WeeklyGrid({
                     </div>
                   )}
                   {cells.map((cell: any) => {
-                    const cIdx = subjectColorMap.get(cell.subjectId) ?? 0;
-                    const colorCls = SUBJECT_COLORS[cIdx];
+                    const cIdx   = subjectColorMap.get(cell.subjectId) ?? 0;
+                    // Cross-branch slotlar: kulrang + qorishtirilgan (greyed-out)
+                    const isCross = cell.isCrossBranch === true;
+                    const colorCls = isCross
+                      ? 'bg-muted/40 border-muted-foreground/20 text-muted-foreground opacity-60'
+                      : SUBJECT_COLORS[cIdx];
+
                     return (
                       <div
                         key={cell.id}
-                        className={`relative rounded-lg border p-2 text-xs group transition-shadow hover:shadow-md ${colorCls} ${hasConflict ? 'ring-1 ring-red-400 dark:ring-red-600' : ''}`}
+                        title={isCross ? `Boshqa filial: ${cell.branch?.name ?? ''}` : undefined}
+                        className={`relative rounded-lg border p-2 text-xs group transition-shadow
+                          ${isCross ? 'cursor-not-allowed' : 'hover:shadow-md'}
+                          ${colorCls}
+                          ${hasConflict && !isCross ? 'ring-1 ring-red-400 dark:ring-red-600' : ''}`}
                       >
-                        <p className="font-semibold truncate">{cell.subject?.name}</p>
-                        <p className="opacity-70 truncate">{cell.class?.name}</p>
-                        {cell.roomNumber && (
-                          <p className="opacity-60 text-[10px]">Xona: {cell.roomNumber}</p>
+                        {isCross && (
+                          <span className="absolute top-0.5 right-0.5 rounded text-[8px] px-1 bg-muted-foreground/20 text-muted-foreground">
+                            {cell.branch?.code ?? 'boshqa'}
+                          </span>
                         )}
-                        {canManage && (
+                        <p className="font-semibold truncate pr-5">{cell.subject?.name}</p>
+                        <p className="opacity-70 truncate">{cell.class?.name}</p>
+                        {(cell.roomNumber || cell.room?.name) && (
+                          <p className="opacity-60 text-[10px]">
+                            Xona: {cell.room?.name ?? cell.roomNumber}
+                          </p>
+                        )}
+                        {/* Delete button: faqat o'z filiali slotlari uchun */}
+                        {canManage && !isCross && (
                           <button
                             onClick={(e) => { e.stopPropagation(); onDelete(cell.id); }}
                             className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity rounded p-0.5 hover:bg-black/10"
@@ -266,34 +289,53 @@ function ListView({
         </Card>
       ) : (
         <div className="space-y-3">
-          {slots.map((slot: any, idx: number) => (
-            <div key={slot.id} className={`flex items-center gap-4 rounded-xl p-4 ${LIST_COLORS[idx % LIST_COLORS.length]}`}>
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white/50 dark:bg-black/20 font-bold text-lg">
-                {slot.timeSlot}
-              </div>
-              <div className="flex-1">
-                <p className="font-semibold">{slot.subject?.name}</p>
-                <p className="text-sm text-muted-foreground">
-                  {slot.class?.name}
-                  {slot.subject?.teacher && <> · {slot.subject.teacher.firstName} {slot.subject.teacher.lastName}</>}
-                </p>
-              </div>
-              <div className="text-right text-sm flex items-center gap-3">
-                <div>
-                  <div className="flex items-center gap-1 text-muted-foreground">
-                    <Clock className="h-3 w-3" />
-                    {slot.startTime} – {slot.endTime}
-                  </div>
-                  {slot.roomNumber && <p className="text-xs text-muted-foreground">Xona: {slot.roomNumber}</p>}
+          {slots.map((slot: any, idx: number) => {
+            const isCross = slot.isCrossBranch === true;
+            return (
+              <div
+                key={slot.id}
+                className={`flex items-center gap-4 rounded-xl p-4 ${
+                  isCross ? 'opacity-60 bg-muted/40' : LIST_COLORS[idx % LIST_COLORS.length]
+                }`}
+              >
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white/50 dark:bg-black/20 font-bold text-lg">
+                  {slot.timeSlot}
                 </div>
-                {canManage && (
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => onDelete(slot.id)}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                )}
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <p className="font-semibold">{slot.subject?.name}</p>
+                    {isCross && (
+                      <Badge variant="outline" className="text-[10px] h-4 px-1 border-muted-foreground/40 text-muted-foreground">
+                        {slot.branch?.name ?? 'boshqa filial'}
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    {slot.class?.name}
+                    {slot.subject?.teacher && <> · {slot.subject.teacher.firstName} {slot.subject.teacher.lastName}</>}
+                  </p>
+                </div>
+                <div className="text-right text-sm flex items-center gap-3">
+                  <div>
+                    <div className="flex items-center gap-1 text-muted-foreground">
+                      <Clock className="h-3 w-3" />
+                      {slot.startTime} – {slot.endTime}
+                    </div>
+                    {(slot.roomNumber || slot.room?.name) && (
+                      <p className="text-xs text-muted-foreground">
+                        Xona: {slot.room?.name ?? slot.roomNumber}
+                      </p>
+                    )}
+                  </div>
+                  {canManage && !isCross && (
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => onDelete(slot.id)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </>
@@ -540,7 +582,8 @@ export default function SchedulePage() {
   };
 
   const schedule: any[] = Array.isArray(weekSchedule) ? weekSchedule : [];
-  const totalSlots = schedule.length;
+  const totalSlots    = schedule.length;
+  const crossBranchCount = schedule.filter((s) => s.isCrossBranch).length;
 
   // Detect all conflicts across the schedule
   const conflictCount = (() => {
@@ -558,6 +601,15 @@ export default function SchedulePage() {
 
   return (
     <div className="space-y-6">
+      {crossBranchCount > 0 && (
+        <div className="flex items-center gap-3 rounded-lg border border-muted bg-muted/30 px-4 py-2.5">
+          <div className="h-3 w-3 rounded-sm bg-muted-foreground/30 border border-muted-foreground/30 shrink-0" />
+          <p className="text-xs text-muted-foreground">
+            <span className="font-medium">{crossBranchCount} ta dars</span> boshqa filiallardan ko&apos;rsatilmoqda
+            — kulrang rangda, o&apos;qituvchi bandligi uchun.
+          </p>
+        </div>
+      )}
       {conflictCount > 0 && (
         <div className="flex items-center gap-3 rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-700 px-4 py-3">
           <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0" />
@@ -574,7 +626,10 @@ export default function SchedulePage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Dars jadvali</h1>
-          <p className="text-muted-foreground">Haftalik dars jadvali · {totalSlots} ta slot</p>
+          <p className="text-muted-foreground">
+            Haftalik dars jadvali · {totalSlots - crossBranchCount} ta slot
+            {crossBranchCount > 0 && ` (+${crossBranchCount} boshqa filial)`}
+          </p>
         </div>
         <div className="flex items-center gap-2">
           {/* View toggle */}

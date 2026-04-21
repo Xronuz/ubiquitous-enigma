@@ -47,6 +47,7 @@ import { ClubsModule } from './modules/clubs/clubs.module';
 import { BranchesModule } from './modules/branches/branches.module';
 import { TreasuryModule } from './modules/treasury/treasury.module';
 import { FinancialShiftsModule } from './modules/financial-shifts/financial-shifts.module';
+import { RoomsModule } from './modules/rooms/rooms.module';
 import { TenantMiddleware } from './common/middleware/tenant.middleware';
 import { envValidationSchema } from './common/config/env.validation';
 
@@ -123,6 +124,7 @@ import { envValidationSchema } from './common/config/env.validation';
     BranchesModule,          // Filiallar CRUD (multi-branch)
     TreasuryModule,          // G'azna / kassa boshqaruvi (Phase 3)
     FinancialShiftsModule,   // Kassir smenalari (Phase 3)
+    RoomsModule,             // Xonalar CRUD (Phase 4 — conflict detection uchun)
   ],
   providers: [
     // Global rate limiting — barcha endpointlarga qo'llaniladi

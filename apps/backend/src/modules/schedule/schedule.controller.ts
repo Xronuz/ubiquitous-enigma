@@ -23,18 +23,24 @@ export class ScheduleController {
   @ApiQuery({ name: 'timeSlot', required: true, type: Number })
   @ApiQuery({ name: 'teacherId', required: false })
   @ApiQuery({ name: 'roomNumber', required: false })
+  @ApiQuery({ name: 'roomId', required: false })
   @ApiQuery({ name: 'classId', required: false })
   @ApiQuery({ name: 'excludeId', required: false })
+  @ApiQuery({ name: 'branchId', required: false })
   checkConflict(
     @CurrentUser() user: JwtPayload,
     @Query('dayOfWeek') dayOfWeek: string,
     @Query('timeSlot', ParseIntPipe) timeSlot: number,
     @Query('teacherId') teacherId?: string,
     @Query('roomNumber') roomNumber?: string,
+    @Query('roomId') roomId?: string,
     @Query('classId') classId?: string,
     @Query('excludeId') excludeId?: string,
+    @Query('branchId') branchId?: string,
   ) {
-    return this.scheduleService.checkConflict(user, { dayOfWeek, timeSlot, teacherId, roomNumber, classId, excludeId });
+    return this.scheduleService.checkConflict(user, {
+      dayOfWeek, timeSlot, teacherId, roomNumber, roomId, classId, excludeId, branchId,
+    });
   }
 
   @Get('today')
@@ -57,14 +63,14 @@ export class ScheduleController {
   }
 
   @Post()
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL)
+  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.BRANCH_ADMIN)
   @ApiOperation({ summary: 'Jadvalga dars qo\'shish' })
   create(@Body() dto: CreateScheduleDto, @CurrentUser() user: JwtPayload) {
     return this.scheduleService.create(dto, user);
   }
 
   @Put(':id')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL)
+  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.BRANCH_ADMIN)
   @ApiOperation({ summary: 'Darsni yangilash' })
   update(
     @Param('id') id: string,
@@ -75,9 +81,21 @@ export class ScheduleController {
   }
 
   @Delete(':id')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL)
+  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.BRANCH_ADMIN)
   @ApiOperation({ summary: 'Darsni jadvaldan o\'chirish' })
   remove(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
     return this.scheduleService.remove(id, user);
+  }
+
+  @Get('teacher/:teacherId/cross-branch')
+  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.BRANCH_ADMIN, UserRole.VICE_PRINCIPAL)
+  @ApiOperation({ summary: "O'qituvchining barcha filiallardagi darslarini olish (UI greyed-out uchun)" })
+  @ApiQuery({ name: 'viewerBranchId', required: false })
+  getTeacherCrossBranch(
+    @Param('teacherId') teacherId: string,
+    @CurrentUser() user: JwtPayload,
+    @Query('viewerBranchId') viewerBranchId?: string,
+  ) {
+    return this.scheduleService.getTeacherCrossBranch(teacherId, user, viewerBranchId ?? user.branchId);
   }
 }

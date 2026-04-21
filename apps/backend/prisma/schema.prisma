@@ -77,6 +77,12 @@ enum ClubCategory {
   other
 }
 
+// ─── Course Scope (O'quv kurs ko'rinishi) ─────────────────────────────────
+enum CourseScope {
+  GLOBAL  // Barcha filiallar uchun ko'rinadigan markaziy kurs
+  LOCAL   // Faqat yaratilgan filial uchun
+}
+
 // ─── Finance Type (Maktab moliya rejimi) ──────────────────────────────────
 enum FinanceType {
   CENTRALIZED    // Barcha filiallar bitta markaziy g'azna orqali
@@ -178,6 +184,7 @@ model School {
   isActive         Boolean          @default(true)
   subscriptionTier SubscriptionPlan @default(free)
   financeType      FinanceType      @default(CENTRALIZED)   // Moliya rejimi
+  timezone         String           @default("Asia/Tashkent") // IANA timezone — UTC saqlash uchun
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
 
@@ -218,6 +225,8 @@ model School {
   branches         Branch[]          // Multi-branch support
   treasuries       Treasury[]        // G'azna kassalari
   financialShifts  FinancialShift[]  // Smena jurnali
+  rooms            Room[]            // Xonalar (filial bo'yicha)
+  courseMaterials  CourseMaterial[]  // Markaziy o'quv materiallari
 
   @@map("schools")
 }
@@ -251,6 +260,8 @@ model Branch {
   userAssignments UserBranchAssignment[]
   treasuries      Treasury[]
   financialShifts FinancialShift[]
+  rooms           Room[]
+  schedules       Schedule[]
 
   @@unique([schoolId, name])
   @@index([schoolId])
@@ -422,6 +433,9 @@ model User {
   openedShifts FinancialShift[] @relation("ShiftOpener")
   closedShifts FinancialShift[] @relation("ShiftCloser")
 
+  // Course materials (yaratuvchi)
+  courseMaterials CourseMaterial[] @relation("CourseMaterialCreator")
+
   @@map("users")
 }
 
@@ -516,23 +530,34 @@ model Subject {
 model Schedule {
   id         String    @id @default(uuid())
   schoolId   String
+  branchId   String?   // Sinfning filiali (denormalized, konflikt tekshirish uchun)
   classId    String
   subjectId  String
   teacherId  String
-  roomNumber String?
+  roomNumber String?   // Legacy: string xona raqami
+  roomId     String?   // FK → Room (yangi: Room modeli bo'yicha)
   dayOfWeek  DayOfWeek
   timeSlot   Int
-  startTime  String
-  endTime    String
+  startTime  String    // "HH:MM" — mahalliy vaqt (school.timezone)
+  endTime    String    // "HH:MM" — mahalliy vaqt (school.timezone)
+  // UTC minute offsets for cross-branch conflict detection
+  // startDayMinUtc = dayOfWeek_index * 1440 + (startHour * 60 + startMin) - tzOffsetMinutes
+  startDayMinUtc Int?  // Haftaning boshidan UTC minutlar soni
+  endDayMinUtc   Int?  // Haftaning boshidan UTC minutlar soni
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
 
   school     School       @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  branch     Branch?      @relation(fields: [branchId], references: [id], onDelete: SetNull)
   class      Class        @relation(fields: [classId], references: [id], onDelete: Cascade)
   subject    Subject      @relation(fields: [subjectId], references: [id], onDelete: Cascade)
   teacher    User         @relation("ScheduleTeacher", fields: [teacherId], references: [id])
+  room       Room?        @relation(fields: [roomId], references: [id], onDelete: SetNull)
   attendance Attendance[]
 
+  @@index([schoolId, dayOfWeek])
+  @@index([teacherId, dayOfWeek])
+  @@index([branchId, dayOfWeek])
   @@map("schedules")
 }
 
@@ -1362,29 +1387,58 @@ model TransportStudent {
 // ─── Learning Center ─────────────────────────────────────────────────────────
 
 model Course {
-  id          String   @id @default(uuid())
+  id          String      @id @default(uuid())
   schoolId    String
-  branchId    String?  // Qaysi filialda o'qitiladi
+  branchId    String?     // Qaysi filialda o'qitiladi (LOCAL uchun talab qilinadi)
+  scope       CourseScope @default(GLOBAL)  // GLOBAL = barcha filiallar, LOCAL = faqat shu filial
   name        String
   description String?
   teacherId   String?
-  duration    Int?     // weeks
+  duration    Int?        // weeks
   price       Float?
-  maxStudents Int      @default(30)
-  isActive    Boolean  @default(true)
+  maxStudents Int         @default(30)
+  isActive    Boolean     @default(true)
   startDate   DateTime?
   endDate     DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
 
-  school      School       @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  branch      Branch?      @relation(fields: [branchId], references: [id], onDelete: SetNull)
-  teacher     User?        @relation("CourseTeacher", fields: [teacherId], references: [id])
+  school      School            @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  branch      Branch?           @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  teacher     User?             @relation("CourseTeacher", fields: [teacherId], references: [id])
   enrollments CourseEnrollment[]
+  materials   CourseMaterial[]
 
   @@index([schoolId])
   @@index([branchId])
+  @@index([schoolId, scope])
   @@map("courses")
+}
+
+// ─── Course Materials (Shared — schoolId bo'yicha, branchdan mustaqil) ─────
+// Har qaysi filial o'qituvchisi maktabning markaziy materiallariga kira oladi.
+
+model CourseMaterial {
+  id          String   @id @default(uuid())
+  schoolId    String   // schoolId-ga bog'liq — filialga emas. Barcha filial o'qituvchilari ko'ra oladi.
+  courseId    String
+  title       String
+  description String?
+  fileUrl     String?
+  type        String   @default("document")  // document | video | link | pdf | audio
+  isPublic    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdById String?  // Qaysi o'qituvchi qo'shgan
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  school     School  @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  course     Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  createdBy  User?   @relation("CourseMaterialCreator", fields: [createdById], references: [id])
+
+  @@index([schoolId])
+  @@index([courseId])
+  @@map("course_materials")
 }
 
 model CourseEnrollment {
@@ -1508,4 +1562,29 @@ model FinancialShift {
   @@index([branchId, status])
   @@index([treasuryId, status])
   @@map("financial_shifts")
+}
+
+// ─── Rooms (Darsxonalar) ──────────────────────────────────────────────────
+// Xona har doim bitta filialga tegishli (branchId required).
+// Konflikt tekshirishda xona faqat o'sha filial doirasida tekshiriladi.
+
+model Room {
+  id        String   @id @default(uuid())
+  schoolId  String
+  branchId  String   // Required — xona har doim bitta filialga tegishli
+  name      String   // "201-xona", "Fizika lab", "Sport zal"
+  capacity  Int      @default(30)
+  floor     Int?     // Qavat raqami
+  type      String   @default("classroom")  // classroom | lab | hall | gym | other
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  school    School     @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  branch    Branch     @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  schedules Schedule[]
+
+  @@unique([schoolId, branchId, name])
+  @@index([schoolId, branchId])
+  @@map("rooms")
 }
