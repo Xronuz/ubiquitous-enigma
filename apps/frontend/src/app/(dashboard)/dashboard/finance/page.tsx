@@ -6,7 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import {
   TrendingUp, TrendingDown, CreditCard, Clock, AlertTriangle,
   Users, Banknote, CheckCircle, ArrowUpRight, ArrowDownRight,
-  BarChart2, FileText, Wallet, MessageSquare,
+  BarChart2, FileText, Wallet, MessageSquare, Vault,
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -18,6 +18,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { financeApi, FinanceDashboardStats, MonthlyRevenueItem, DebtorItem } from '@/lib/api/finance';
+import { TreasuryPanel } from '@/components/finance/treasury-panel';
+import { ShiftManager } from '@/components/finance/shift-manager';
 import { cn } from '@/lib/utils';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -242,9 +244,19 @@ export default function FinanceDashboardPage() {
         </Card>
       )}
 
+      {/* G'azna + Smena — yon panellar */}
+      <div className="grid gap-4 lg:grid-cols-3">
+        <div className="lg:col-span-2 space-y-4">
+          <TreasuryPanel />
+        </div>
+        <div className="space-y-4">
+          <ShiftManager />
+        </div>
+      </div>
+
       {/* Tabs */}
       <Tabs defaultValue="chart">
-        <TabsList>
+        <TabsList className="flex-wrap h-auto gap-1">
           <TabsTrigger value="chart">
             <TrendingUp className="mr-1.5 h-3.5 w-3.5" /> Oylik grafik
           </TabsTrigger>

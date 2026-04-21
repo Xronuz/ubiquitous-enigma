@@ -1,4 +1,5 @@
 import { apiClient } from './client';
+import type { TreasurySummary } from './treasury';
 
 export interface FinanceDashboardStats {
   totalRevenue: number;
@@ -27,6 +28,8 @@ export interface FinanceDashboardStats {
     createdAt: string;
     student: { id: string; firstName: string; lastName: string };
   }[];
+  // Phase 3: G'azna
+  treasury?: TreasurySummary;
 }
 
 export interface MonthlyRevenueItem {
