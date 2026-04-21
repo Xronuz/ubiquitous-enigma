@@ -77,6 +77,24 @@ enum ClubCategory {
   other
 }
 
+// ─── Finance Type (Maktab moliya rejimi) ──────────────────────────────────
+enum FinanceType {
+  CENTRALIZED    // Barcha filiallar bitta markaziy g'azna orqali
+  DECENTRALIZED  // Har bir filial mustaqil g'azna boshqaradi
+}
+
+// ─── Treasury Type ────────────────────────────────────────────────────────
+enum TreasuryType {
+  CASH   // Naqd pul kassasi
+  BANK   // Bank hisob raqami
+}
+
+// ─── Financial Shift Status ───────────────────────────────────────────────
+enum ShiftStatus {
+  OPEN    // Smena ochiq (to'lovlar qabul qilinmoqda)
+  CLOSED  // Smena yopilgan (kunlik hisob-kitob tugagan)
+}
+
 enum AttendanceStatus {
   present
   absent
@@ -159,6 +177,7 @@ model School {
   logoUrl          String?
   isActive         Boolean          @default(true)
   subscriptionTier SubscriptionPlan @default(free)
+  financeType      FinanceType      @default(CENTRALIZED)   // Moliya rejimi
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
 
@@ -197,6 +216,8 @@ model School {
   systemConfigs    SystemConfig[]
   clubs            Club[]
   branches         Branch[]          // Multi-branch support
+  treasuries       Treasury[]        // G'azna kassalari
+  financialShifts  FinancialShift[]  // Smena jurnali
 
   @@map("schools")
 }
@@ -228,6 +249,8 @@ model Branch {
   transportRoutes TransportRoute[]
   modules         BranchModule[]
   userAssignments UserBranchAssignment[]
+  treasuries      Treasury[]
+  financialShifts FinancialShift[]
 
   @@unique([schoolId, name])
   @@index([schoolId])
@@ -394,6 +417,10 @@ model User {
 
   // Multi-branch assignments (teacher can teach in 2 branches)
   branchAssignments UserBranchAssignment[]
+
+  // Financial shifts (kassir)
+  openedShifts FinancialShift[] @relation("ShiftOpener")
+  closedShifts FinancialShift[] @relation("ShiftCloser")
 
   @@map("users")
 }
@@ -635,6 +662,8 @@ model Payment {
   schoolId        String
   branchId        String?         // Filialga tegishli to'lov izolyatsiyasi
   studentId       String
+  treasuryId      String?         // To'lov tushgan g'azna (Treasury)
+  shiftId         String?         // Qaysi smena ichida qabul qilingan
   amount          Float
   currency        String          @default("UZS")
   status          PaymentStatus   @default(pending)
@@ -646,13 +675,16 @@ model Payment {
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
 
-  school  School  @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  branch  Branch? @relation(fields: [branchId], references: [id], onDelete: SetNull)
-  student User    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  school   School          @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  branch   Branch?         @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  student  User            @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  treasury Treasury?       @relation(fields: [treasuryId], references: [id], onDelete: SetNull)
+  shift    FinancialShift? @relation(fields: [shiftId], references: [id], onDelete: SetNull)
 
   @@index([schoolId, status, dueDate])
   @@index([branchId, status])
   @@index([studentId, status])
+  @@index([treasuryId])
   @@map("payments")
 }
 
@@ -1413,4 +1445,67 @@ model ClubMember {
   @@unique([clubId, studentId])
   @@index([studentId])
   @@map("club_members")
+}
+
+// ─── Treasury (G'azna / Kassa) ────────────────────────────────────────────
+// CENTRALIZED  → schoolId bo'yicha bitta umumiy g'azna (branchId = null)
+// DECENTRALIZED → har bir filialning o'z g'aznasi (branchId SET)
+
+model Treasury {
+  id        String       @id @default(uuid())
+  schoolId  String
+  branchId  String?      // null = markaziy (CENTRALIZED), SET = filial kassasi
+  name      String                     // "Asosiy kassa", "Chilonzor naqd"
+  type      TreasuryType @default(CASH)
+  balance   Float        @default(0)   // Hozirgi balans (UZS)
+  currency  String       @default("UZS")
+  isActive  Boolean      @default(true)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  school   School  @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  branch   Branch? @relation(fields: [branchId], references: [id], onDelete: SetNull)
+
+  payments        Payment[]
+  financialShifts FinancialShift[]
+
+  @@index([schoolId, branchId])
+  @@index([schoolId, type])
+  @@map("treasuries")
+}
+
+// ─── Financial Shift (Kassir smenasi) ────────────────────────────────────
+// O'quv markazlari (DECENTRALIZED) uchun kunlik kassa smenasini boshqarish.
+// To'lov qabul qilish uchun ochiq smena bo'lishi shart.
+
+model FinancialShift {
+  id               String      @id @default(uuid())
+  schoolId         String
+  branchId         String?
+  treasuryId       String
+  openerId         String                        // Smenani ochgan xodim
+  closerId         String?                       // Smenani yopgan xodim
+  startTime        DateTime    @default(now())
+  endTime          DateTime?
+  startingBalance  Float       @default(0)       // Smena boshidagi balans
+  expectedBalance  Float?      // Hisoblangan kutilgan balans (startingBalance + to'lovlar)
+  actualBalance    Float?      // Kassir hisoblagan haqiqiy balans
+  discrepancy      Float?      // expectedBalance - actualBalance (farq)
+  status           ShiftStatus @default(OPEN)
+  notes            String?     // Kassir izohi
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  school   School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  branch   Branch?  @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  treasury Treasury @relation(fields: [treasuryId], references: [id], onDelete: Cascade)
+  opener   User     @relation("ShiftOpener", fields: [openerId], references: [id])
+  closer   User?    @relation("ShiftCloser", fields: [closerId], references: [id])
+
+  payments Payment[]
+
+  @@index([schoolId, status])
+  @@index([branchId, status])
+  @@index([treasuryId, status])
+  @@map("financial_shifts")
 }

@@ -7,6 +7,8 @@ import { JwtPayload, PaymentStatus } from '@eduplatform/types';
 import { AuditService } from '@/common/audit/audit.service';
 import { EventsGateway } from '@/modules/gateway/events.gateway';
 import { branchFilter } from '@/common/utils/branch-filter.util';
+import { TreasuryService } from '@/modules/treasury/treasury.service';
+import { FinancialShiftsService } from '@/modules/financial-shifts/financial-shifts.service';
 
 // ─── Payme JSON-RPC error codes ────────────────────────────────────────────
 const PAYME_ERRORS = {
@@ -36,34 +38,106 @@ export class PaymentsService {
     private readonly config: ConfigService,
     @Optional() private readonly auditService: AuditService,
     @Optional() private readonly eventsGateway: EventsGateway,
+    @Optional() private readonly treasuryService: TreasuryService,
+    @Optional() private readonly shiftsService: FinancialShiftsService,
   ) {}
 
   async create(dto: CreatePaymentDto, currentUser: JwtPayload, branchCtx: string | null = null) {
-    const payment = await this.prisma.payment.create({
-      data: {
-        schoolId: currentUser.schoolId!,
-        branchId: branchCtx ?? currentUser.branchId ?? undefined,
-        studentId: dto.studentId,
-        amount: dto.amount,
-        currency: dto.currency ?? 'UZS',
-        provider: (dto.provider as any) ?? 'cash',
-        description: dto.description,
-        dueDate: dto.dueDate ? new Date(dto.dueDate) : undefined,
-      },
-      include: {
-        student: { select: { id: true, firstName: true, lastName: true } },
-      },
+    const schoolId = currentUser.schoolId!;
+    const effectiveBranchId = branchCtx ?? currentUser.branchId ?? null;
+    const isCash = !dto.provider || dto.provider === 'cash';
+
+    // ── 1. G'azna aniqlash ──────────────────────────────────────────────────
+    const treasury = this.treasuryService
+      ? await this.treasuryService.getEffectiveTreasury(schoolId, effectiveBranchId)
+      : null;
+
+    // ── 2. Shift guard (DECENTRALIZED + cash to'lov uchun) ──────────────────
+    // Agar maktab DECENTRALIZED rejimda ishlasa va naqd to'lov bo'lsa —
+    // ochiq smena bo'lishi shart.
+    let activeShift: any = null;
+    if (isCash && this.shiftsService && effectiveBranchId) {
+      // Maktab rejimini tekshirish
+      const school = await this.prisma.school.findUnique({
+        where: { id: schoolId },
+        select: { financeType: true },
+      });
+
+      if (school?.financeType === 'DECENTRALIZED') {
+        // Bu filialda LMS moduli yoqilganmi?
+        const lmsModule = await this.prisma.branchModule.findFirst({
+          where: { branchId: effectiveBranchId, moduleName: 'learning_center', isEnabled: true },
+        });
+
+        if (lmsModule) {
+          activeShift = await this.shiftsService.getActiveShift(schoolId, effectiveBranchId);
+          if (!activeShift) {
+            throw new BadRequestException(
+              'To\'lov qabul qilish uchun avval smenani oching (POST /financial-shifts/open)',
+            );
+          }
+        }
+      }
+    }
+
+    // ── 3. $transaction: payment yaratish + treasury balance yangilash ───────
+    const payment = await this.prisma.$transaction(async (tx) => {
+      const created = await tx.payment.create({
+        data: {
+          schoolId,
+          branchId: effectiveBranchId ?? undefined,
+          studentId: dto.studentId,
+          treasuryId: treasury?.id ?? undefined,
+          shiftId: activeShift?.id ?? undefined,
+          amount: dto.amount,
+          currency: dto.currency ?? 'UZS',
+          provider: (dto.provider as any) ?? 'cash',
+          description: dto.description,
+          dueDate: dto.dueDate ? new Date(dto.dueDate) : undefined,
+          // Naqd to'lov darhol "paid" hisoblanadi
+          status: isCash ? ('paid' as any) : ('pending' as any),
+          paidAt: isCash ? new Date() : undefined,
+        },
+        include: {
+          student: { select: { id: true, firstName: true, lastName: true } },
+        },
+      });
+
+      // Naqd to'lov → treasury balansini yangilash
+      if (isCash && treasury) {
+        await tx.treasury.update({
+          where: { id: treasury.id },
+          data: { balance: { increment: dto.amount } },
+        });
+      }
+
+      return created;
     });
 
-    // ── Audit log ────────────────────────────────────────────────────────────
+    // ── 4. Audit log ─────────────────────────────────────────────────────────
     this.auditService?.log({
       userId: currentUser.sub ?? undefined,
-      schoolId: currentUser.schoolId ?? undefined,
+      schoolId,
       action: 'create',
       entity: 'Payment',
       entityId: payment.id,
-      newData: { amount: payment.amount, currency: payment.currency, studentId: payment.studentId },
+      newData: {
+        amount: payment.amount,
+        currency: payment.currency,
+        studentId: payment.studentId,
+        treasuryId: treasury?.id,
+        shiftId: activeShift?.id,
+      },
     });
+
+    // ── 5. Real-time broadcast ────────────────────────────────────────────────
+    if (isCash && schoolId) {
+      this.eventsGateway?.emitPaymentReceived(schoolId, {
+        paymentId: payment.id,
+        studentId: payment.studentId,
+        amount: payment.amount,
+      });
+    }
 
     return payment;
   }
@@ -185,11 +259,47 @@ export class PaymentsService {
   }
 
   async markAsPaid(id: string, currentUser: JwtPayload, branchCtx: string | null = null) {
-    const payment = await this.prisma.payment.findFirst({ where: { id, ...branchFilter(currentUser, branchCtx) } });
+    const payment = await this.prisma.payment.findFirst({
+      where: { id, ...branchFilter(currentUser, branchCtx) },
+    });
     if (!payment) throw new NotFoundException('To\'lov topilmadi');
-    const updated = await this.prisma.payment.update({
-      where: { id },
-      data: { status: 'paid' as any, paidAt: new Date() },
+    if ((payment.status as string) === 'paid') {
+      throw new BadRequestException('To\'lov allaqachon to\'langan');
+    }
+
+    // ── $transaction: status yangilash + treasury balance yangilash ──────────
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const result = await tx.payment.update({
+        where: { id },
+        data: { status: 'paid' as any, paidAt: new Date() },
+      });
+
+      // Treasury balansini yangilash (agar treasury bog'liq bo'lsa)
+      if (payment.treasuryId) {
+        await tx.treasury.update({
+          where: { id: payment.treasuryId },
+          data: { balance: { increment: payment.amount } },
+        });
+      } else if (this.treasuryService) {
+        // Treasury bog'liq bo'lmasa — getEffectiveTreasury orqali topamiz
+        const treasury = await this.treasuryService.getEffectiveTreasury(
+          currentUser.schoolId!,
+          branchCtx ?? currentUser.branchId,
+        );
+        if (treasury) {
+          await tx.treasury.update({
+            where: { id: treasury.id },
+            data: { balance: { increment: payment.amount } },
+          });
+          // To'lovga treasury bog'lab qo'yamiz
+          await tx.payment.update({
+            where: { id },
+            data: { treasuryId: treasury.id },
+          });
+        }
+      }
+
+      return result;
     });
 
     // ── Audit log ────────────────────────────────────────────────────────────
@@ -325,9 +435,18 @@ export class PaymentsService {
     }
 
     const now = new Date();
-    await this.prisma.payment.update({
-      where: { id: payment.id },
-      data: { status: 'paid' as any, paidAt: now },
+    await this.prisma.$transaction(async (tx) => {
+      await tx.payment.update({
+        where: { id: payment.id },
+        data: { status: 'paid' as any, paidAt: now },
+      });
+      // Treasury balansini yangilash
+      if (payment.treasuryId) {
+        await tx.treasury.update({
+          where: { id: payment.treasuryId },
+          data: { balance: { increment: payment.amount } },
+        });
+      }
     });
 
     // Broadcast real-time event to school dashboard
@@ -456,9 +575,17 @@ export class PaymentsService {
     // action=2: complete (PerformTransaction equivalent)
     if (Number(action) === 2) {
       if ((payment.status as string) !== 'paid') {
-        await this.prisma.payment.update({
-          where: { id: payment.id },
-          data: { status: 'paid' as any, paidAt: new Date(), providerOrderId: String(body.click_trans_id) },
+        await this.prisma.$transaction(async (tx) => {
+          await tx.payment.update({
+            where: { id: payment.id },
+            data: { status: 'paid' as any, paidAt: new Date(), providerOrderId: String(body.click_trans_id) },
+          });
+          if (payment.treasuryId) {
+            await tx.treasury.update({
+              where: { id: payment.treasuryId },
+              data: { balance: { increment: payment.amount } },
+            });
+          }
         });
         // Broadcast real-time event to school dashboard
         if (payment.schoolId) {

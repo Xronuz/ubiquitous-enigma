@@ -2,10 +2,14 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@/common/prisma/prisma.service';
 import { JwtPayload } from '@eduplatform/types';
 import { branchFilter } from '@/common/utils/branch-filter.util';
+import { TreasuryService } from '@/modules/treasury/treasury.service';
 
 @Injectable()
 export class FinanceService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly treasuryService: TreasuryService,
+  ) {}
 
   // ── Helpers ───────────────────────────────────────────────────────────────
 
@@ -88,6 +92,9 @@ export class FinanceService {
       ? Math.round(((thisMonthAmt - lastMonthAmt) / lastMonthAmt) * 100)
       : thisMonthAmt > 0 ? 100 : 0;
 
+    // G'azna balanslari (director uchun umumiy ko'rinish)
+    const treasurySummary = await this.treasuryService.getFinanceSummary(currentUser);
+
     return {
       totalRevenue: totalRevenue._sum.amount ?? 0,
       totalPayments: totalRevenue._count,
@@ -101,6 +108,8 @@ export class FinanceService {
       totalStudents,
       latestPayroll: approvedPayrolls,
       recentPayments: lastPayments,
+      // Phase 3: G'azna
+      treasury: treasurySummary,
     };
   }
 
