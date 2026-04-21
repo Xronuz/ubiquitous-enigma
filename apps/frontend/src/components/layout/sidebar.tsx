@@ -35,6 +35,7 @@ import {
   Activity,
   Puzzle,
   GitBranch,
+  Target,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/auth.store';
@@ -112,6 +113,7 @@ const navGroups: NavGroup[] = [
       // Foydalanuvchilar: faqat texnik admin (school_admin) boshqaradi
       { label: 'Foydalanuvchilar', href: '/dashboard/users', icon: Users, roles: ['school_admin'] },
       { label: 'Filiallar', href: '/dashboard/branches', icon: GitBranch, roles: ['school_admin', 'director'] },
+      { label: 'CRM — Leadlar', href: '/dashboard/crm', icon: Target, roles: ['school_admin', 'director', 'branch_admin', 'vice_principal', 'accountant'] },
       { label: "Ta'til so'rovlari", href: '/dashboard/leave-requests', icon: CalendarOff, roles: [...ALL_STAFF, 'student'] },
       { label: 'Intizom jurnali', href: '/dashboard/discipline', icon: ShieldAlert, roles: ACADEMIC_STAFF },
       { label: 'Ota-ona uchrashuvlari', href: '/dashboard/meetings', icon: CalendarCheck, roles: ACADEMIC_STAFF },

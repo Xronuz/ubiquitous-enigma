@@ -101,6 +101,28 @@ enum ShiftStatus {
   CLOSED  // Smena yopilgan (kunlik hisob-kitob tugagan)
 }
 
+// ─── CRM: Lead manba (qayerdan keldi) ─────────────────────────────────────
+enum LeadSource {
+  INSTAGRAM    // Instagram reklama / DM
+  TELEGRAM     // Telegram kanal / bot
+  FACEBOOK     // Facebook reklama
+  WEBSITE      // Rasmiy sayt orqali
+  REFERRAL     // Do'st/tanish tavsiyasi
+  CALL         // Telefon qo'ng'irog'i
+  WALK_IN      // To'g'ridan-to'g'ri kelib
+  OTHER        // Boshqa manba
+}
+
+// ─── CRM: Lead holati (voronka bosqichi) ───────────────────────────────────
+enum LeadStatus {
+  NEW              // Yangi lead — hali bog'lanilmagan
+  CONTACTED        // Bog'lanildi — muloqot boshlandi
+  TEST_LESSON      // Sinov darsiga keldi
+  WAITING_PAYMENT  // To'lov kutilmoqda (deyarli tayyor)
+  CONVERTED        // O'quvchiga aylantirildi ✅
+  CLOSED           // Yopildi (rad etdi / aloqa yo'q)
+}
+
 enum AttendanceStatus {
   present
   absent
@@ -227,6 +249,8 @@ model School {
   financialShifts  FinancialShift[]  // Smena jurnali
   rooms            Room[]            // Xonalar (filial bo'yicha)
   courseMaterials  CourseMaterial[]  // Markaziy o'quv materiallari
+  leads            Lead[]            // CRM leadlar
+  leadComments     LeadComment[]
 
   @@map("schools")
 }
@@ -262,6 +286,7 @@ model Branch {
   financialShifts FinancialShift[]
   rooms           Room[]
   schedules       Schedule[]
+  leads           Lead[]        // CRM leadlar (filial kesimi)
 
   @@unique([schoolId, name])
   @@index([schoolId])
@@ -435,6 +460,11 @@ model User {
 
   // Course materials (yaratuvchi)
   courseMaterials CourseMaterial[] @relation("CourseMaterialCreator")
+
+  // CRM leads
+  assignedLeads   Lead[]        @relation("LeadAssignee")
+  createdLeads    Lead[]        @relation("LeadCreator")
+  leadComments    LeadComment[] @relation("LeadCommentAuthor")
 
   @@map("users")
 }
@@ -1587,4 +1617,70 @@ model Room {
   @@unique([schoolId, branchId, name])
   @@index([schoolId, branchId])
   @@map("rooms")
+}
+
+// ─── CRM: Leads (Potensial o'quvchilar) ───────────────────────────────────────
+//
+// Voronka:  NEW → CONTACTED → TEST_LESSON → WAITING_PAYMENT → CONVERTED / CLOSED
+//
+// Duplicate aniqlash:
+//   phone + schoolId kombinatsiyasi UNIQUE — bir telefon bir maktabda faqat 1 marta.
+//   Agar bitta odam Instagram + Telegram orqali yozsa → birinchi leadni qayta-ishlatamiz
+//   (source + note yangilanadi, yangi lead yarATILMAYDI).
+//
+// convertToStudent():
+//   Lead → User (student) + ClassStudent → Lead.status = CONVERTED
+//   Prisma.$transaction ichida atomik.
+
+model Lead {
+  id                 String     @id @default(uuid())
+  schoolId           String
+  branchId           String?    // Qaysi filialgaa tegishli (NULL = umumiy / filial aniqlanmagan)
+  firstName          String
+  lastName           String
+  phone              String     // Asosiy identifikator (duplicate tekshirish uchun)
+  source             LeadSource @default(OTHER)
+  status             LeadStatus @default(NEW)
+  note               String?    // Qo'shimcha izoh
+  assignedToId       String?    // Mas'ul xodim (manager, reception, teacher)
+  createdById        String?    // Kimn tomonidan yaratilgan
+  convertedStudentId String?    // convertToStudent() dan keyin to'ldiriladi
+  expectedClassId    String?    // Qaysi sinfga/guruhga mo'ljallangan
+  nextContactDate    DateTime?  // Keyingi bog'lanish sanasi (reminder uchun)
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+
+  school     School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  branch     Branch?  @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  assignedTo User?    @relation("LeadAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+  createdBy  User?    @relation("LeadCreator",  fields: [createdById], references: [id],  onDelete: SetNull)
+
+  comments LeadComment[]
+
+  // phone + schoolId — bir maktabda bitta telefon faqat bitta lead
+  @@unique([schoolId, phone])
+  @@index([schoolId, status])
+  @@index([schoolId, branchId])
+  @@index([schoolId, source])
+  @@index([assignedToId])
+  @@map("leads")
+}
+
+// ─── CRM: Lead izohlari (muloqot tarixi) ──────────────────────────────────────
+
+model LeadComment {
+  id        String   @id @default(uuid())
+  leadId    String
+  schoolId  String
+  authorId  String?  // Izoh yozgan xodim
+  text      String
+  createdAt DateTime @default(now())
+
+  lead   Lead   @relation(fields: [leadId],   references: [id], onDelete: Cascade)
+  school School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  author User?  @relation("LeadCommentAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+
+  @@index([leadId])
+  @@index([schoolId])
+  @@map("lead_comments")
 }
