@@ -44,6 +44,7 @@ import { DisciplineModule } from './modules/discipline/discipline.module';
 import { MeetingsModule } from './modules/meetings/meetings.module';
 import { FinanceModule } from './modules/finance/finance.module';
 import { ClubsModule } from './modules/clubs/clubs.module';
+import { BranchesModule } from './modules/branches/branches.module';
 import { TenantMiddleware } from './common/middleware/tenant.middleware';
 import { envValidationSchema } from './common/config/env.validation';
 
@@ -117,6 +118,7 @@ import { envValidationSchema } from './common/config/env.validation';
     MeetingsModule,          // Ota-ona uchrashuvlari
     FinanceModule,           // Moliyaviy dashboard (Phase 2)
     ClubsModule,             // To'garaklar (extracurricular)
+    BranchesModule,          // Filiallar CRUD (multi-branch)
   ],
   providers: [
     // Global rate limiting — barcha endpointlarga qo'llaniladi
