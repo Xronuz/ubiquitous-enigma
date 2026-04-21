@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { LogOut, Moon, Sun, User, Search } from 'lucide-react';
 import { MobileNav } from '@/components/layout/mobile-nav';
 import { NotificationDrawer } from '@/components/layout/notification-drawer';
+import { BranchSwitcher } from '@/components/layout/branch-switcher';
 import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -56,6 +57,9 @@ export function Header() {
         </Button>
       </div>
       <div className="flex items-center gap-2">
+        {/* Branch switcher — director/school_admin/branch_admin uchun */}
+        <BranchSwitcher />
+
         {/* Theme toggle */}
         <Button
           variant="ghost"

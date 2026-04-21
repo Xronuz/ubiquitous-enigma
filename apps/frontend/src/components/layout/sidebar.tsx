@@ -34,6 +34,7 @@ import {
   TrendingUp,
   Activity,
   Puzzle,
+  GitBranch,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/auth.store';
@@ -110,6 +111,7 @@ const navGroups: NavGroup[] = [
     items: [
       // Foydalanuvchilar: faqat texnik admin (school_admin) boshqaradi
       { label: 'Foydalanuvchilar', href: '/dashboard/users', icon: Users, roles: ['school_admin'] },
+      { label: 'Filiallar', href: '/dashboard/branches', icon: GitBranch, roles: ['school_admin', 'director'] },
       { label: "Ta'til so'rovlari", href: '/dashboard/leave-requests', icon: CalendarOff, roles: [...ALL_STAFF, 'student'] },
       { label: 'Intizom jurnali', href: '/dashboard/discipline', icon: ShieldAlert, roles: ACADEMIC_STAFF },
       { label: 'Ota-ona uchrashuvlari', href: '/dashboard/meetings', icon: CalendarCheck, roles: ACADEMIC_STAFF },
