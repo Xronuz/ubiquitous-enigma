@@ -49,6 +49,7 @@ import { TreasuryModule } from './modules/treasury/treasury.module';
 import { FinancialShiftsModule } from './modules/financial-shifts/financial-shifts.module';
 import { RoomsModule }  from './modules/rooms/rooms.module';
 import { LeadsModule }  from './modules/leads/leads.module';
+import { CoinsModule }  from './modules/coins/coins.module';
 import { TenantMiddleware } from './common/middleware/tenant.middleware';
 import { envValidationSchema } from './common/config/env.validation';
 
@@ -127,6 +128,7 @@ import { envValidationSchema } from './common/config/env.validation';
     FinancialShiftsModule,   // Kassir smenalari (Phase 3)
     RoomsModule,             // Xonalar CRUD (Phase 4 — conflict detection uchun)
     LeadsModule,             // CRM Lead boshqaruvi (Phase 5)
+    CoinsModule,             // Gamification — Coin & Reward system (Phase 7)
   ],
   providers: [
     // Global rate limiting — barcha endpointlarga qo'llaniladi

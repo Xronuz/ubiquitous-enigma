@@ -199,12 +199,12 @@ function FeeFormDialog({
                 <Label>Sinf darajasi</Label>
                 <Controller name="gradeLevel" control={control} render={({ field }) => (
                   <Select
-                    value={field.value !== undefined ? String(field.value) : ''}
-                    onValueChange={(v) => field.onChange(v ? +v : undefined)}
+                    value={field.value !== undefined ? String(field.value) : 'all'}
+                    onValueChange={(v) => field.onChange(v === 'all' ? undefined : +v)}
                   >
                     <SelectTrigger><SelectValue placeholder="Barchasi" /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Barcha sinflar</SelectItem>
+                      <SelectItem value="all">Barcha sinflar</SelectItem>
                       {GRADE_LEVELS.map(g => <SelectItem key={g} value={String(g)}>{g}-sinf</SelectItem>)}
                     </SelectContent>
                   </Select>

@@ -76,7 +76,7 @@ export const auditLogApi = {
     );
     const baseUrl = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api/v1').replace(/\/api\/v1$/, '');
     const token = typeof window !== 'undefined'
-      ? JSON.parse(localStorage.getItem('auth-storage') ?? '{}')?.state?.accessToken ?? ''
+      ? localStorage.getItem('accessToken') ?? ''
       : '';
     const link = document.createElement('a');
     link.href = `${baseUrl}/api/v1/audit-logs/export?${params.toString()}`;

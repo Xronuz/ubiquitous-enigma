@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format, subDays } from 'date-fns';
 import {
@@ -141,11 +141,48 @@ export default function AttendancePage() {
   // ── Mutations ─────────────────────────────────────────────────────────────────
   const markMutation = useMutation({
     mutationFn: attendanceApi.mark,
+    // ── Optimistic update: UI reflects changes instantly; rolls back on error ──
+    onMutate: async (payload) => {
+      const reportKey = ['attendance', 'report', selectedClass, selectedDate];
+      // Prevent race: cancel any in-flight refetch of this query
+      await queryClient.cancelQueries({ queryKey: reportKey });
+      const snapshot = queryClient.getQueryData<AttendanceRecord[]>(reportKey);
+
+      // Build a studentId→status lookup from the submitted entries
+      const entryMap = new Map(payload.entries.map((e: any) => [e.studentId, e.status]));
+
+      queryClient.setQueryData<AttendanceRecord[]>(reportKey, (old = []) => {
+        // Update existing records; append new ones for students not yet in report
+        const updated: AttendanceRecord[] = old.map(r =>
+          entryMap.has(r.studentId)
+            ? { ...r, status: entryMap.get(r.studentId) as AttendanceRecord['status'] }
+            : r,
+        );
+        entryMap.forEach((status, studentId) => {
+          if (!old.some(r => r.studentId === studentId)) {
+            updated.push({
+              id: `opt-${studentId}`,
+              studentId,
+              classId: selectedClass,
+              date: selectedDate,
+              status: status as AttendanceRecord['status'],
+            });
+          }
+        });
+        return updated;
+      });
+
+      return { snapshot, reportKey };
+    },
     onSuccess: () => {
       toast({ title: '✅ Davomat saqlandi' });
       queryClient.invalidateQueries({ queryKey: ['attendance'] });
     },
-    onError: (err: any) => {
+    onError: (err: any, _vars, context) => {
+      // Roll back to snapshot on network/server error
+      if (context?.snapshot !== undefined) {
+        queryClient.setQueryData(context.reportKey, context.snapshot);
+      }
       const msg = err?.response?.data?.message;
       toast({ variant: 'destructive', title: 'Xato', description: Array.isArray(msg) ? msg.join(', ') : msg ?? 'Xatolik' });
     },
@@ -160,19 +197,35 @@ export default function AttendancePage() {
 
   const totalMarked = stats.present + stats.absent + stats.late + stats.excused;
 
-  // ── Heat-map data (last 28 days per student) ──────────────────────────────────
+  // ── Heat-map data (last 28 days, ALL students) ────────────────────────────────
+  // O(N) not O(N²): pre-build lookup Map then iterate students once.
+  // Previously limited to 20 students via slice(0,20) — that bug is now removed.
   const heatMapData = useMemo(() => {
     if (!students.length || !history.length) return [];
+
+    // Step 1: Build lookup  studentId → dateKey → records[]  in one pass
+    const lookup = new Map<string, Map<string, AttendanceRecord[]>>();
+    for (const r of history) {
+      const dateKey = format(new Date(r.date), 'yyyy-MM-dd');
+      if (!lookup.has(r.studentId)) lookup.set(r.studentId, new Map());
+      const dateMap = lookup.get(r.studentId)!;
+      if (!dateMap.has(dateKey)) dateMap.set(dateKey, []);
+      dateMap.get(dateKey)!.push(r);
+    }
+
+    // Step 2: Build date axis once
     const last28 = Array.from({ length: 28 }, (_, i) =>
-      format(subDays(new Date(), 27 - i), 'yyyy-MM-dd')
+      format(subDays(new Date(), 27 - i), 'yyyy-MM-dd'),
     );
-    return students.slice(0, 20).map(s => ({
+
+    // Step 3: Map each student using the O(1) lookup (no nested .filter)
+    return students.map(s => ({
       name: `${s.firstName} ${s.lastName}`,
       days: last28.map(date => {
-        const recs = history.filter(r => r.studentId === s.id && format(new Date(r.date), 'yyyy-MM-dd') === date);
-        if (!recs.length) return null;
-        const present = recs.filter(r => r.status === 'present').length;
-        return Math.round((present / recs.length) * 100);
+        const recs = lookup.get(s.id)?.get(date);
+        if (!recs?.length) return null;
+        const presentCount = recs.filter(r => r.status === 'present').length;
+        return Math.round((presentCount / recs.length) * 100);
       }),
     }));
   }, [students, history]);
@@ -283,16 +336,23 @@ export default function AttendancePage() {
       {/* ── Class selector + Date ────────────────────────────────────────────── */}
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex flex-wrap gap-2 flex-1">
-          {classList.map((cls: any) => (
-            <Button
-              key={cls.id}
-              variant={selectedClass === cls.id ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => handleClassSelect(cls.id)}
-            >
-              {cls.name}
-            </Button>
-          ))}
+          {classList.map((cls: any) => {
+            const active = selectedClass === cls.id;
+            return (
+              <button
+                key={cls.id}
+                type="button"
+                onClick={() => handleClassSelect(cls.id)}
+                className={
+                  active
+                    ? 'rounded-full px-4 py-1.5 text-sm font-semibold bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 transition-colors'
+                    : 'rounded-full px-4 py-1.5 text-sm font-medium bg-white text-slate-600 hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 shadow-[0_1px_3px_rgba(0,0,0,0.04)] transition-colors'
+                }
+              >
+                {cls.name}
+              </button>
+            );
+          })}
         </div>
         <div className="flex items-center gap-2">
           <Label htmlFor="date-picker" className="text-sm text-muted-foreground shrink-0">Sana:</Label>

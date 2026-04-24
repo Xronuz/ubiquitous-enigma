@@ -31,16 +31,11 @@ export const academicCalendarApi = {
     apiClient.delete(`/academic-calendar/${id}`).then(r => r.data),
 
   exportPdf: async (params?: { from?: string; to?: string }): Promise<void> => {
-    const token = typeof window !== 'undefined'
-      ? JSON.parse(localStorage.getItem('auth-storage') || '{}')?.state?.accessToken ?? ''
-      : '';
-    const query = params ? '?' + new URLSearchParams(Object.fromEntries(Object.entries(params).filter(([, v]) => v))).toString() : '';
-    const resp = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api/v1'}/academic-calendar/export/pdf${query}`,
-      { headers: { Authorization: `Bearer ${token}` } },
-    );
-    if (!resp.ok) throw new Error('PDF yuklab olishda xato');
-    const blob = await resp.blob();
+    const filteredParams = params
+      ? Object.fromEntries(Object.entries(params).filter(([, v]) => v))
+      : undefined;
+    const resp = await apiClient.get('/academic-calendar/export/pdf', { params: filteredParams, responseType: 'blob' });
+    const blob = new Blob([resp.data], { type: 'application/pdf' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -50,16 +45,11 @@ export const academicCalendarApi = {
   },
 
   exportICal: async (params?: { from?: string; to?: string }): Promise<void> => {
-    const token = typeof window !== 'undefined'
-      ? JSON.parse(localStorage.getItem('auth-storage') || '{}')?.state?.accessToken ?? ''
-      : '';
-    const query = params ? '?' + new URLSearchParams(Object.fromEntries(Object.entries(params).filter(([, v]) => v))).toString() : '';
-    const resp = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api/v1'}/academic-calendar/export/ical${query}`,
-      { headers: { Authorization: `Bearer ${token}` } },
-    );
-    if (!resp.ok) throw new Error('iCal yuklab olishda xato');
-    const blob = await resp.blob();
+    const filteredParams = params
+      ? Object.fromEntries(Object.entries(params).filter(([, v]) => v))
+      : undefined;
+    const resp = await apiClient.get('/academic-calendar/export/ical', { params: filteredParams, responseType: 'blob' });
+    const blob = new Blob([resp.data], { type: 'text/calendar' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;

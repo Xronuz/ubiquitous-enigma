@@ -5,7 +5,8 @@
  *  1. POST /auth/switch-branch → yangi JWT tokenlar oladi
  *  2. useAuthStore.setAuth() chaqirib tokenlarni saqlaydi (activeBranchId yangilanadi)
  *  3. useBranchStore.setActiveBranch() UI meta-datani yangilaydi
- *  4. Sahifani qayta yuklaydi (barcha React Query cache tozalanadi)
+ *  4. Branch-specific query keys invalidate qiladi (queryClient.clear() emas —
+ *     auth/settings/fee-structures kabi global ma'lumotlar saqlanib qoladi)
  *
  * Ishlatish:
  *   const { switchBranch, isSwitching } = useSwitchBranch();
@@ -47,8 +48,17 @@ export function useSwitchBranch() {
         // UI branch meta-datani yangilash
         setActiveBranch(branchId, branchMeta ?? null);
 
-        // Barcha React Query cache tozalash (yangi branch konteksti uchun)
-        queryClient.clear();
+        // Branch-specific data invalidate (global cache emas — auth/settings kabi
+        // branch-ga bog'liq bo'lmagan ma'lumotlar saqlanib qoladi)
+        const branchKeys = [
+          'classes', 'schedule', 'attendance', 'grades',
+          'payments', 'users', 'subjects', 'class-students',
+          'students-for-payment-create',
+          'reports', 'analytics',
+        ];
+        await Promise.all(
+          branchKeys.map(key => queryClient.invalidateQueries({ queryKey: [key] })),
+        );
 
         toast({
           title: branchId

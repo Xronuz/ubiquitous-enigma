@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Calendar, Clock, Plus, Loader2, Trash2, LayoutGrid, List, AlertTriangle, Upload } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -93,14 +93,17 @@ function WeeklyGrid({
   onDelete: (id: string) => void;
   onAdd: (day: DayOfWeek, slot: number) => void;
 }) {
-  // Map subjectId → color index
-  const subjectColorMap = new Map<string, number>();
-  let colorIdx = 0;
-  for (const s of schedule) {
-    if (s.subjectId && !subjectColorMap.has(s.subjectId)) {
-      subjectColorMap.set(s.subjectId, colorIdx++ % SUBJECT_COLORS.length);
+  // Map subjectId → color index (memoized — stable across re-renders)
+  const subjectColorMap = useMemo(() => {
+    const map = new Map<string, number>();
+    let idx = 0;
+    for (const s of schedule) {
+      if (s.subjectId && !map.has(s.subjectId)) {
+        map.set(s.subjectId, idx++ % SUBJECT_COLORS.length);
+      }
     }
-  }
+    return map;
+  }, [schedule]);
 
   const getSlot = (day: DayOfWeek, slot: number) =>
     schedule.filter((s) => s.dayOfWeek === day && s.timeSlot === slot);
@@ -270,11 +273,29 @@ function ListView({
       <div className="flex flex-wrap gap-2">
         {DAYS.map(({ key, label }) => {
           const count = schedule.filter((s: any) => s.dayOfWeek === key).length;
+          const active = activeDay === key;
           return (
-            <Button key={key} variant={activeDay === key ? 'default' : 'outline'} size="sm" onClick={() => onDayChange(key)} className="relative">
+            <button
+              key={key}
+              type="button"
+              onClick={() => onDayChange(key)}
+              className={
+                active
+                  ? 'relative inline-flex items-center gap-1 rounded-full px-4 py-1.5 text-sm font-semibold bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 transition-colors'
+                  : 'relative inline-flex items-center gap-1 rounded-full px-4 py-1.5 text-sm font-medium bg-white text-slate-600 hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 shadow-[0_1px_3px_rgba(0,0,0,0.04)] transition-colors'
+              }
+            >
               {label}
-              {count > 0 && <Badge variant="secondary" className="ml-1 h-4 px-1 text-xs">{count}</Badge>}
-            </Button>
+              {count > 0 && (
+                <span className={
+                  active
+                    ? 'ml-1 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-blue-600 px-1 text-[10px] font-bold text-white'
+                    : 'ml-1 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-slate-200 px-1 text-[10px] font-bold text-slate-600 dark:bg-slate-700 dark:text-slate-300'
+                }>
+                  {count}
+                </span>
+              )}
+            </button>
           );
         })}
       </div>
@@ -364,15 +385,18 @@ function StudentScheduleView() {
 
   const schedule: any[] = weekData ?? [];
 
-  // Subject color map
-  const subjectColorMap = new Map<string, number>();
-  let colorIdx = 0;
-  for (const s of schedule) {
-    const sid = s.subjectId ?? s.subject?.id;
-    if (sid && !subjectColorMap.has(sid)) {
-      subjectColorMap.set(sid, colorIdx++ % SUBJECT_COLORS.length);
+  // Subject color map (memoized — stable across re-renders)
+  const subjectColorMap = useMemo(() => {
+    const map = new Map<string, number>();
+    let idx = 0;
+    for (const s of schedule) {
+      const sid = s.subjectId ?? s.subject?.id;
+      if (sid && !map.has(sid)) {
+        map.set(sid, idx++ % SUBJECT_COLORS.length);
+      }
     }
-  }
+    return map;
+  }, [schedule]);
 
   const todayKey = (() => {
     const i = new Date().getDay();

@@ -913,7 +913,7 @@ export default function StudentPortalPage() {
   const { data: attendanceData, isLoading: attendanceLoading } = useQuery<AttendanceRecord[]>({
     queryKey: ['attendance', 'student', studentId],
     queryFn: async () => {
-      const res = await apiClient.get<AttendanceRecord[]>(`/attendance/student/${studentId}`);
+      const res = await apiClient.get<AttendanceRecord[]>(`/attendance/student/${studentId}/history`);
       return res.data;
     },
     enabled: !!studentId,

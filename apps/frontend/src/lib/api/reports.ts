@@ -68,16 +68,8 @@ export const reportsApi = {
       grades: '/reports/grades/pdf',
       finance: '/reports/finance/pdf',
     };
-    const query = params ? '?' + new URLSearchParams(params).toString() : '';
-    const token = typeof window !== 'undefined'
-      ? JSON.parse(localStorage.getItem('auth-storage') || '{}')?.state?.accessToken ?? ''
-      : '';
-    const resp = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api/v1'}${urlMap[type]}${query}`,
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-    if (!resp.ok) throw new Error('PDF generatsiya xatosi');
-    const blob = await resp.blob();
+    const resp = await apiClient.get(urlMap[type], { params, responseType: 'blob' });
+    const blob = new Blob([resp.data], { type: 'application/pdf' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;

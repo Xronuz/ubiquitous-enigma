@@ -1,6 +1,6 @@
 import {
-  IsEmail, IsEnum, IsNotEmpty, IsOptional, IsPhoneNumber,
-  IsString, MinLength, Matches,
+  IsEmail, IsEnum, IsNotEmpty, IsOptional,
+  IsString, IsUUID, MinLength, Matches,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { UserRole } from '@eduplatform/types';
@@ -23,6 +23,7 @@ export class CreateUserDto {
   @ApiPropertyOptional({ example: '+998901234567' })
   @IsOptional()
   @IsString()
+  @Matches(/^[+\d][\d\s\-().]{5,18}$/, { message: 'phone raqam noto\'g\'ri formatda' })
   phone?: string;
 
   @ApiProperty({ example: 'Secret123!', minLength: 8 })
@@ -37,8 +38,13 @@ export class CreateUserDto {
   @IsEnum(UserRole, { message: 'Rol noto\'g\'ri' })
   role: UserRole;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ description: 'Maktab ID (UUID)' })
   @IsOptional()
-  @IsString()
+  @IsUUID('4', { message: 'schoolId UUID formatida bo\'lishi kerak' })
   schoolId?: string;
+
+  @ApiPropertyOptional({ description: 'Filial ID (UUID) — director/school_admin uchun null' })
+  @IsOptional()
+  @IsUUID('4', { message: 'branchId UUID formatida bo\'lishi kerak' })
+  branchId?: string;
 }

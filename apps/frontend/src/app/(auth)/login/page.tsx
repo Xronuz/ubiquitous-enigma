@@ -49,83 +49,102 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 p-4">
-      <Card className="w-full max-w-md shadow-xl">
-        <CardHeader className="text-center space-y-2">
-          <div className="flex justify-center">
-            <div className="p-3 bg-primary rounded-full">
-              <GraduationCap className="h-8 w-8 text-primary-foreground" />
-            </div>
+    <div className="min-h-screen flex items-center justify-center p-4 bg-[hsl(210,20%,98%)] dark:bg-[hsl(222,47%,5%)]">
+      {/* Decorative gradient blobs */}
+      <div className="pointer-events-none fixed inset-0 overflow-hidden">
+        <div className="absolute -top-40 -right-40 h-96 w-96 rounded-full bg-primary/8 blur-3xl" />
+        <div className="absolute -bottom-40 -left-40 h-96 w-96 rounded-full bg-violet-500/8 blur-3xl" />
+      </div>
+
+      <div className="relative w-full max-w-[400px] animate-fade-up">
+        {/* Logo bar */}
+        <div className="mb-8 flex flex-col items-center gap-3">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary shadow-glow-blue">
+            <GraduationCap className="h-7 w-7 text-primary-foreground" />
           </div>
-          <CardTitle className="text-2xl font-bold">EduPlatform</CardTitle>
-          <CardDescription>Maktab boshqaruv tizimiga kiring</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            {loginError && (
-              <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-                ⚠️ {loginError}
-              </div>
-            )}
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="admin@school.uz"
-                autoComplete="email"
-                {...register('email')}
-              />
-              {errors.email && (
-                <p className="text-sm text-destructive">{errors.email.message}</p>
-              )}
-            </div>
+          <div className="text-center">
+            <h1 className="text-2xl font-bold tracking-tight">EduPlatform</h1>
+            <p className="text-sm text-muted-foreground mt-1">Maktab boshqaruv tizimi</p>
+          </div>
+        </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="password">Parol</Label>
-              <div className="relative">
+        <Card className="shadow-elevated">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg">Tizimga kirish</CardTitle>
+            <CardDescription>Hisobingiz ma'lumotlarini kiriting</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+              {loginError && (
+                <div className="flex items-start gap-2.5 rounded-lg border border-destructive/30 bg-destructive/8 px-3.5 py-3 text-sm text-destructive">
+                  <span className="shrink-0 mt-px">⚠</span>
+                  <span>{loginError}</span>
+                </div>
+              )}
+
+              <div className="space-y-1.5">
+                <Label htmlFor="email" className="text-sm font-medium">Email</Label>
                 <Input
-                  id="password"
-                  type={showPassword ? 'text' : 'password'}
-                  placeholder="••••••••"
-                  autoComplete="current-password"
-                  {...register('password')}
+                  id="email"
+                  type="email"
+                  placeholder="admin@school.uz"
+                  autoComplete="email"
+                  className="h-10"
+                  {...register('email')}
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
+                {errors.email && (
+                  <p className="text-xs text-destructive mt-1">{errors.email.message}</p>
+                )}
               </div>
-              {errors.password && (
-                <p className="text-sm text-destructive">{errors.password.message}</p>
-              )}
-            </div>
 
-            <div className="flex justify-end">
-              <a
-                href="/forgot-password"
-                className="text-sm text-primary hover:underline"
-              >
-                Parolni unutdingizmi?
-              </a>
-            </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="password" className="text-sm font-medium">Parol</Label>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="••••••••"
+                    autoComplete="current-password"
+                    className="h-10 pr-10"
+                    {...register('password')}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+                {errors.password && (
+                  <p className="text-xs text-destructive mt-1">{errors.password.message}</p>
+                )}
+              </div>
 
-            <Button type="submit" className="w-full" disabled={isSubmitting}>
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Kirish...
-                </>
-              ) : (
-                'Kirish'
-              )}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+              <div className="flex justify-end">
+                <a href="/forgot-password" className="text-xs text-muted-foreground hover:text-primary transition-colors">
+                  Parolni unutdingizmi?
+                </a>
+              </div>
+
+              <Button type="submit" className="w-full h-10 font-semibold" disabled={isSubmitting} size="lg">
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Kirish...
+                  </>
+                ) : (
+                  'Kirish →'
+                )}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+
+        <p className="mt-6 text-center text-xs text-muted-foreground">
+          © {new Date().getFullYear()} EduPlatform. Barcha huquqlar himoyalangan.
+        </p>
+      </div>
     </div>
   );
 }

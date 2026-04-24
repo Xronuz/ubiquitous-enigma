@@ -1,13 +1,13 @@
-import { IsString, IsUUID, IsDateString, IsOptional, IsNumber, MaxLength, Min, Max } from 'class-validator';
+import { IsString, IsDateString, IsOptional, IsNumber, MaxLength, Min, Max } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateHomeworkDto {
   @ApiProperty()
-  @IsUUID()
+  @IsString()
   classId: string;
 
   @ApiProperty()
-  @IsUUID()
+  @IsString()
   subjectId: string;
 
   @ApiProperty({ maxLength: 200 })
@@ -28,12 +28,12 @@ export class CreateHomeworkDto {
 export class UpdateHomeworkDto {
   @ApiPropertyOptional()
   @IsOptional()
-  @IsUUID()
+  @IsString()
   classId?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
-  @IsUUID()
+  @IsString()
   subjectId?: string;
 
   @ApiPropertyOptional({ maxLength: 200 })

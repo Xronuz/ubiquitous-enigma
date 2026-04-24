@@ -22,6 +22,7 @@ export class CreateGradeDto {
   @ApiProperty({ example: 85 })
   @IsNumber()
   @Min(0)
+  @Max(1000)
   score: number;
 
   @ApiPropertyOptional({ example: 100 })

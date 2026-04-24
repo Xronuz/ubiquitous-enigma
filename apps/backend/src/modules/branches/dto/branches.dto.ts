@@ -27,6 +27,7 @@ export class CreateBranchDto {
   @IsOptional()
   @IsString()
   @MaxLength(20)
+  @Matches(/^[+\d][\d\s\-().]{5,18}$/, { message: 'phone raqam noto\'g\'ri formatda' })
   phone?: string;
 
   @ApiPropertyOptional({ example: 'chilonzor@school.uz' })

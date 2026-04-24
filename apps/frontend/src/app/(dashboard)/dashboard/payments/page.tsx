@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   CreditCard, AlertCircle, CheckCircle2, Clock, TrendingUp,
@@ -270,6 +270,9 @@ export default function PaymentsPage() {
   // Class stats expand
   const [expandedClass, setExpandedClass] = useState<string | null>(null);
 
+  // Active tab — drives lazy history loading
+  const [activeTab, setActiveTab] = useState('classes');
+
   const { data: report, isLoading: reportLoading } = useQuery({
     queryKey: ['payments', 'report'],
     queryFn: paymentsApi.getReport,
@@ -284,6 +287,8 @@ export default function PaymentsPage() {
       to: filterTo || undefined,
       limit: 50,
     }),
+    // Lazy: only fetch when the history tab is actually open
+    enabled: activeTab === 'history',
   });
 
   // Classes for filter + create
@@ -292,22 +297,56 @@ export default function PaymentsPage() {
     queryFn: classesApi.getAll,
   });
 
-  // Students list (filtered by class if selected for create)
+  // Students list — stable key so re-selection doesn't cause an extra network trip
   const { data: studentsData } = useQuery({
-    queryKey: ['class-students-create', form.studentId ? 'all' : 'none'],
+    queryKey: ['students-for-payment-create'],
     queryFn: () => usersApi.getAll({ page: 1, limit: 200 }),
     enabled: createOpen,
+    staleTime: 60_000, // 1 min — list is unlikely to change while modal is open
   });
   const allStudents = (studentsData?.data ?? []).filter((u: any) => u.role === 'student');
 
   const markPaidMutation = useMutation({
     mutationFn: paymentsApi.markAsPaid,
+    onMutate: async (paymentId: string) => {
+      // Cancel any in-flight refetches so they don't overwrite the optimistic value
+      await queryClient.cancelQueries({ queryKey: ['payments', 'report'] });
+      const snapshot = queryClient.getQueryData(['payments', 'report']);
+
+      // Optimistically remove the debtor row from the class stats immediately
+      queryClient.setQueryData(['payments', 'report'], (old: any) => {
+        if (!old?.classStats) return old;
+        return {
+          ...old,
+          classStats: old.classStats.map((cls: any) => {
+            const hasDebtor = cls.debtors?.some((d: any) => d.id === paymentId);
+            if (!hasDebtor) return cls;
+            const newDebtors = cls.debtors.filter((d: any) => d.id !== paymentId);
+            const removedDebt = cls.debtors.find((d: any) => d.id === paymentId)?.amount ?? 0;
+            return {
+              ...cls,
+              debtors: newDebtors,
+              debtorCount: Math.max(0, (cls.debtorCount ?? 0) - 1),
+              totalDebt: Math.max(0, (cls.totalDebt ?? 0) - removedDebt),
+            };
+          }),
+        };
+      });
+
+      return { snapshot };
+    },
     onSuccess: () => {
+      // Server confirmed — now revalidate for fresh data
       queryClient.invalidateQueries({ queryKey: ['payments'] });
       toast({ title: "✅ To'lov to'landi deb belgilandi" });
     },
-    onError: (err: any) =>
-      toast({ variant: 'destructive', title: 'Xato', description: err?.response?.data?.message }),
+    onError: (err: any, _id, context) => {
+      // Roll back to snapshot if server rejected
+      if (context?.snapshot !== undefined) {
+        queryClient.setQueryData(['payments', 'report'], context.snapshot);
+      }
+      toast({ variant: 'destructive', title: 'Xato', description: err?.response?.data?.message });
+    },
   });
 
   const createMutation = useMutation({
@@ -421,7 +460,7 @@ export default function PaymentsPage() {
         </Card>
       </div>
 
-      <Tabs defaultValue="classes">
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="classes">
             <School className="mr-1.5 h-4 w-4" /> Sinf bo'yicha

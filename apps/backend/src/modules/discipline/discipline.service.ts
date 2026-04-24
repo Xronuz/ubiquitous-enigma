@@ -1,17 +1,18 @@
 import {
-  Injectable, NotFoundException, ForbiddenException,
+  Injectable, NotFoundException, ForbiddenException, Optional,
 } from '@nestjs/common';
 import {
   IsString, IsOptional, IsDateString, IsEnum, MaxLength, MinLength,
 } from 'class-validator';
 import { PrismaService } from '@/common/prisma/prisma.service';
 import { JwtPayload, UserRole } from '@eduplatform/types';
+import { CoinsService, COIN_RULES } from '@/modules/coins/coins.service';
 
 // ─── Enums (mirror schema) ────────────────────────────────────────────────────
 
 export type DisciplineType     = 'behavior' | 'absence' | 'academic' | 'dress_code' | 'other';
 export type DisciplineSeverity = 'low' | 'medium' | 'high';
-export type DisciplineAction   = 'warning' | 'detention' | 'parent_call' | 'parent_meeting' | 'suspension' | 'other';
+export type DisciplineAction   = 'warning' | 'praise' | 'detention' | 'parent_call' | 'parent_meeting' | 'suspension' | 'other';
 
 // ─── DTOs ─────────────────────────────────────────────────────────────────────
 
@@ -24,7 +25,7 @@ export class CreateDisciplineDto {
   @IsOptional() @IsEnum(['low', 'medium', 'high'])
   severity?: DisciplineSeverity;
 
-  @IsOptional() @IsEnum(['warning', 'detention', 'parent_call', 'parent_meeting', 'suspension', 'other'])
+  @IsOptional() @IsEnum(['warning', 'praise', 'detention', 'parent_call', 'parent_meeting', 'suspension', 'other'])
   action?: DisciplineAction;
 
   @IsString() @MinLength(5) @MaxLength(1000)
@@ -50,7 +51,10 @@ const MANAGER_ROLES = [
 
 @Injectable()
 export class DisciplineService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly coinsService: CoinsService,
+  ) {}
 
   async findAll(
     currentUser: JwtPayload,
@@ -135,7 +139,7 @@ export class DisciplineService {
     });
     if (!student) throw new NotFoundException('O\'quvchi topilmadi');
 
-    return this.prisma.disciplineIncident.create({
+    const incident = await this.prisma.disciplineIncident.create({
       data: {
         schoolId,
         studentId:    dto.studentId,
@@ -152,6 +156,22 @@ export class DisciplineService {
         reportedBy: { select: { id: true, firstName: true, lastName: true } },
       },
     });
+
+    // ── Coin mukofot/jarima ───────────────────────────────────────────────────
+    const action = dto.action ?? 'warning';
+    if (action === 'praise') {
+      this.coinsService?.earnCoins(
+        dto.studentId, schoolId, COIN_RULES.DISCIPLINE_PRAISE, 'discipline_praise',
+        { disciplineId: incident.id, action: 'praise' },
+      ).catch(() => {});
+    } else if (action === 'warning') {
+      this.coinsService?.deductCoins(
+        dto.studentId, schoolId, Math.abs(COIN_RULES.DISCIPLINE_WARNING), 'discipline_warning',
+        { disciplineId: incident.id, action: 'warning' },
+      ).catch(() => {});
+    }
+
+    return incident;
   }
 
   async resolve(id: string, dto: ResolveDto, currentUser: JwtPayload) {

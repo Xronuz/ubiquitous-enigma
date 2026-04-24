@@ -4,16 +4,122 @@ import { Response } from 'express';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
 import { ReportsService } from './reports.service';
+import { AnalyticsService } from './analytics.service';
 import { CurrentUser } from '@/common/decorators/current-user.decorator';
 import { Roles } from '@/common/decorators/roles.decorator';
 import { JwtPayload, UserRole } from '@eduplatform/types';
+
+// Roles that can see cross-branch analytics
+const ANALYTICS_ROLES = [
+  UserRole.DIRECTOR, UserRole.SCHOOL_ADMIN, UserRole.VICE_PRINCIPAL, UserRole.ACCOUNTANT,
+];
 
 @ApiTags('reports')
 @ApiBearerAuth('JWT')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller({ path: 'reports', version: '1' })
 export class ReportsController {
-  constructor(private readonly reportsService: ReportsService) {}
+  constructor(
+    private readonly reportsService: ReportsService,
+    private readonly analyticsService: AnalyticsService,
+  ) {}
+
+  // ─── Analytics endpoints ───────────────────────────────────────────────
+
+  @Get('analytics/pulse')
+  @Roles(...ANALYTICS_ROLES)
+  @ApiOperation({ summary: 'Maktab bugungi real-vaqt ko\'rsatkichlari (Pulse)' })
+  getSchoolPulse(@CurrentUser() user: JwtPayload) {
+    return this.analyticsService.getSchoolPulse(user);
+  }
+
+  @Get('analytics/finance')
+  @Roles(...ANALYTICS_ROLES)
+  @ApiOperation({ summary: 'Global moliyaviy hisobot — oyma-oy, filiallar bo\'yicha' })
+  @ApiQuery({ name: 'months',   required: false, description: 'Necha oy (default: 12)' })
+  @ApiQuery({ name: 'branchId', required: false })
+  getGlobalFinance(
+    @CurrentUser() user: JwtPayload,
+    @Query('months')   months?:   string,
+    @Query('branchId') branchId?: string,
+  ) {
+    return this.analyticsService.getGlobalFinanceReport(user, months ? Number(months) : 12, branchId);
+  }
+
+  @Get('analytics/branch-comparison')
+  @Roles(...ANALYTICS_ROLES)
+  @ApiOperation({ summary: 'Filiallarni akademik ko\'rsatkichlar bo\'yicha solishtirish' })
+  getBranchComparison(@CurrentUser() user: JwtPayload) {
+    return this.analyticsService.getBranchComparison(user);
+  }
+
+  @Get('analytics/marketing-roi')
+  @Roles(...ANALYTICS_ROLES)
+  @ApiOperation({ summary: 'Marketing manba × konversiya × daromad (ROI)' })
+  @ApiQuery({ name: 'branchId', required: false })
+  getMarketingROI(
+    @CurrentUser() user: JwtPayload,
+    @Query('branchId') branchId?: string,
+  ) {
+    return this.analyticsService.getMarketingROI(user, branchId);
+  }
+
+  @Get('analytics/alerts')
+  @Roles(...ANALYTICS_ROLES)
+  @ApiOperation({ summary: 'Smart Alerts — avto ogohlantirishlar' })
+  getSmartAlerts(@CurrentUser() user: JwtPayload) {
+    return this.analyticsService.getSmartAlerts(user);
+  }
+
+  @Get('analytics/at-risk')
+  @Roles(...ANALYTICS_ROLES, UserRole.CLASS_TEACHER)
+  @ApiOperation({ summary: 'Xavf ostidagi o\'quvchilar — davomat va ball bo\'yicha' })
+  @ApiQuery({ name: 'attendanceThreshold', required: false, description: 'Davomat chegarasi % (default: 75)' })
+  @ApiQuery({ name: 'gradeThreshold',      required: false, description: 'Ball chegarasi %  (default: 60)' })
+  @ApiQuery({ name: 'classId',             required: false })
+  getAtRiskStudents(
+    @CurrentUser() user: JwtPayload,
+    @Query('attendanceThreshold') att?:     string,
+    @Query('gradeThreshold')      grade?:   string,
+    @Query('classId')             classId?: string,
+  ) {
+    return this.reportsService.getAtRiskStudents(
+      user,
+      att   ? Number(att)   : 75,
+      grade ? Number(grade) : 60,
+      classId,
+    );
+  }
+
+  // ─── Excel export ──────────────────────────────────────────────────────
+
+  @Get('export/excel')
+  @Roles(...ANALYTICS_ROLES)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Excel eksport (students | payments | attendance)' })
+  @ApiProduces('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+  @ApiQuery({ name: 'type',     required: true, enum: ['students', 'payments', 'attendance'] })
+  @ApiQuery({ name: 'branchId', required: false })
+  async exportExcel(
+    @CurrentUser() user: JwtPayload,
+    @Res() res: Response,
+    @Query('type')     type:      'students' | 'payments' | 'attendance',
+    @Query('branchId') branchId?: string,
+  ) {
+    const buf = await this.analyticsService.exportToExcel(user, type, branchId);
+    const names: Record<string, string> = {
+      students:   "o'quvchilar",
+      payments:   "to'lovlar",
+      attendance: 'davomat',
+    };
+    const filename = `${names[type] ?? type}-${new Date().toISOString().slice(0, 10)}.xlsx`;
+    res.set({
+      'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'Content-Disposition': `attachment; filename="${filename}"`,
+      'Content-Length': String(buf.length),
+    });
+    res.end(buf);
+  }
 
   // ─── JSON endpoints ────────────────────────────────────────────────────
 

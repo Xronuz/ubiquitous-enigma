@@ -5,7 +5,7 @@
       "name": "frontend",
       "runtimeExecutable": "/Users/xronuz/.nvm/versions/node/v22.21.0/bin/node",
       "runtimeArgs": ["node_modules/next/dist/bin/next", "dev", "--port", "3000"],
-      "cwd": "/Users/xronuz/Desktop/School-managementSYS/apps/frontend",
+      "cwd": "/Users/xronuz/Desktop/XEDU-platform/School-managementSYS/apps/frontend",
       "port": 3000,
       "autoPort": false
     }

@@ -43,14 +43,14 @@ export class ClassesController {
   }
 
   @Get()
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.BRANCH_ADMIN, UserRole.VICE_PRINCIPAL, UserRole.TEACHER, UserRole.CLASS_TEACHER)
+  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.BRANCH_ADMIN, UserRole.VICE_PRINCIPAL, UserRole.TEACHER, UserRole.CLASS_TEACHER, UserRole.STUDENT, UserRole.PARENT, UserRole.ACCOUNTANT)
   @ApiOperation({ summary: 'Sinflar ro\'yxati' })
   findAll(@CurrentUser() user: JwtPayload, @BranchContext() branchCtx: string | null) {
     return this.classesService.findAll(user, branchCtx);
   }
 
   @Get(':id')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.BRANCH_ADMIN, UserRole.VICE_PRINCIPAL, UserRole.TEACHER, UserRole.CLASS_TEACHER)
+  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.BRANCH_ADMIN, UserRole.VICE_PRINCIPAL, UserRole.TEACHER, UserRole.CLASS_TEACHER, UserRole.STUDENT, UserRole.PARENT, UserRole.ACCOUNTANT)
   @ApiOperation({ summary: 'Sinf ma\'lumoti' })
   findOne(@Param('id') id: string, @CurrentUser() user: JwtPayload, @BranchContext() branchCtx: string | null) {
     return this.classesService.findOne(id, user, branchCtx);

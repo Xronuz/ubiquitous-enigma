@@ -164,15 +164,8 @@ export const payrollApi = {
 
   // ── Salary Slips ────────────────────────────────────────────────────────────
   downloadSalarySlip: async (payrollId: string, itemId: string): Promise<void> => {
-    const token = typeof window !== 'undefined'
-      ? JSON.parse(localStorage.getItem('auth-storage') || '{}')?.state?.accessToken ?? ''
-      : '';
-    const resp = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api/v1'}/payroll/monthly/${payrollId}/slip/${itemId}`,
-      { headers: { Authorization: `Bearer ${token}` } },
-    );
-    if (!resp.ok) throw new Error('PDF generatsiya xatosi');
-    const blob = await resp.blob();
+    const resp = await apiClient.get(`/payroll/monthly/${payrollId}/slip/${itemId}`, { responseType: 'blob' });
+    const blob = new Blob([resp.data], { type: 'application/pdf' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;

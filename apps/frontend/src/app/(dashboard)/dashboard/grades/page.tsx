@@ -416,7 +416,7 @@ export default function GradesPage() {
   });
 
   // ── Queries ──────────────────────────────────────────────────────────────────
-  const { data: classes } = useQuery({ queryKey: ['classes'], queryFn: classesApi.getAll });
+  const { data: classes } = useQuery({ queryKey: ['classes'], queryFn: classesApi.getAll, enabled: !isStudent });
   const classList: any[] = Array.isArray(classes) ? classes : [];
 
   // Teacher/class_teacher: faqat o'z fanlari; admin: barcha fanlar

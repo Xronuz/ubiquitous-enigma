@@ -17,7 +17,7 @@ export class AttendanceController {
   constructor(private readonly attendanceService: AttendanceService) {}
 
   @Post('mark')
-  @Roles(UserRole.TEACHER, UserRole.CLASS_TEACHER)
+  @Roles(UserRole.TEACHER, UserRole.CLASS_TEACHER, UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.BRANCH_ADMIN, UserRole.VICE_PRINCIPAL)
   @ApiOperation({ summary: 'Davomat belgilash' })
   mark(
     @Body() dto: MarkAttendanceDto,

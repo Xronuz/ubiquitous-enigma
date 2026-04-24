@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, UnauthorizedException, BadRequestException, Logger, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { IsString, IsNumber, IsOptional, IsUUID, Min, IsDateString } from 'class-validator';
+import { IsString, IsNumber, IsOptional, Min, IsDateString } from 'class-validator';
 import * as crypto from 'crypto';
 import { PrismaService } from '@/common/prisma/prisma.service';
 import { JwtPayload, PaymentStatus } from '@eduplatform/types';
@@ -21,8 +21,8 @@ const PAYME_ERRORS = {
 };
 
 export class CreatePaymentDto {
-  @IsUUID() studentId: string;
-  @IsNumber() @Min(0) amount: number;
+  @IsString() studentId: string;
+  @IsNumber() @Min(1) amount: number;
   @IsOptional() @IsString() currency?: string;
   @IsOptional() @IsString() provider?: string;
   @IsOptional() @IsString() description?: string;
@@ -63,19 +63,15 @@ export class PaymentsService {
         select: { financeType: true },
       });
 
+      // SECURITY FIX: LMS modul sharti olib tashlandi.
+      // Avvalgi kod LMS o'chiq bo'lsa shift guard'ni chetlab o'tishga ruxsat berardi.
+      // DECENTRALIZED rejimda har qanday naqd to'lov uchun ochiq smena majburiy.
       if (school?.financeType === 'DECENTRALIZED') {
-        // Bu filialda LMS moduli yoqilganmi?
-        const lmsModule = await this.prisma.branchModule.findFirst({
-          where: { branchId: effectiveBranchId, moduleName: 'learning_center', isEnabled: true },
-        });
-
-        if (lmsModule) {
-          activeShift = await this.shiftsService.getActiveShift(schoolId, effectiveBranchId);
-          if (!activeShift) {
-            throw new BadRequestException(
-              'To\'lov qabul qilish uchun avval smenani oching (POST /financial-shifts/open)',
-            );
-          }
+        activeShift = await this.shiftsService.getActiveShift(schoolId, effectiveBranchId);
+        if (!activeShift) {
+          throw new BadRequestException(
+            'To\'lov qabul qilish uchun avval smenani oching (POST /financial-shifts/open)',
+          );
         }
       }
     }
@@ -153,6 +149,9 @@ export class PaymentsService {
     page = 1,
     limit = 20,
   ) {
+    // Hard caps: prevent OOM from malicious ?limit=999999
+    page  = Math.max(1, page);
+    limit = Math.min(100, Math.max(1, limit));
     const skip = (page - 1) * limit;
     const where: any = { ...branchFilter(currentUser, branchCtx) };
     if (studentId) where.studentId = studentId;
@@ -514,12 +513,20 @@ export class PaymentsService {
   }
 
   private async paymeGetStatement(id: any, params: any) {
-    const from  = new Date(params?.from ?? 0);
-    const to    = new Date(params?.to   ?? Date.now());
+    const from = new Date(params?.from ?? 0);
+    const to   = new Date(params?.to   ?? Date.now());
+
+    // SECURITY: vaqt oralig'ini cheklash — max 31 kun, faqat Payme to'lovlari
+    const MS_31_DAYS = 31 * 24 * 60 * 60 * 1000;
+    if (to.getTime() - from.getTime() > MS_31_DAYS) {
+      return { id, error: { code: -32400, message: { uz: 'Vaqt oralig\'i 31 kundan oshmasin' } } };
+    }
+
     const payments = await this.prisma.payment.findMany({
       where: {
+        provider:        'payme' as any,   // faqat Payme to'lovlari
         providerOrderId: { not: null },
-        createdAt: { gte: from, lte: to },
+        createdAt:       { gte: from, lte: to },
       },
     });
 

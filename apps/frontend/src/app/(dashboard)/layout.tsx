@@ -56,7 +56,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   if (!isAuthenticated) return null;
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
+    // ── App shell — slate-100 canvas so shadows/glass pop visually ──
+    <div className="flex h-screen overflow-hidden bg-[#EEF0F6] dark:bg-slate-950">
       <RealtimeProvider />
       <div className="hidden md:flex">
         <Sidebar />

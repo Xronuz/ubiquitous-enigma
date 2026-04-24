@@ -187,6 +187,14 @@ export class AuthService {
 
     const targetBranchId = dto.branchId ?? null;
 
+    // SECURITY: branch_admin "barcha filiallar" rejimiga (null) o'ta olmaydi.
+    // Bu null bypass orqali assignment tekshiruvini chetlab o'tishni bloklaydi.
+    if (currentUser.role === UserRole.BRANCH_ADMIN && !targetBranchId) {
+      throw new ForbiddenException(
+        'Branch admin "barcha filiallar" rejimiga o\'ta olmaydi. Aniq filial tanlang.',
+      );
+    }
+
     // Agar branchId berilgan bo'lsa — validate
     if (targetBranchId) {
       const branch = await this.prisma.branch.findUnique({

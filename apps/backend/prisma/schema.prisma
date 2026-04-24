@@ -382,6 +382,7 @@ model User {
   avatarUrl    String?
   language     Language @default(uz)
   isActive     Boolean  @default(true)
+  coins        Int      @default(0)  // Gamification: student reward coins
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 

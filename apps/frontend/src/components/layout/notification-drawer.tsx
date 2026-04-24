@@ -129,14 +129,17 @@ export function NotificationDrawer() {
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative">
+        <button
+          className="relative flex h-10 w-10 items-center justify-center rounded-full bg-white dark:bg-slate-900 shadow-pill text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:shadow-md transition-all duration-150"
+          aria-label="Bildirishnomalar"
+        >
           <Bell className="h-4 w-4" />
           {unreadCount > 0 && (
-            <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[9px] font-bold text-destructive-foreground">
+            <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-bold text-white ring-2 ring-white dark:ring-slate-900">
               {unreadCount > 9 ? '9+' : unreadCount}
             </span>
           )}
-        </Button>
+        </button>
       </SheetTrigger>
 
       <SheetContent side="right" className="w-full sm:w-[400px] p-0 flex flex-col">

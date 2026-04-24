@@ -73,9 +73,9 @@ export function BranchSwitcher() {
   const isBranchAdmin = user.role === 'branch_admin';
   if (isBranchAdmin && activeBranches.length <= 1) {
     return (
-      <div className="hidden md:flex items-center gap-1.5 px-2 py-1 rounded-md border bg-muted/50 text-sm text-muted-foreground">
-        <Building2 className="h-3.5 w-3.5" />
-        <span className="max-w-[120px] truncate font-medium">
+      <div className="hidden md:flex items-center gap-2 h-10 px-4 rounded-full bg-white dark:bg-slate-900 shadow-pill text-sm font-medium text-slate-700 dark:text-slate-200">
+        <Building2 className="h-3.5 w-3.5 shrink-0" />
+        <span className="max-w-[140px] truncate">
           {activeBranchMeta?.name ?? currentLabel}
         </span>
       </div>
@@ -85,26 +85,30 @@ export function BranchSwitcher() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button
-          variant="outline"
-          size="sm"
+        <button
+          type="button"
           disabled={isSwitching || isLoading}
           className={cn(
-            'hidden md:flex items-center gap-1.5 h-8 px-2.5 text-sm font-medium max-w-[200px]',
-            'border-dashed hover:border-solid transition-all',
-            activeBranchId && 'border-primary/50 text-primary',
+            // Header pill — matches search/theme/bell/avatar system
+            'hidden md:flex items-center gap-2 h-10 px-4 max-w-[220px]',
+            'rounded-full bg-white dark:bg-slate-900 shadow-pill',
+            'text-sm font-medium text-slate-700 dark:text-slate-200',
+            'hover:shadow-md transition-all duration-150',
+            'disabled:opacity-60 disabled:cursor-not-allowed',
+            'focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/30',
+            activeBranchId && 'text-blue-700 dark:text-blue-300',
           )}
         >
           {isSwitching ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0" />
           ) : activeBranchId ? (
             <Building2 className="h-3.5 w-3.5 shrink-0" />
           ) : (
             <Layers className="h-3.5 w-3.5 shrink-0" />
           )}
           <span className="truncate">{currentLabel}</span>
-          <ChevronDown className="h-3 w-3 shrink-0 opacity-50" />
-        </Button>
+          <ChevronDown className="h-3 w-3 shrink-0 opacity-60" />
+        </button>
       </DropdownMenuTrigger>
 
       <DropdownMenuContent align="end" className="w-60">

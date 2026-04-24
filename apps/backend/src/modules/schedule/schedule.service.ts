@@ -49,15 +49,26 @@ export class ScheduleService {
     if (keys.length > 0) await this.redis.del(...keys);
   }
 
-  // ── Timezone helper ───────────────────────────────────────────────────────
+  // ── Timezone helper (Redis-cached) ───────────────────────────────────────
 
-  /** Maktab timezone ini olish (cache lash imkonsiz, ishonchlilik uchun DB dan) */
+  /**
+   * Maktab timezone ini olish.
+   * Redis da 1 soat cache lanadi — har bir create/update da DB ga murojaat
+   * qilinishining oldini oladi (cold-path: 1 DB hit/soat; hot-path: Redis O(1)).
+   */
   private async getSchoolTimezone(schoolId: string): Promise<string> {
+    const cacheKey = `school:tz:${schoolId}`;
+    const cached   = await this.redis.get(cacheKey);
+    if (cached) return cached;
+
     const school = await this.prisma.school.findUnique({
       where: { id: schoolId },
       select: { timezone: true },
     });
-    return school?.timezone ?? 'Asia/Tashkent';
+    const tz = school?.timezone ?? 'Asia/Tashkent';
+    // Cache for 1 hour — timezone changes are rare admin operations
+    await this.redis.set(cacheKey, tz, 'EX', 3600);
+    return tz;
   }
 
   // ── Read methods ──────────────────────────────────────────────────────────

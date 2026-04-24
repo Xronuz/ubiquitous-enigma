@@ -69,16 +69,9 @@ export const libraryApi = {
     apiClient.put(`/library/loans/${id}/return`, {}).then(r => r.data),
 
   exportLoansPdf: async (active?: boolean): Promise<void> => {
-    const token = typeof window !== 'undefined'
-      ? JSON.parse(localStorage.getItem('auth-storage') || '{}')?.state?.accessToken ?? ''
-      : '';
-    const query = active !== undefined ? `?active=${active}` : '';
-    const resp = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api/v1'}/library/loans/export/pdf${query}`,
-      { headers: { Authorization: `Bearer ${token}` } },
-    );
-    if (!resp.ok) throw new Error('PDF yuklab olishda xato');
-    const blob = await resp.blob();
+    const params = active !== undefined ? { active } : undefined;
+    const resp = await apiClient.get('/library/loans/export/pdf', { params, responseType: 'blob' });
+    const blob = new Blob([resp.data], { type: 'application/pdf' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;

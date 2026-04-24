@@ -72,27 +72,27 @@ export function BreadcrumbNav() {
   return (
     <nav
       aria-label="Breadcrumb"
-      className="flex items-center gap-1 text-sm text-muted-foreground mb-4 flex-wrap"
+      className="flex items-center gap-1.5 text-sm mb-5 flex-wrap"
     >
       <Link
         href="/dashboard"
-        className="flex items-center gap-1 hover:text-foreground transition-colors"
+        className="flex h-7 w-7 items-center justify-center rounded-lg bg-white shadow-pill text-slate-500 hover:text-slate-900 hover:shadow-md transition-all dark:bg-slate-900 dark:text-slate-400 dark:hover:text-white"
       >
         <Home className="h-3.5 w-3.5 shrink-0" />
       </Link>
       {crumbs.map((crumb, idx) => {
         const isLast = idx === crumbs.length - 1;
         return (
-          <span key={crumb.href} className="flex items-center gap-1 min-w-0">
-            <ChevronRight className="h-3.5 w-3.5 shrink-0 opacity-50" />
+          <span key={crumb.href} className="flex items-center gap-1.5 min-w-0">
+            <ChevronRight className="h-3.5 w-3.5 shrink-0 text-slate-300 dark:text-slate-600" />
             {isLast ? (
-              <span className="font-medium text-foreground truncate max-w-[180px]">
+              <span className="font-semibold text-slate-900 dark:text-slate-100 truncate max-w-[220px]">
                 {crumb.label}
               </span>
             ) : (
               <Link
                 href={crumb.href}
-                className="hover:text-foreground transition-colors truncate max-w-[140px]"
+                className="font-medium text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors truncate max-w-[140px]"
               >
                 {crumb.label}
               </Link>

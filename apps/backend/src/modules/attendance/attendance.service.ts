@@ -35,41 +35,44 @@ export class AttendanceService {
     const schoolId = currentUser.schoolId!;
     const date = new Date(dto.date);
 
-    // Upsert each student attendance
-    const operations = dto.entries.map((entry) =>
-      this.prisma.attendance.upsert({
-        where: {
-          studentId_scheduleId_date: {
-            studentId: entry.studentId,
-            scheduleId: dto.scheduleId ?? null as any,
-            date,
-          },
-        },
-        create: {
-          schoolId,
-          branchId: branchCtx ?? currentUser.branchId ?? undefined,
-          classId: dto.classId,
-          studentId: entry.studentId,
-          scheduleId: dto.scheduleId,
-          date,
-          status: entry.status as any,
-          note: entry.note,
-        },
-        update: {
-          status: entry.status as any,
-          note: entry.note,
-        },
-      }),
-    );
+    // Support legacy 'records' alias: resolve entries from either field
+    const entries = (dto.entries?.length ? dto.entries : null) ?? dto.records ?? [];
 
-    await this.prisma.$transaction(operations);
+    // Use findFirst + create/update to avoid NULL-unsafe upsert on scheduleId
+    await this.prisma.$transaction(async (tx) => {
+      for (const entry of entries) {
+        const existing = await tx.attendance.findFirst({
+          where: { studentId: entry.studentId, classId: dto.classId, date },
+          select: { id: true },
+        });
+        if (existing) {
+          await tx.attendance.update({
+            where: { id: existing.id },
+            data: { status: entry.status as any, note: entry.note },
+          });
+        } else {
+          await tx.attendance.create({
+            data: {
+              schoolId,
+              branchId: branchCtx ?? currentUser.branchId ?? undefined,
+              classId: dto.classId,
+              studentId: entry.studentId,
+              scheduleId: dto.scheduleId,
+              date,
+              status: entry.status as any,
+              note: entry.note,
+            },
+          });
+        }
+      }
+    });
 
     // ── Cache invalidation ────────────────────────────────────────────────────
     await this.invalidate(schoolId);
 
     // ── Audit log ────────────────────────────────────────────────────────────
-    const absentCount = dto.entries.filter(e => e.status === 'absent').length;
-    const lateCount   = dto.entries.filter(e => e.status === 'late').length;
+    const absentCount = entries.filter(e => e.status === 'absent').length;
+    const lateCount   = entries.filter(e => e.status === 'late').length;
     this.auditService?.log({
       userId: currentUser.sub ?? undefined,
       schoolId: currentUser.schoolId ?? undefined,
@@ -78,7 +81,7 @@ export class AttendanceService {
       newData: {
         classId: dto.classId,
         date: dto.date,
-        total: dto.entries.length,
+        total: entries.length,
         absent: absentCount,
         late: lateCount,
       },
@@ -89,20 +92,21 @@ export class AttendanceService {
     this.eventsGateway?.emitToSchool(schoolId, 'attendance:marked', {
       classId: dto.classId,
       date: dto.date,
-      count: dto.entries.length,
+      count: entries.length,
     });
 
     // ── Ota-onaga SMS trigger (absent/late) ──────────────────────────────────
     await this.triggerAttendanceAlerts(dto, schoolId, date);
 
-    return { message: `${dto.entries.length} ta o'quvchi davomati belgilandi` };
+    return { message: `${entries.length} ta o'quvchi davomati belgilandi` };
   }
 
   /** Absent/late o'quvchilarning ota-onalariga SMS yuborish */
   private async triggerAttendanceAlerts(dto: MarkAttendanceDto, schoolId: string, date: Date) {
     if (!this.notificationQueue) return;
 
-    const alertEntries = dto.entries.filter(e => e.status === 'absent' || e.status === 'late');
+    const resolvedEntries = (dto.entries?.length ? dto.entries : null) ?? dto.records ?? [];
+    const alertEntries = resolvedEntries.filter(e => e.status === 'absent' || e.status === 'late');
     if (!alertEntries.length) return;
 
     try {

@@ -51,6 +51,24 @@ export class GlobalExceptionFilter implements ExceptionFilter {
           message = 'Ma\'lumotlar bazasi xatosi';
           error = 'Database Error';
       }
+    } else if (exception instanceof Prisma.PrismaClientUnknownRequestError) {
+      // e.g. PostgreSQL 22021 — invalid byte sequence (null bytes, bad encoding)
+      const msg = (exception as any).message ?? '';
+      if (msg.includes('22021') || msg.includes('invalid byte sequence') || msg.includes('0x00')) {
+        status  = HttpStatus.BAD_REQUEST;
+        message = 'So\'rov noto\'g\'ri belgilar (null-bayt yoki noto\'g\'ri kodlash) ni o\'z ichiga oladi';
+        error   = 'Bad Request';
+      } else {
+        status  = HttpStatus.BAD_REQUEST;
+        message = 'Ma\'lumotlar bazasi xatosi';
+        error   = 'Database Error';
+        this.logger.error(msg, (exception as any).stack);
+      }
+    } else if (exception instanceof Prisma.PrismaClientValidationError) {
+      status  = HttpStatus.BAD_REQUEST;
+      message = 'Ma\'lumotlar bazasi validatsiya xatosi';
+      error   = 'Bad Request';
+      this.logger.warn((exception as any).message?.slice(0, 200));
     } else if (exception instanceof Error) {
       this.logger.error(exception.message, exception.stack);
     }

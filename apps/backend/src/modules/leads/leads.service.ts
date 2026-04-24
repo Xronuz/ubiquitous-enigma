@@ -20,7 +20,7 @@ import {
   BadRequestException, ForbiddenException,
 } from '@nestjs/common';
 import {
-  IsString, IsNotEmpty, IsOptional, IsEnum, IsUUID, IsDateString, MaxLength,
+  IsString, IsNotEmpty, IsOptional, IsEnum, IsUUID, IsDateString, MaxLength, Matches,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import * as bcrypt from 'bcrypt';
@@ -57,6 +57,8 @@ export class CreateLeadDto {
 
   @ApiProperty({ example: '+998901234567' })
   @IsString() @IsNotEmpty() @MaxLength(20)
+  // Must contain at least 7 digits (allows +, spaces, dashes, parens)
+  @Matches(/^[+\d][\d\s\-().]{5,18}$/, { message: 'phone raqam noto\'g\'ri formatda' })
   phone: string;
 
   @ApiProperty({ enum: LeadSource, default: LeadSource.OTHER })
@@ -104,6 +106,7 @@ export class UpdateLeadDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsString() @MaxLength(20)
+  @Matches(/^[+\d][\d\s\-().]{5,18}$/, { message: 'phone raqam noto\'g\'ri formatda' })
   phone?: string;
 
   @ApiPropertyOptional({ enum: LeadSource })
@@ -454,6 +457,16 @@ export class LeadsService {
     });
     if (!cls) throw new NotFoundException('Sinf/guruh topilmadi');
 
+    // SECURITY: branch-scoped foydalanuvchi boshqa filial sinfiga convert qila olmaydi
+    const SCHOOL_WIDE = new Set([
+      'super_admin', 'school_admin', 'director', 'vice_principal',
+    ]);
+    if (!SCHOOL_WIDE.has(currentUser.role as string) && lead.branchId && cls.branchId && cls.branchId !== lead.branchId) {
+      throw new ForbiddenException(
+        'Lead va sinf bir xil filialda bo\'lishi kerak. Cross-branch convert taqiqlangan.',
+      );
+    }
+
     // Email generatsiyasi: agar berilmagan bo'lsa — telefon asosida
     const phoneDigits = lead.phone.replace(/[^\d]/g, '');
     const email       = dto.email ?? `student${phoneDigits}@school.local`;
@@ -589,7 +602,6 @@ export class LeadsService {
       branch:        { select: { id: true, name: true, code: true } },
       assignedTo:    { select: { id: true, firstName: true, lastName: true, role: true } },
       createdBy:     { select: { id: true, firstName: true, lastName: true } },
-      expectedClass: { select: { id: true, name: true, gradeLevel: true } },
       _count:        { select: { comments: true } },
     } as const;
   }

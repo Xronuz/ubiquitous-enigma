@@ -41,8 +41,42 @@ import { formatCurrency, getRoleLabel } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/components/ui/use-toast';
 
+// ── Backwards-compat: map old "bg-*-500" class strings → new token keys ──────
+const LEGACY_COLOR_MAP: Record<string, string> = {
+  'bg-blue-500':    'blue',
+  'bg-violet-500':  'violet',
+  'bg-purple-500':  'violet',
+  'bg-green-500':   'emerald',
+  'bg-emerald-500': 'emerald',
+  'bg-red-500':     'red',
+  'bg-orange-500':  'amber',
+  'bg-amber-500':   'amber',
+  'bg-yellow-500':  'amber',
+  'bg-cyan-500':    'cyan',
+  'bg-sky-500':     'cyan',
+  'bg-indigo-500':  'indigo',
+  'bg-rose-500':    'rose',
+  'bg-pink-500':    'rose',
+  'bg-muted':       'blue',
+  'bg-primary':     'blue',
+};
+
+// ── Color palette for KPI cards ──────────────────────────────────────────────
+const KPI_COLORS = {
+  blue:    { accent: 'kpi-blue',    bg: 'bg-blue-50   dark:bg-blue-950/30',    icon: 'text-blue-600   dark:text-blue-400'    },
+  violet:  { accent: 'kpi-violet',  bg: 'bg-violet-50 dark:bg-violet-950/30',  icon: 'text-violet-600 dark:text-violet-400'  },
+  emerald: { accent: 'kpi-emerald', bg: 'bg-emerald-50 dark:bg-emerald-950/30',icon: 'text-emerald-600 dark:text-emerald-400'},
+  amber:   { accent: 'kpi-amber',   bg: 'bg-amber-50  dark:bg-amber-950/30',   icon: 'text-amber-600  dark:text-amber-400'   },
+  red:     { accent: 'kpi-red',     bg: 'bg-red-50    dark:bg-red-950/30',     icon: 'text-red-600    dark:text-red-400'     },
+  indigo:  { accent: 'kpi-indigo',  bg: 'bg-indigo-50 dark:bg-indigo-950/30',  icon: 'text-indigo-600 dark:text-indigo-400'  },
+  cyan:    { accent: 'kpi-cyan',    bg: 'bg-cyan-50   dark:bg-cyan-950/30',    icon: 'text-cyan-600   dark:text-cyan-400'    },
+  rose:    { accent: 'kpi-rose',    bg: 'bg-rose-50   dark:bg-rose-950/30',    icon: 'text-rose-600   dark:text-rose-400'    },
+} as const;
+
+type KpiColor = keyof typeof KPI_COLORS;
+
 function StatCard({
-  title, value, description, icon: Icon, trend, loading, color,
+  title, value, description, icon: Icon, trend, loading, color = 'blue', href,
 }: {
   title: string;
   value: string | number;
@@ -50,24 +84,32 @@ function StatCard({
   icon: React.ElementType;
   trend?: 'up' | 'down';
   loading?: boolean;
-  color?: string;
+  /** @deprecated use color token instead */
+  color?: KpiColor | string;
+  href?: string;
 }) {
+  // Resolve legacy "bg-*-500" class strings to new token keys
+  const resolvedColor = LEGACY_COLOR_MAP[color] ?? color;
+  const cfg = KPI_COLORS[resolvedColor as KpiColor] ?? KPI_COLORS.blue;
+
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
-        <div className={`rounded-lg p-2 ${color ?? 'bg-primary/10'}`}>
-          <Icon className={`h-4 w-4 ${color ? 'text-white' : 'text-primary'}`} />
+    <Card className={`${cfg.accent} card-lift cursor-default`}>
+      <CardHeader className="flex flex-row items-center justify-between pb-2 pt-4 px-4">
+        <CardTitle className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          {title}
+        </CardTitle>
+        <div className={`rounded-lg p-2 ${cfg.bg} shrink-0`}>
+          <Icon className={`h-4 w-4 ${cfg.icon}`} />
         </div>
       </CardHeader>
-      <CardContent>
-        {loading ? <Skeleton className="h-8 w-24" /> : (
-          <div className="text-2xl font-bold">{value}</div>
+      <CardContent className="px-4 pb-4">
+        {loading ? <Skeleton className="h-10 w-28" /> : (
+          <div className="text-3xl font-black tracking-tight animate-count-up">{value}</div>
         )}
         {description && (
-          <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
-            {trend === 'up' && <TrendingUp className="h-3 w-3 text-green-500" />}
-            {trend === 'down' && <TrendingDown className="h-3 w-3 text-red-500" />}
+          <p className="mt-1.5 flex items-center gap-1 text-xs text-muted-foreground">
+            {trend === 'up'   && <TrendingUp   className="h-3 w-3 text-emerald-500 shrink-0" />}
+            {trend === 'down' && <TrendingDown className="h-3 w-3 text-red-500 shrink-0" />}
             {description}
           </p>
         )}
@@ -205,8 +247,8 @@ function SuperAdminDashboard() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Platform boshqaruvi</h1>
-          <p className="text-muted-foreground">EduPlatform — Super Admin paneli</p>
+          <h1 className="text-2xl font-bold tracking-tight">Platform boshqaruvi</h1>
+          <p className="text-muted-foreground text-sm mt-0.5">EduPlatform — Super Admin paneli</p>
         </div>
         <Button asChild>
           <Link href="/dashboard/schools">
@@ -223,7 +265,7 @@ function SuperAdminDashboard() {
           value={isLoading ? '...' : (stats?.schoolCount ?? 0)}
           icon={School}
           description="Aktiv maktablar"
-          color="bg-blue-500"
+          color="blue"
           loading={isLoading}
         />
         <StatCard
@@ -231,7 +273,7 @@ function SuperAdminDashboard() {
           value={isLoading ? '...' : (stats?.userCount ?? 0)}
           icon={Users}
           description="Barcha maktablar bo'yicha"
-          color="bg-violet-500"
+          color="violet"
           loading={isLoading}
         />
         <StatCard
@@ -239,7 +281,7 @@ function SuperAdminDashboard() {
           value={isLoading ? '...' : (stats?.activeSubscriptions ?? 0)}
           icon={CheckCircle2}
           description="To'lov qilayotgan maktablar"
-          color="bg-green-500"
+          color="emerald"
           loading={isLoading}
         />
       </div>
@@ -668,25 +710,28 @@ function TeacherKPISection() {
   ];
 
   return (
-    <div className={`grid gap-4 ${isClassTeacher ? 'sm:grid-cols-4' : 'sm:grid-cols-3'}`}>
-      {teacherKpis.map(({ title, value, icon: Icon, description, href }) => (
-        <Card
-          key={title}
-          className="cursor-pointer hover:shadow-md transition-shadow"
-          onClick={() => router.push(href)}
-        >
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
-            <div className="rounded-lg bg-primary/10 p-2">
-              <Icon className="h-4 w-4 text-primary" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{value}</div>
-            <p className="mt-1 text-xs text-muted-foreground">{description}</p>
-          </CardContent>
-        </Card>
-      ))}
+    <div className={`grid gap-5 ${isClassTeacher ? 'sm:grid-cols-4' : 'sm:grid-cols-3'}`}>
+      {teacherKpis.map(({ title, value, icon: Icon, description, href }, i) => {
+        const colors: KpiColor[] = ['blue', 'emerald', 'amber', 'violet'];
+        return (
+          <Card
+            key={title}
+            className={`${KPI_COLORS[colors[i % colors.length]].accent} cursor-pointer card-lift`}
+            onClick={() => router.push(href)}
+          >
+            <CardHeader className="flex flex-row items-center justify-between pb-2 pt-4 px-4">
+              <CardTitle className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{title}</CardTitle>
+              <div className={`rounded-lg p-2 ${KPI_COLORS[colors[i % colors.length]].bg}`}>
+                <Icon className={`h-4 w-4 ${KPI_COLORS[colors[i % colors.length]].icon}`} />
+              </div>
+            </CardHeader>
+            <CardContent className="px-4 pb-4">
+              <div className="text-2xl font-bold tracking-tight">{value}</div>
+              <p className="mt-1.5 text-xs text-muted-foreground">{description}</p>
+            </CardContent>
+          </Card>
+        );
+      })}
     </div>
   );
 }
@@ -1332,8 +1377,14 @@ function SchoolDashboard() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Xush kelibsiz, {user?.firstName}!</h1>
-        <p className="text-muted-foreground">{getRoleLabel(user?.role ?? '')} — EduPlatform</p>
+        <h1 className="text-4xl font-black tracking-tight leading-tight">
+          Xush kelibsiz,{' '}
+          <span className="text-gradient">{user?.firstName}!</span>
+        </h1>
+        <p className="text-muted-foreground text-sm mt-2">
+          {getRoleLabel(user?.role ?? '')} — EduPlatform &middot;{' '}
+          {new Date().toLocaleDateString('uz-UZ', { weekday: 'long', day: 'numeric', month: 'long' })}
+        </p>
       </div>
 
       {/* Onboarding checklist for new school admins */}
@@ -1370,6 +1421,7 @@ function SchoolDashboard() {
             value={usersData?.meta.total ?? 0}
             icon={Users}
             description="Aktiv foydalanuvchilar"
+            color="violet"
             loading={usersLoading}
           />
         )}
@@ -1379,6 +1431,7 @@ function SchoolDashboard() {
             value={classList.length}
             icon={School}
             description="Aktiv sinflar"
+            color="blue"
             loading={classesLoading}
           />
         )}
@@ -1390,6 +1443,7 @@ function SchoolDashboard() {
               icon={CreditCard}
               trend="up"
               description="Oylik tushum"
+              color="emerald"
               loading={paymentsLoading}
             />
             <StatCard
@@ -1398,6 +1452,7 @@ function SchoolDashboard() {
               icon={AlertCircle}
               trend="down"
               description="Kechikkan to'lovlar"
+              color="red"
               loading={paymentsLoading}
             />
           </>
@@ -1594,7 +1649,7 @@ function ParentDashboard() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Xush kelibsiz, {user?.firstName}!</h1>
+        <h1 className="text-4xl font-black tracking-tight leading-tight">Xush kelibsiz, {user?.firstName}!</h1>
         <p className="text-muted-foreground">Farzandlaringizning o'qish holati</p>
       </div>
 
@@ -1836,12 +1891,12 @@ function DirectorDashboard() {
     <div className="space-y-6 p-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold">Direktor paneli</h1>
+        <h1 className="text-4xl font-black tracking-tight leading-tight">Direktor paneli</h1>
         <p className="text-sm text-muted-foreground">Maktab umumiy holati va boshqaruv</p>
       </div>
 
       {/* KPI Cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Bugungi davomat"
           value={`${presentPct}%`}

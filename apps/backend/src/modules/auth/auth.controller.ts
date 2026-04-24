@@ -22,7 +22,9 @@ export class AuthController {
   @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { ttl: 15 * 60 * 1000, limit: 100 } })
+  // Hard login rate-limit: max 10 attempts per 60 s per IP.
+  // After 10 failures the client gets 429 Too Many Requests.
+  @Throttle({ default: { ttl: 60_000, limit: 10 } })
   @ApiOperation({ summary: 'Tizimga kirish' })
   @ApiResponse({ status: 200, description: 'Muvaffaqiyatli kirish' })
   @ApiResponse({ status: 401, description: 'Email yoki parol noto\'g\'ri' })
@@ -48,7 +50,7 @@ export class AuthController {
   @Public()
   @Post('forgot-password')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { ttl: 60 * 60 * 1000, limit: 50 } })
+  @Throttle({ default: { ttl: 60_000, limit: 5 } })
   @ApiOperation({ summary: 'Parolni tiklash so\'rovi' })
   forgotPassword(@Body() dto: ForgotPasswordDto) {
     return this.authService.forgotPassword(dto);

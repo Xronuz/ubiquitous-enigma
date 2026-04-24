@@ -106,11 +106,11 @@ export function MobileFab() {
         ))}
       </div>
 
-      {/* Main FAB button */}
+      {/* Main FAB button — dark premium emphasis */}
       <button
         onClick={() => setOpen(prev => !prev)}
-        className={`fixed bottom-5 right-4 z-50 flex h-14 w-14 items-center justify-center rounded-full shadow-xl text-white transition-all duration-200 active:scale-95 md:hidden ${
-          open ? 'bg-gray-700 rotate-45' : 'bg-primary'
+        className={`fixed bottom-5 right-4 z-50 flex h-14 w-14 items-center justify-center rounded-full shadow-[0_8px_24px_rgba(15,23,42,0.35)] text-white transition-all duration-200 active:scale-95 md:hidden ${
+          open ? 'bg-slate-700 rotate-45' : 'bg-slate-900 hover:bg-slate-800'
         }`}
         aria-label="Tezkor amallar"
       >

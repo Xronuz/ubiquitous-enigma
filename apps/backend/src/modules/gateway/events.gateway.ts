@@ -42,13 +42,23 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
           secret: this.config.get('JWT_SECRET'),
         });
         client.data.user = payload;
-        // Join school room for tenant isolation
+
+        const rooms: string[] = [`user:${payload.sub}`];
+
+        // Tenant room — barcha maktab xodimlari
         if (payload.schoolId) {
-          await client.join(`school:${payload.schoolId}`);
+          rooms.push(`school:${payload.schoolId}`);
         }
-        // Join personal room for direct messages and notifications
-        await client.join(`user:${payload.sub}`);
-        this.logger.log(`Client connected: ${payload.email} (${client.id})`);
+
+        // Branch room — filial xodimlari (director/school_admin ham ulani kuzatadi)
+        if (payload.branchId) {
+          rooms.push(`branch:${payload.branchId}`);
+        }
+
+        await Promise.all(rooms.map((r) => client.join(r)));
+        this.logger.log(
+          `Connected: ${payload.email} → [${rooms.join(', ')}] (${client.id})`,
+        );
       } else {
         // Public display mode — join display room only
         const schoolSlug = client.handshake.query?.schoolSlug as string;
@@ -66,7 +76,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.logger.log(`Client disconnected: ${client.id}`);
   }
 
-  // ─── Subscribe to school-specific rooms ─────────────────────────────────
+  // ─── Subscribe messages (manual room join) ───────────────────────────────
 
   @SubscribeMessage('join:school')
   async handleJoinSchool(
@@ -75,6 +85,15 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   ) {
     await client.join(`school:${data.schoolId}`);
     return { event: 'joined', room: `school:${data.schoolId}` };
+  }
+
+  @SubscribeMessage('join:branch')
+  async handleJoinBranch(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { branchId: string },
+  ) {
+    await client.join(`branch:${data.branchId}`);
+    return { event: 'joined', room: `branch:${data.branchId}` };
   }
 
   @SubscribeMessage('join:display')
@@ -92,9 +111,20 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.server.to(`school:${schoolId}`).emit(event, data);
   }
 
+  emitToBranch(branchId: string, event: string, data: unknown) {
+    this.server.to(`branch:${branchId}`).emit(event, data);
+  }
+
   emitToDisplay(schoolSlug: string, event: string, data: unknown) {
     this.server.to(`display:${schoolSlug}`).emit(event, data);
   }
+
+  /** Shaxsiy xabar — user:{userId} xonasiga yuborish */
+  emitToUser(userId: string, event: string, data: unknown) {
+    this.server.to(`user:${userId}`).emit(event, data);
+  }
+
+  // ─── Domain events ───────────────────────────────────────────────────────
 
   emitScheduleUpdate(schoolId: string, data: unknown) {
     this.emitToSchool(schoolId, 'schedule:live', data);
@@ -112,9 +142,27 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.emitToSchool(schoolId, 'payment:received', data);
   }
 
-  /** Shaxsiy xabar — user:{userId} xonasiga yuborish */
-  emitToUser(userId: string, event: string, data: unknown) {
-    this.server.to(`user:${userId}`).emit(event, data);
+  /**
+   * G'azna yopildi — faqat shu filial + School Admin xabar oladi.
+   * School Admin `school:{schoolId}` xonasida ham turadi, shuning uchun
+   * ikkala emit ham kerak emas: branch xonasiga yuborganda School Admin
+   * ham oladi faqat u `branch:{branchId}` xonasiga qo'shilgan bo'lsa.
+   * Ishonchli yo'l: branch → school (cross-posting) orqali yuborish.
+   */
+  emitShiftClosed(
+    branchId: string,
+    schoolId: string,
+    data: { branchName: string; closedAt: string; totalIn: number; totalOut: number; balance: number },
+  ) {
+    // Filial xodimlari (kassir, filial menejer)
+    this.emitToBranch(branchId, 'treasury:shift_closed', data);
+    // School Admin va Director — maktab xonasiga ham yuborish
+    this.emitToSchool(schoolId, 'treasury:shift_closed', { ...data, branchId });
+  }
+
+  emitLeadAssigned(branchId: string, assigneeUserId: string, data: unknown) {
+    this.emitToBranch(branchId, 'crm:lead_assigned', data);
+    this.emitToUser(assigneeUserId, 'crm:lead_assigned', data);
   }
 
   /** Shaxsiy xabar: yangi xabar keldi */

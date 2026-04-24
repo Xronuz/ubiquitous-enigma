@@ -54,7 +54,7 @@ export class TenantMiddleware implements NestMiddleware {
     if (isSuperAdmin) {
       (req as any).tenantId = null;
       (req as any).isSuperAdmin = true;
-      (req as any).branchContext = this.resolveBranchContext(req, user);
+      (req as any).branchContext = await this.resolveBranchContext(req, user);
       await this.prisma.setTenantContext(null, true);
       return next();
     }
@@ -67,7 +67,7 @@ export class TenantMiddleware implements NestMiddleware {
     // Request ga tenant context qo'shish
     (req as any).tenantId = user.schoolId;
     (req as any).isSuperAdmin = false;
-    (req as any).branchContext = this.resolveBranchContext(req, user);
+    (req as any).branchContext = await this.resolveBranchContext(req, user);
 
     // PostgreSQL session variable o'rnatish (RLS uchun)
     await this.prisma.setTenantContext(user.schoolId, false);
@@ -76,13 +76,30 @@ export class TenantMiddleware implements NestMiddleware {
   }
 
   /**
-   * branchContext ni aniqlash:
-   * - school-wide rol + x-branch-id header → override
-   * - boshqalar → user.branchId (JWT) yoki null
+   * branchContext ni aniqlash (async — DB tekshiruvi bilan).
+   * SECURITY: x-branch-id faqat user.schoolId ga tegishli branch uchun ruxsat.
+   * Cross-school spoofing: Director A maktabidan B maktabining branchId'ni
+   * yuborsa, DB da schoolId mos kelmaydi → 403 Forbidden.
    */
-  private resolveBranchContext(req: Request, user: JwtPayload): string | null {
+  private async resolveBranchContext(req: Request, user: JwtPayload): Promise<string | null> {
     const headerBranchId = req.headers['x-branch-id'] as string | undefined;
+
     if (headerBranchId && CAN_OVERRIDE_BRANCH.has(user.role)) {
+      // Super admin istalgan filialga kirishi mumkin — DB check o'tkazib yuboriladi
+      if (user.role === UserRole.SUPER_ADMIN) return headerBranchId;
+
+      // Boshqa rollar uchun: branch shu maktabga tegishli ekanligini tasdiqlash
+      if (user.schoolId) {
+        const branch = await this.prisma.branch.findFirst({
+          where: { id: headerBranchId, schoolId: user.schoolId },
+          select: { id: true },
+        });
+        if (!branch) {
+          throw new ForbiddenException(
+            'x-branch-id: bu filial sizning maktabingizga tegishli emas',
+          );
+        }
+      }
       return headerBranchId;
     }
     return user.branchId ?? null;

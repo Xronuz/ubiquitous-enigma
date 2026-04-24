@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, Optional, Inject } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Optional, Inject } from '@nestjs/common';
 import { IsArray, IsDateString, IsEnum, IsNumber, IsOptional, IsString, IsUUID, Max, Min, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 import { Queue } from 'bullmq';
@@ -6,6 +6,7 @@ import { PrismaService } from '@/common/prisma/prisma.service';
 import { RedisService } from '@/common/redis/redis.service';
 import { GradeType, JwtPayload, UserRole } from '@eduplatform/types';
 import { branchFilter } from '@/common/utils/branch-filter.util';
+import { CoinsService, COIN_RULES } from '@/modules/coins/coins.service';
 
 const GRADE_TTL = 5 * 60;     // 5 min — baholar tez-tez yangilanishi mumkin
 const GPA_TTL   = 3 * 60;     // 3 min — GPA hisobi qimmat, qisqaroq TTL
@@ -18,8 +19,8 @@ import { EventsGateway } from '@/modules/gateway/events.gateway';
 // ── Bulk grade DTOs ────────────────────────────────────────────────────────────
 export class BulkGradeItemDto {
   @IsUUID() studentId: string;
-  @IsNumber() @Min(0) score: number;
-  @IsOptional() @IsNumber() @Max(1000) maxScore?: number;
+  @IsNumber() @Min(0) @Max(1000) score: number;
+  @IsOptional() @IsNumber() @Min(0) @Max(1000) maxScore?: number;
   @IsOptional() @IsString() comment?: string;
 }
 
@@ -42,6 +43,7 @@ export class GradesService {
     @Optional() @Inject(NOTIFICATION_QUEUE) private readonly queue: Queue,
     @Optional() private readonly auditService: AuditService,
     @Optional() private readonly eventsGateway: EventsGateway,
+    @Optional() private readonly coinsService: CoinsService,
   ) {}
 
   private ck(schoolId: string, branchCtx: string | null, suffix: string) {
@@ -54,6 +56,14 @@ export class GradesService {
   }
 
   async create(dto: CreateGradeDto, currentUser: JwtPayload, branchCtx: string | null = null) {
+    // ── Logic validation: score must not exceed maxScore ──────────────────────
+    const effectiveMax = dto.maxScore ?? 100;
+    if (dto.score > effectiveMax) {
+      throw new BadRequestException(
+        `score (${dto.score}) maksimal balldan (${effectiveMax}) oshib ketishi mumkin emas`,
+      );
+    }
+
     const grade = await this.prisma.grade.create({
       data: {
         ...dto,
@@ -93,6 +103,18 @@ export class GradesService {
 
     // ── O'quvchiga in-app bildirishnoma ──────────────────────────────────────
     this.triggerGradeNotification(grade, currentUser).catch(() => {});
+
+    // ── Coin mukofot: score >= 90% → +10 coin ────────────────────────────────
+    const pct = grade.maxScore > 0 ? (grade.score / grade.maxScore) * 100 : 0;
+    if (pct >= 90) {
+      this.coinsService?.earnCoins(
+        grade.studentId,
+        currentUser.schoolId!,
+        COIN_RULES.GRADE_EXCELLENT,
+        'grade_excellent',
+        { gradeId: grade.id, score: grade.score, maxScore: grade.maxScore },
+      ).catch(() => {});
+    }
 
     return grade;
   }
@@ -144,6 +166,16 @@ export class GradesService {
 
   /** Bir vaqtda butun sinf uchun baho kiritish */
   async bulkCreate(dto: BulkGradesDto, currentUser: JwtPayload, branchCtx: string | null = null) {
+    // ── Logic validation: each item.score must not exceed effective maxScore ──
+    for (const item of dto.items) {
+      const effectiveMax = item.maxScore ?? dto.maxScore;
+      if (item.score > effectiveMax) {
+        throw new BadRequestException(
+          `studentId ${item.studentId}: score (${item.score}) maksimal balldan (${effectiveMax}) oshib ketishi mumkin emas`,
+        );
+      }
+    }
+
     const date = new Date(dto.date);
     const branchId = branchCtx ?? currentUser.branchId ?? undefined;
     await this.prisma.grade.createMany({
@@ -243,6 +275,7 @@ export class GradesService {
   async update(id: string, dto: Partial<CreateGradeDto>, currentUser: JwtPayload, branchCtx: string | null = null) {
     const grade = await this.prisma.grade.findFirst({ where: { id, ...branchFilter(currentUser, branchCtx) } });
     if (!grade) throw new NotFoundException('Baho topilmadi');
+
     const updated = await this.prisma.grade.update({
       where: { id },
       data: { ...dto, date: dto.date ? new Date(dto.date) : undefined } as any,
@@ -259,6 +292,34 @@ export class GradesService {
       newData: dto as any,
     });
 
+    // ── Coin idempotency on update ────────────────────────────────────────────
+    // Agar score 90% dan past → yuqoriga chiqqan bo'lsa: coins berish (birinchi marta).
+    // Agar 90%+ dan pastga tushgan bo'lsa: coins qaytarish.
+    // Idempotency: gradeId bo'yicha mavjud coinTransaction tekshiriladi.
+    const newScore    = dto.score    ?? grade.score;
+    const newMaxScore = dto.maxScore ?? grade.maxScore;
+    const oldPct = grade.maxScore > 0 ? (grade.score / grade.maxScore) * 100 : 0;
+    const newPct = newMaxScore   > 0 ? (newScore    / newMaxScore)    * 100 : 0;
+
+    if (this.coinsService) {
+      const existing = await this.prisma.coinTransaction.findFirst({
+        where: { metadata: { path: ['gradeId'], equals: id }, type: 'earn', reason: 'grade_excellent' },
+      }).catch(() => null);
+
+      if (newPct >= 90 && !existing) {
+        // Birinchi marta 90%+ ga yetdi
+        this.coinsService.earnCoins(
+          grade.studentId, currentUser.schoolId!, COIN_RULES.GRADE_EXCELLENT,
+          'grade_excellent', { gradeId: id },
+        ).catch(() => {});
+      } else if (newPct < 90 && existing) {
+        this.coinsService.deductCoins(
+          grade.studentId, currentUser.schoolId!, existing.amount, 'discipline_warning',
+          { gradeId: id, reason: 'score_dropped' },
+        ).catch(() => {});
+      }
+    }
+
     // ── Cache invalidation ────────────────────────────────────────────────────
     await this.invalidate(currentUser.schoolId!);
 
@@ -268,6 +329,21 @@ export class GradesService {
   async remove(id: string, currentUser: JwtPayload, branchCtx: string | null = null) {
     const grade = await this.prisma.grade.findFirst({ where: { id, ...branchFilter(currentUser, branchCtx) } });
     if (!grade) throw new NotFoundException('Baho topilmadi');
+
+    // ── Coin rollback on grade delete (idempotency) ───────────────────────────
+    // O'quvchi bahosini o'chirib, qayta yuqori baho yozsa coin ikki marta berilmasin.
+    if (this.coinsService) {
+      const earnedTx = await this.prisma.coinTransaction.findFirst({
+        where: { metadata: { path: ['gradeId'], equals: id }, type: 'earn', reason: 'grade_excellent' },
+      }).catch(() => null);
+      if (earnedTx) {
+        this.coinsService.deductCoins(
+          grade.studentId, grade.schoolId!, earnedTx.amount, 'discipline_warning',
+          { gradeId: id, reason: 'grade_deleted' },
+        ).catch(() => {});
+      }
+    }
+
     await this.prisma.grade.delete({ where: { id } });
 
     // ── Audit log ────────────────────────────────────────────────────────────
