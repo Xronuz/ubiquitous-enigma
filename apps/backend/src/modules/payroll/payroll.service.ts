@@ -6,7 +6,7 @@ import {
   Min, Max, MaxLength, IsBoolean, IsIn, IsArray, IsInt,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import * as PDFDocument from 'pdfkit';
+import PDFDocument from 'pdfkit';
 import { PrismaService } from '@/common/prisma/prisma.service';
 import { JwtPayload, UserRole } from '@eduplatform/types';
 import { branchFilter } from '@/common/utils/branch-filter.util';
@@ -771,7 +771,7 @@ export class PayrollService {
       }
 
       doc.moveDown(0.3);
-      doc.moveTo(marginL, y + 2).lineTo(pageW - marginL, y + 2).strokeColor('#e2e8f0').strokeWidth(1.5).stroke();
+      doc.moveTo(marginL, y + 2).lineTo(pageW - marginL, y + 2).lineWidth(1.5).strokeColor('#e2e8f0').stroke();
       y += 8;
 
       // ── Gross & Net ───────────────────────────────────────────────────

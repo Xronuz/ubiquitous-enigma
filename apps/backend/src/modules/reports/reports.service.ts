@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import * as PDFDocument from 'pdfkit';
+import PDFDocument from 'pdfkit';
 import { PrismaService } from '@/common/prisma/prisma.service';
 import { JwtPayload } from '@eduplatform/types';
 
@@ -28,6 +28,9 @@ export class ReportsService {
       include: {
         student: { select: { id: true, firstName: true, lastName: true } },
       },
+      // Safety cap: prevents OOM on schools with years of attendance data.
+      // For unbounded exports, use the Excel export endpoint instead.
+      take: 10_000,
     });
 
     const summary = new Map<string, {
@@ -433,29 +436,56 @@ export class ReportsService {
       },
     });
 
-    const results: any[] = [];
+    // ── Batch N+1 fix ───────────────────────────────────────────────────────
+    // Before: 2 DB queries per student → O(students×2) round-trips
+    // After:  2 groupBy queries for ALL students → always 2 round-trips total
+    const studentIds = classStudents.map(cs => cs.student.id);
 
+    if (studentIds.length === 0) {
+      return { students: [], total: 0, thresholds: { attendance: attendanceThreshold, grade: gradeThreshold } };
+    }
+
+    const [attendanceGroups, gradeGroups] = await Promise.all([
+      // Attendance: group by (studentId, status) → count per status per student
+      this.prisma.attendance.groupBy({
+        by:    ['studentId', 'status'],
+        where: { studentId: { in: studentIds }, schoolId },
+        _count: { _all: true },
+      }),
+      // Grades: group by studentId → sum(score) + sum(maxScore) per student
+      this.prisma.grade.groupBy({
+        by:    ['studentId'],
+        where: { studentId: { in: studentIds }, schoolId },
+        _sum:  { score: true, maxScore: true },
+      }),
+    ]);
+
+    // Build O(1) lookup maps
+    const attMap = new Map<string, { total: number; present: number }>();
+    for (const row of attendanceGroups) {
+      const cur = attMap.get(row.studentId) ?? { total: 0, present: 0 };
+      cur.total += row._count._all;
+      if (row.status === 'present') cur.present += row._count._all;
+      attMap.set(row.studentId, cur);
+    }
+
+    const gradeMap = new Map<string, { score: number; maxScore: number }>();
+    for (const row of gradeGroups) {
+      gradeMap.set(row.studentId, {
+        score:    row._sum.score    ?? 0,
+        maxScore: row._sum.maxScore ?? 0,
+      });
+    }
+
+    // Evaluate risk using the pre-fetched maps (no DB calls inside loop)
+    const results: any[] = [];
     for (const cs of classStudents) {
       const studentId = cs.student.id;
+      const att   = attMap.get(studentId)   ?? { total: 0, present: 0 };
+      const grade = gradeMap.get(studentId) ?? { score: 0, maxScore: 0 };
 
-      const [attendanceRecords, gradeRecords] = await Promise.all([
-        this.prisma.attendance.findMany({
-          where: { studentId, schoolId },
-          select: { status: true },
-        }),
-        this.prisma.grade.findMany({
-          where: { studentId, schoolId },
-          select: { score: true, maxScore: true },
-        }),
-      ]);
-
-      const totalDays = attendanceRecords.length;
-      const presentDays = attendanceRecords.filter(a => a.status === 'present').length;
-      const attPct = totalDays > 0 ? Math.round((presentDays / totalDays) * 100) : 100;
-
-      const totalScore = gradeRecords.reduce((s, g) => s + g.score, 0);
-      const totalMax   = gradeRecords.reduce((s, g) => s + g.maxScore, 0);
-      const gradePct   = totalMax > 0 ? Math.round((totalScore / totalMax) * 100) : 100;
+      const attPct   = att.total   > 0 ? Math.round((att.present / att.total) * 100) : 100;
+      const gradePct = grade.maxScore > 0 ? Math.round((grade.score / grade.maxScore) * 100) : 100;
 
       const isAtRisk = attPct < attendanceThreshold || gradePct < gradeThreshold;
       if (!isAtRisk) continue;

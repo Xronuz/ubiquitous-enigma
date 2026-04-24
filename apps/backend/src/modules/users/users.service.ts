@@ -342,6 +342,7 @@ export class UsersService {
       avatarUrl: true,
       isActive: true,
       createdAt: true,
+      coins: true,
     };
   }
 }

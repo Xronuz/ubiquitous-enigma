@@ -195,12 +195,13 @@ export class ConflictDetectorService {
       }
     }
 
-    // ── 2. XONA to'qnashuvi — FAQAT SHU FILIAL ──────────────────────────────
-    if (roomId && branchId) {
+    // ── 2. XONA to'qnashuvi — SCHOOL-WIDE (xona noyob ID bilan aniqlanadi) ────
+    // branchId null bo'lsa ham tekshiriladi — xona ikki marta band qilinmasin.
+    if (roomId) {
       const roomSlots = await this.prisma.schedule.findMany({
         where: {
           schoolId,
-          branchId,   // Faqat shu filialning xonalari tekshiriladi
+          ...(branchId ? { branchId } : {}),  // branchId berilsa filtrlaymiz, yo'qsa school-wide
           roomId,
           dayOfWeek: dayOfWeek as any,
           ...exclude,
