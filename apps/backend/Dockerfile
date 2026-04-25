@@ -47,19 +47,28 @@ COPY --from=builder /app/package.json ./
 COPY --from=builder /app/packages/types/package.json ./packages/types/
 COPY --from=builder /app/apps/backend/package.json ./apps/backend/
 
-# Copy node_modules from builder — includes the generated Prisma client.
-# prisma CLI is a devDependency so we cannot run `prisma generate` in a
-# prod-only install; copying the pre-built modules is the safe alternative.
-COPY --from=builder /app/node_modules ./node_modules
+# pnpm workspace node_modules structure:
+#   /app/node_modules/           → .pnpm virtual store (actual package files)
+#   /app/apps/backend/node_modules/ → per-package symlinks into the .pnpm store
+# Both layers must be copied so Node.js can resolve backend dependencies.
+# Copying only the root node_modules leaves @nestjs/core etc. unresolvable.
+COPY --from=builder /app/node_modules              ./node_modules
+COPY --from=builder /app/apps/backend/node_modules ./apps/backend/node_modules
 
 # Copy built artifacts
 COPY --from=builder /app/apps/backend/dist    ./apps/backend/dist
 COPY --from=builder /app/apps/backend/prisma  ./apps/backend/prisma
 COPY --from=builder /app/packages/types/dist  ./packages/types/dist
 
-# Create uploads dir
+# Create uploads dir and set ownership only on app code + writable dirs.
+# node_modules is root-owned but world-readable — no need to chown it,
+# and doing so would recurse ~500k pnpm hard-links (adds 140 s to build).
 RUN mkdir -p /app/apps/backend/uploads && \
-    chown -R nestjs:nodejs /app
+    chown -R nestjs:nodejs \
+      /app/apps/backend/dist \
+      /app/apps/backend/prisma \
+      /app/apps/backend/uploads \
+      /app/packages
 
 USER nestjs
 
