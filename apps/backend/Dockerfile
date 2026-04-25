@@ -22,8 +22,10 @@ RUN pnpm install --frozen-lockfile
 COPY packages/types ./packages/types
 COPY apps/backend ./apps/backend
 
-# Generate Prisma client
-RUN pnpm --filter backend prisma generate
+# Generate Prisma client — use `exec` so pnpm invokes the binary directly.
+# `pnpm --filter backend prisma generate` silently skips (no script named
+# "prisma" in package.json); `exec` avoids that trap.
+RUN pnpm --filter backend exec prisma generate
 
 # Build shared types
 RUN pnpm --filter @eduplatform/types build
