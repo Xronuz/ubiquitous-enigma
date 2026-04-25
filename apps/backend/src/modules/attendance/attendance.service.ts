@@ -112,46 +112,59 @@ export class AttendanceService {
     try {
       const alertIds = alertEntries.map(e => e.studentId);
 
+      // ─── Explicit shape (Prisma v6 + TS5 can't infer the nested include) ──
+      type StudentWithParents = {
+        id:        string;
+        firstName: string;
+        lastName:  string;
+        childParents: Array<{
+          parent: {
+            phone: string | null;
+            email: string | null;
+          };
+        }>;
+      };
+      type SchoolPayload = { name: string };
+
       // Single batch query — no N+1
-      // NOTE: Prisma v6 + TS5 can't infer Promise.all destructure tuple types
-      // for union return types; running them in parallel via Promise.all
-      // collapses both results to {}. We keep both queries parallel with
-      // separate variables so TypeScript preserves the precise types.
-      const schoolP = this.prisma.school.findUnique({
-        where: { id: schoolId },
-        select: { name: true },
-      });
-      const studentsP = this.prisma.user.findMany({
-        where: { id: { in: alertIds }, schoolId },
-        select: {
-          id: true,
-          firstName: true,
-          lastName: true,
-          childParents: {
-            include: { parent: { select: { phone: true, email: true } } },
+      const [school, students] = (await Promise.all([
+        this.prisma.school.findUnique({
+          where: { id: schoolId },
+          select: { name: true },
+        }),
+        this.prisma.user.findMany({
+          where: { id: { in: alertIds }, schoolId },
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            childParents: {
+              include: { parent: { select: { phone: true, email: true } } },
+            },
           },
-        },
-      });
-      const school   = await schoolP;
-      const students = await studentsP;
+        }),
+      ])) as unknown as [SchoolPayload | null, StudentWithParents[]];
+
       if (!school) return;
 
-      const studentMap = new Map(students.map(s => [s.id, s]));
+      const studentMap = new Map<string, StudentWithParents>(
+        students.map((s) => [s.id, s]),
+      );
       const dateStr = date.toLocaleDateString('uz-UZ', { year: 'numeric', month: 'long', day: 'numeric' });
 
-      const queueJobs = alertEntries.flatMap(entry => {
+      const queueJobs = alertEntries.flatMap((entry) => {
         const student = studentMap.get(entry.studentId);
         if (!student) return [];
         const statusText = entry.status === 'absent' ? 'darsga kelmadi' : 'darsga kech qoldi';
         return student.childParents
-          .filter(rel => !!rel.parent.phone)
-          .map(rel => this.notificationQueue!.queueAttendanceAlert({
+          .filter((rel) => !!rel.parent.phone)
+          .map((rel) => this.notificationQueue!.queueAttendanceAlert({
             parentPhone: rel.parent.phone!,
             parentEmail: rel.parent.email ?? undefined,
             studentName: `${student.firstName} ${student.lastName}`,
-            date: dateStr,
-            status: statusText,
-            schoolName: school.name,
+            date:        dateStr,
+            status:      statusText,
+            schoolName:  school.name,
           }));
       });
 
