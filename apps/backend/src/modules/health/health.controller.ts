@@ -25,7 +25,10 @@ export class HealthController {
   @ApiOperation({ summary: 'Health check (liveness)' })
   async check(): Promise<HealthCheckResult> {
     return this.health.check([
-      () => this.prismaIndicator.pingCheck('database', this.prisma),
+      // PrismaHealthIndicator types accept the bare PrismaClient generic.
+      // Our PrismaService extends PrismaClient at runtime but Prisma v6's
+      // structural type widens the missing methods — cast to any is safe here.
+      () => this.prismaIndicator.pingCheck('database', this.prisma as any),
       () => this.memory.checkHeap('memory_heap', 512 * 1024 * 1024),
       // Redis — ixtiyoriy, mavjud bo'lmasa degraded holat, crash emas
       async () => {

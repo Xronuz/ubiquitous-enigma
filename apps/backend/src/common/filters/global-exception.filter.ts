@@ -7,7 +7,13 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
-import { Prisma } from '@prisma/client';
+// Prisma v6: error classes moved out of the `Prisma` namespace.
+// They live in `@prisma/client/runtime/library` and must be imported directly.
+import {
+  PrismaClientKnownRequestError,
+  PrismaClientUnknownRequestError,
+  PrismaClientValidationError,
+} from '@prisma/client/runtime/library';
 
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
@@ -34,7 +40,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         message = exception.message;
         error = exception.name;
       }
-    } else if (exception instanceof Prisma.PrismaClientKnownRequestError) {
+    } else if (exception instanceof PrismaClientKnownRequestError) {
       switch (exception.code) {
         case 'P2002':
           status = HttpStatus.CONFLICT;
@@ -51,7 +57,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
           message = 'Ma\'lumotlar bazasi xatosi';
           error = 'Database Error';
       }
-    } else if (exception instanceof Prisma.PrismaClientUnknownRequestError) {
+    } else if (exception instanceof PrismaClientUnknownRequestError) {
       // e.g. PostgreSQL 22021 — invalid byte sequence (null bytes, bad encoding)
       const msg = (exception as any).message ?? '';
       if (msg.includes('22021') || msg.includes('invalid byte sequence') || msg.includes('0x00')) {
@@ -64,7 +70,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         error   = 'Database Error';
         this.logger.error(msg, (exception as any).stack);
       }
-    } else if (exception instanceof Prisma.PrismaClientValidationError) {
+    } else if (exception instanceof PrismaClientValidationError) {
       status  = HttpStatus.BAD_REQUEST;
       message = 'Ma\'lumotlar bazasi validatsiya xatosi';
       error   = 'Bad Request';

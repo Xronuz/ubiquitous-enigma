@@ -113,20 +113,27 @@ export class AttendanceService {
       const alertIds = alertEntries.map(e => e.studentId);
 
       // Single batch query — no N+1
-      const [school, students] = await Promise.all([
-        this.prisma.school.findUnique({ where: { id: schoolId }, select: { name: true } }),
-        this.prisma.user.findMany({
-          where: { id: { in: alertIds }, schoolId },
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            childParents: {
-              include: { parent: { select: { phone: true, email: true } } },
-            },
+      // NOTE: Prisma v6 + TS5 can't infer Promise.all destructure tuple types
+      // for union return types; running them in parallel via Promise.all
+      // collapses both results to {}. We keep both queries parallel with
+      // separate variables so TypeScript preserves the precise types.
+      const schoolP = this.prisma.school.findUnique({
+        where: { id: schoolId },
+        select: { name: true },
+      });
+      const studentsP = this.prisma.user.findMany({
+        where: { id: { in: alertIds }, schoolId },
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          childParents: {
+            include: { parent: { select: { phone: true, email: true } } },
           },
-        }),
-      ]);
+        },
+      });
+      const school   = await schoolP;
+      const students = await studentsP;
       if (!school) return;
 
       const studentMap = new Map(students.map(s => [s.id, s]));

@@ -169,7 +169,10 @@ export class AnalyticsService {
     const revenueByBranch = new Map(branchRevenueRaw.map(r => [r.branchId, r]));
 
     const branchRevenue = branches.map((b) => {
-      const stats = revenueByBranch.get(b.id);
+      // Cast: Prisma v6 + TS5 narrows Map<K, GroupByResult>.get() to {} | undefined
+      const stats = revenueByBranch.get(b.id) as
+        | { _sum: { amount: number | null }; _count: { _all: number }; _avg: { amount: number | null } }
+        | undefined;
       return {
         branchId:   b.id,
         branchName: b.name,
@@ -279,7 +282,10 @@ export class AnalyticsService {
     const results = branches.map((b) => {
       const att   = attMap.get(b.id)  ?? { total: 0, present: 0 };
       const lead  = leadMap.get(b.id) ?? { total: 0, converted: 0 };
-      const grade = gradeMap.get(b.id);
+      // Cast: Prisma v6 + TS5 widens Map<K, GroupByResult>.get() to {} | undefined.
+      const grade = gradeMap.get(b.id) as
+        | { _avg: { score: number | null }; _count: { _all: number } }
+        | undefined;
 
       const attendancePct  = att.total  > 0 ? Math.round((att.present  / att.total)  * 100) : 0;
       const conversionRate = lead.total > 0 ? Math.round((lead.converted / lead.total) * 100) : 0;
