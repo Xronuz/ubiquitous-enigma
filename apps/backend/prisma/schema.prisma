@@ -251,6 +251,7 @@ model School {
   courseMaterials  CourseMaterial[]  // Markaziy o'quv materiallari
   leads            Lead[]            // CRM leadlar
   leadComments     LeadComment[]
+  coinTransactions CoinTransaction[]
 
   @@map("schools")
 }
@@ -466,6 +467,9 @@ model User {
   assignedLeads   Lead[]        @relation("LeadAssignee")
   createdLeads    Lead[]        @relation("LeadCreator")
   leadComments    LeadComment[] @relation("LeadCommentAuthor")
+
+  // Gamification
+  coinTransactions CoinTransaction[]
 
   @@map("users")
 }
@@ -1684,4 +1688,26 @@ model LeadComment {
   @@index([leadId])
   @@index([schoolId])
   @@map("lead_comments")
+}
+
+// ─── Gamification: Coin tranzaksiyalari ───────────────────────────────────────
+
+model CoinTransaction {
+  id        String   @id @default(uuid())
+  userId    String
+  schoolId  String
+  amount    Int
+  type      String   // 'earn' | 'deduct'
+  reason    String   // 'grade_excellent' | 'attendance_weekly' | 'discipline_praise' | 'manual_award' | 'discipline_warning' | 'shop_purchase'
+  balance   Int      // Tranzaksiyadan keyingi balans
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId],   references: [id], onDelete: Cascade)
+  school School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([schoolId])
+  @@index([userId, schoolId])
+  @@map("coin_transactions")
 }
