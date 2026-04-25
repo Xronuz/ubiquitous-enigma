@@ -1,0 +1,249 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# EduPlatform — Self-Hosted Stack
+# ═══════════════════════════════════════════════════════════════════════════════
+#
+# Foydalanish (birinchi marta):
+#   cp .env.example .env
+#   nano .env                   ← SERVER_HOST, passwords, JWT_SECRET ni to'ldiring
+#   docker compose -f docker-compose.selfhost.yml up -d --build
+#
+# Keyingi marta (update):
+#   git pull origin main
+#   docker compose -f docker-compose.selfhost.yml up -d --build
+#
+# Loglarni ko'rish:
+#   docker compose -f docker-compose.selfhost.yml logs -f backend
+#   docker compose -f docker-compose.selfhost.yml logs -f migrate
+#
+# To'liq qayta boshlash (ma'lumotlar o'chadi!):
+#   docker compose -f docker-compose.selfhost.yml down -v && \
+#   docker compose -f docker-compose.selfhost.yml up -d --build
+# ═══════════════════════════════════════════════════════════════════════════════
+
+name: eduplatform
+
+# ─── Umumiy sozlamalar ─────────────────────────────────────────────────────────
+x-backend-env: &backend-env
+  NODE_ENV: production
+  DATABASE_URL: postgresql://${POSTGRES_USER:-eduplatform}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:-eduplatform_db}
+  REDIS_URL: redis://:${REDIS_PASSWORD:-}@redis:6379/0
+  REDIS_HOST: redis
+  REDIS_PORT: "6379"
+  REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+  REDIS_DB: "0"
+  JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
+  JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?Set JWT_REFRESH_SECRET in .env}
+  JWT_ACCESS_EXPIRES_IN: ${JWT_ACCESS_EXPIRES_IN:-15m}
+  JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-7d}
+  ALLOWED_ORIGINS: http://${SERVER_HOST:-localhost}
+  PORT: "3001"
+  APP_URL: http://${SERVER_HOST:-localhost}
+  LOG_LEVEL: ${LOG_LEVEL:-info}
+  THROTTLE_TTL: ${THROTTLE_TTL:-60000}
+  THROTTLE_LIMIT: ${THROTTLE_LIMIT:-100}
+  INFOBIP_API_KEY: ${INFOBIP_API_KEY:-}
+  INFOBIP_BASE_URL: ${INFOBIP_BASE_URL:-}
+  SMS_FROM: ${SMS_FROM:-EduPlatform}
+  SMTP_HOST: ${SMTP_HOST:-}
+  SMTP_PORT: ${SMTP_PORT:-587}
+  SMTP_USER: ${SMTP_USER:-}
+  SMTP_PASS: ${SMTP_PASS:-}
+  SMTP_FROM: ${SMTP_FROM:-EduPlatform <noreply@eduplatform.uz>}
+  PAYME_MERCHANT_ID: ${PAYME_MERCHANT_ID:-}
+  PAYME_SECRET_KEY: ${PAYME_SECRET_KEY:-}
+  CLICK_MERCHANT_ID: ${CLICK_MERCHANT_ID:-}
+  CLICK_SECRET_KEY: ${CLICK_SECRET_KEY:-}
+
+services:
+
+  # ─── 1. PostgreSQL ───────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: eduplatform-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-eduplatform}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-eduplatform_db}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-eduplatform} -d ${POSTGRES_DB:-eduplatform_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - internal
+    logging:
+      driver: "json-file"
+      options: { max-size: "10m", max-file: "3" }
+
+  # ─── 2. Redis ────────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: eduplatform-redis
+    restart: unless-stopped
+    command: >
+      redis-server
+        --appendonly yes
+        --requirepass ${REDIS_PASSWORD:-}
+        --maxmemory 256mb
+        --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-}", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - internal
+    logging:
+      driver: "json-file"
+      options: { max-size: "5m", max-file: "2" }
+
+  # ─── 3. Migrate (Init Container) ─────────────────────────────────────────────
+  # Bu service bir martagina ishlaydi:
+  #   prisma migrate deploy  → SQL ni DBga qo'llaydi
+  #   prisma generate        → @prisma/client ni yangilaydi
+  #   prisma db seed         → Demo ma'lumotlarni to'ldiradi (idempotent)
+  # Backend shu service muvaffaqiyatli tugashini kutadi.
+  migrate:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile
+      target: builder          # Builder stage: barcha devDeps mavjud (ts-node, prisma)
+    container_name: eduplatform-migrate
+    working_dir: /app/apps/backend
+    command: >
+      sh -c "
+        echo '════════════════════════════════════════' &&
+        echo '  EduPlatform — DB Initialization' &&
+        echo '════════════════════════════════════════' &&
+        echo '⏳ Applying migrations...' &&
+        npx prisma migrate deploy &&
+        echo '⚡ Generating Prisma client...' &&
+        npx prisma generate &&
+        echo '🌱 Running seed (idempotent)...' &&
+        npx prisma db seed &&
+        echo '✅ DB ready!'
+      "
+    environment:
+      <<: *backend-env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - internal
+    restart: "no"
+    logging:
+      driver: "json-file"
+      options: { max-size: "10m", max-file: "3" }
+
+  # ─── 4. Backend (NestJS) ─────────────────────────────────────────────────────
+  backend:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile
+    container_name: eduplatform-backend
+    restart: unless-stopped
+    environment:
+      <<: *backend-env
+    volumes:
+      - uploads_data:/app/apps/backend/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3001/api/health || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    networks:
+      - internal
+    logging:
+      driver: "json-file"
+      options: { max-size: "20m", max-file: "5" }
+
+  # ─── 5. Frontend (Next.js) ───────────────────────────────────────────────────
+  frontend:
+    build:
+      context: .
+      dockerfile: apps/frontend/Dockerfile
+      args:
+        # SERVER_HOST .env faylidan o'qiladi — frontend build vaqtida bakelanadi
+        NEXT_PUBLIC_API_URL: http://${SERVER_HOST:-localhost}/api/v1
+        NEXT_PUBLIC_WS_URL: http://${SERVER_HOST:-localhost}
+    container_name: eduplatform-frontend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      NEXT_TELEMETRY_DISABLED: "1"
+      PORT: "3000"
+      HOSTNAME: "0.0.0.0"
+      NEXT_PUBLIC_API_URL: http://${SERVER_HOST:-localhost}/api/v1
+      NEXT_PUBLIC_WS_URL: http://${SERVER_HOST:-localhost}
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000 || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+    networks:
+      - internal
+      - external
+    logging:
+      driver: "json-file"
+      options: { max-size: "10m", max-file: "3" }
+
+  # ─── 6. Nginx (Reverse Proxy) ────────────────────────────────────────────────
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: eduplatform-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.selfhost.conf:/etc/nginx/nginx.conf:ro
+      - nginx_logs:/var/log/nginx
+    depends_on:
+      frontend:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
+    networks:
+      - external
+    logging:
+      driver: "json-file"
+      options: { max-size: "10m", max-file: "3" }
+
+# ─── Volumes ───────────────────────────────────────────────────────────────────
+volumes:
+  postgres_data:
+    name: eduplatform_postgres_data
+  redis_data:
+    name: eduplatform_redis_data
+  uploads_data:
+    name: eduplatform_uploads_data
+  nginx_logs:
+    name: eduplatform_nginx_logs
+
+# ─── Networks ──────────────────────────────────────────────────────────────────
+networks:
+  internal:
+    # DB, Redis, Backend — tashqaridan yopiq
+    name: eduplatform-internal
+    internal: true
+  external:
+    # Frontend + Nginx — tashqariga ochiq
+    name: eduplatform-external
