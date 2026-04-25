@@ -22,6 +22,9 @@ RUN pnpm install --frozen-lockfile
 COPY packages/types ./packages/types
 COPY apps/frontend ./apps/frontend
 
+# Guarantee public/ exists (Next.js runner expects it; project may have no static assets yet)
+RUN mkdir -p /app/apps/frontend/public
+
 # Build args (injected at build time for SSG/ISR)
 ARG NEXT_PUBLIC_API_URL=http://localhost:3001/api/v1
 ARG NEXT_PUBLIC_WS_URL=http://localhost:3001
