@@ -22,8 +22,10 @@ ALTER TABLE "staff_salaries"
   ADD COLUMN IF NOT EXISTS "tariffBreakdownJson" JSONB;
 
 -- CreateTable: SystemConfig
+-- FIXED: Added schoolId (required by schema), corrected unique index to (schoolId, key), added FK.
 CREATE TABLE IF NOT EXISTS "system_configs" (
   "id"        TEXT         NOT NULL,
+  "schoolId"  TEXT         NOT NULL,
   "key"       TEXT         NOT NULL,
   "value"     JSONB        NOT NULL,
   "label"     TEXT,
@@ -33,7 +35,13 @@ CREATE TABLE IF NOT EXISTS "system_configs" (
   CONSTRAINT "system_configs_pkey" PRIMARY KEY ("id")
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS "system_configs_key_key" ON "system_configs"("key");
+-- Unique constraint is (schoolId, key) — each school has its own config namespace
+CREATE UNIQUE INDEX IF NOT EXISTS "system_configs_schoolId_key_key" ON "system_configs"("schoolId", "key");
+
+-- FK: system_configs.schoolId → schools.id
+ALTER TABLE "system_configs"
+  ADD CONSTRAINT "system_configs_schoolId_fkey"
+  FOREIGN KEY ("schoolId") REFERENCES "schools"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- CreateIndex: Attendance
 CREATE INDEX IF NOT EXISTS "attendance_classId_date_idx"   ON "attendance"("classId", "date");

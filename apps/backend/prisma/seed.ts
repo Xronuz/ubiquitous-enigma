@@ -96,6 +96,7 @@ async function main() {
             { moduleName: 'library',          isEnabled: true },
             { moduleName: 'transport',        isEnabled: false },
             { moduleName: 'inventory',        isEnabled: false },
+            { moduleName: 'psychology',       isEnabled: false },
             { moduleName: 'clubs',            isEnabled: true  },
           ],
         },
@@ -455,7 +456,11 @@ async function main() {
   console.log('✅ Davomat tarixi yaratildi (so\'nggi 10 kun)');
 
   // ─── 10. Grades ──────────────────────────────────────────────────────────
-  // har bir o'quvchi uchun 3 ta fan bo'yicha 4-5 ta baho
+  // Cleanup: remove all grades for this school before re-seeding so that
+  // repeated seed runs do not accumulate duplicates (grades have no natural
+  // unique constraint we can upsert on).
+  await prisma.grade.deleteMany({ where: { schoolId: school.id } });
+
   const gradeData: Array<{
     studentId: string; subjectId: string; type: 'homework'|'classwork'|'test'|'exam'|'quarterly'|'final'; score: number; maxScore: number; dateOffset: number; comment?: string;
   }> = [
@@ -517,6 +522,12 @@ async function main() {
   console.log('✅ Baholar yaratildi');
 
   // ─── 11. Homeworks ───────────────────────────────────────────────────────
+  // Delete-then-recreate: homeworks have no unique constraint to upsert on.
+  await prisma.homeworkSubmission.deleteMany({
+    where: { homework: { schoolId: school.id } },
+  });
+  await prisma.homework.deleteMany({ where: { schoolId: school.id } });
+
   const hw1 = await prisma.homework.create({
     data: {
       schoolId:    school.id,
@@ -526,7 +537,7 @@ async function main() {
       description: "Darslik 47-bet, 12-15-masalalar. Har bir masalani yechilishi bilan ko'rsating.",
       dueDate:     date(2),
     },
-  }).catch(() => prisma.homework.findFirst({ where: { title: "Kasrlar bo'yicha masalalar", classId: class5A.id } }).then(r => r!));
+  });
 
   const hw2 = await prisma.homework.create({
     data: {
@@ -537,7 +548,7 @@ async function main() {
       description: "Bahor mavzusida 150-200 so'zlik insho yozing.",
       dueDate:     date(3),
     },
-  }).catch(() => prisma.homework.findFirst({ where: { title: 'Insho: Bahor tabiatim', classId: class5A.id } }).then(r => r!));
+  });
 
   const hw3 = await prisma.homework.create({
     data: {
@@ -548,36 +559,38 @@ async function main() {
       description: "Write about your family (100-150 words). Use Present Simple tense.",
       dueDate:     date(4),
     },
-  }).catch(() => prisma.homework.findFirst({ where: { title: 'My Family - writing task', classId: class5A.id } }).then(r => r!));
+  });
 
-  // Homework submissions
-  if (hw1) {
-    await prisma.homeworkSubmission.upsert({
-      where: { homeworkId_studentId: { homeworkId: hw1.id, studentId: std001.id } },
-      update: {},
-      create: {
-        homeworkId:  hw1.id,
-        studentId:   std001.id,
-        content:     "12-masala: 3/4 + 1/2 = 5/4. 13-masala: 2/3 × 6 = 4. 14-masala: ...",
-        score:       90,
-        submittedAt: date(-1),
-      },
-    });
-    await prisma.homeworkSubmission.upsert({
-      where: { homeworkId_studentId: { homeworkId: hw1.id, studentId: std002.id } },
-      update: {},
-      create: {
-        homeworkId:  hw1.id,
-        studentId:   std002.id,
-        content:     "Barcha masalalar yechildi. Kasrlarni qo'shish, ayirish, ko'paytirish...",
-        score:       95,
-        submittedAt: date(-2),
-      },
-    });
-  }
+  // Homework submissions (hw1 is always defined — safe to use directly)
+  await prisma.homeworkSubmission.upsert({
+    where: { homeworkId_studentId: { homeworkId: hw1.id, studentId: std001.id } },
+    update: {},
+    create: {
+      homeworkId:  hw1.id,
+      studentId:   std001.id,
+      content:     "12-masala: 3/4 + 1/2 = 5/4. 13-masala: 2/3 × 6 = 4. 14-masala: ...",
+      score:       90,
+      submittedAt: date(-1),
+    },
+  });
+  await prisma.homeworkSubmission.upsert({
+    where: { homeworkId_studentId: { homeworkId: hw1.id, studentId: std002.id } },
+    update: {},
+    create: {
+      homeworkId:  hw1.id,
+      studentId:   std002.id,
+      content:     "Barcha masalalar yechildi. Kasrlarni qo'shish, ayirish, ko'paytirish...",
+      score:       95,
+      submittedAt: date(-2),
+    },
+  });
   console.log('✅ Uy vazifalari yaratildi');
 
   // ─── 12. Payments ────────────────────────────────────────────────────────
+  // Payments have no unique constraint to upsert on, so delete-then-recreate
+  // is the safest idempotency strategy for seed data.
+  await prisma.payment.deleteMany({ where: { schoolId: school.id } });
+
   const paymentData = [
     { studentId: std001.id, amount: 500000, status: 'paid',    provider: 'cash',  desc: "Mart 2026 — o'quv to'lovi",    paidAt: date(-5),  dueDate: date(-10) },
     { studentId: std001.id, amount: 500000, status: 'pending', provider: 'payme', desc: "Aprel 2026 — o'quv to'lovi",   paidAt: null,      dueDate: date(15)  },
@@ -609,8 +622,10 @@ async function main() {
   console.log('✅ To\'lovlar yaratildi');
 
   // ─── 13. Exams ───────────────────────────────────────────────────────────
+  // Exams have no unique constraint; delete-then-recreate for idempotency.
+  await prisma.exam.deleteMany({ where: { schoolId: school.id } });
   await prisma.exam.createMany({
-    skipDuplicates: true,
+    skipDuplicates: false,
     data: [
       {
         schoolId:    school.id,
@@ -777,7 +792,9 @@ async function main() {
     createdBooks.push(book);
   }
 
-  // Library loans
+  // Library loans — delete existing seed loans before recreating
+  await prisma.libraryLoan.deleteMany({ where: { schoolId: school.id } });
+
   const loanData = [
     { book: createdBooks[0], studentId: std001.id, dueOffset: 14 },
     { book: createdBooks[3], studentId: std002.id, dueOffset: 14 },
@@ -787,14 +804,14 @@ async function main() {
   for (const l of loanData) {
     await prisma.libraryLoan.create({
       data: {
-        schoolId:  school.id,
-        bookId:    l.book.id,
-        studentId: l.studentId,
-        loanDate:  date(-7),
-        dueDate:   date(l.dueOffset),
+        schoolId:   school.id,
+        bookId:     l.book.id,
+        studentId:  l.studentId,
+        loanDate:   date(-7),
+        dueDate:    date(l.dueOffset),
         returnDate: null,
       },
-    }).catch(() => null);
+    });
   }
   console.log('✅ Kutubxona kitoblari va nashriyotlar yaratildi');
 
@@ -887,6 +904,12 @@ async function main() {
   console.log('✅ Oylik hisob-kitob yaratildi (Fevral 2026)');
 
   // ─── 18. Leave Requests ──────────────────────────────────────────────────
+  // Delete existing leave requests + approvals for this school before re-seeding
+  await prisma.leaveApproval.deleteMany({
+    where: { leaveRequest: { schoolId: school.id } },
+  });
+  await prisma.leaveRequest.deleteMany({ where: { schoolId: school.id } });
+
   const leave1 = await prisma.leaveRequest.create({
     data: {
       schoolId:    school.id,
@@ -896,7 +919,7 @@ async function main() {
       endDate:     dateOnly(16),
       status:      'pending',
     },
-  }).catch(() => null);
+  });
 
   const leave2 = await prisma.leaveRequest.create({
     data: {
@@ -907,24 +930,26 @@ async function main() {
       endDate:     dateOnly(11),
       status:      'approved',
     },
-  }).catch(() => null);
+  });
 
-  if (leave2) {
-    await prisma.leaveApproval.upsert({
-      where: { leaveRequestId_approverId: { leaveRequestId: leave2.id, approverId: schoolAdmin.id } },
-      update: {},
-      create: {
-        leaveRequestId: leave2.id,
-        approverId:     schoolAdmin.id,
-        status:         'approved',
-        comment:        "Tasdiqlandi. Kurs tugagach hisobot taqdim eting.",
-        decidedAt:      date(-1),
-      },
-    });
-  }
+  await prisma.leaveApproval.upsert({
+    where: { leaveRequestId_approverId: { leaveRequestId: leave2.id, approverId: schoolAdmin.id } },
+    update: {},
+    create: {
+      leaveRequestId: leave2.id,
+      approverId:     schoolAdmin.id,
+      status:         'approved',
+      comment:        "Tasdiqlandi. Kurs tugagach hisobot taqdim eting.",
+      decidedAt:      date(-1),
+    },
+  });
   console.log("✅ Ta'til so'rovlari yaratildi");
 
   // ─── 19. Notifications ───────────────────────────────────────────────────
+  // Notifications have no unique constraint — delete school's seed notifs
+  // before re-creating to stay idempotent.
+  await prisma.notification.deleteMany({ where: { schoolId: school.id } });
+
   const notifData = [
     { recipientId: std001.id, title: "Yangi baho",               body: "Matematika: test uchun 78 ball oldingiz",           type: 'in_app' as const },
     { recipientId: std001.id, title: "Uy vazifasi",              body: "Matematika: 'Kasrlar' vazifasi ertaga topshiriladi", type: 'in_app' as const },
@@ -948,6 +973,9 @@ async function main() {
   console.log('✅ Bildirishnomalar yaratildi');
 
   // ─── 20. Messages ────────────────────────────────────────────────────────
+  // Messages have no unique constraint — same delete-then-recreate pattern.
+  await prisma.message.deleteMany({ where: { schoolId: school.id } });
+
   const msgData = [
     { senderId: teacher1.id, receiverId: schoolAdmin.id, content: "Assalomu alaykum! 5-A sinf matematika jurnali tayyor. Ko'rib chiqishingizni so'rayman." },
     { senderId: schoolAdmin.id, receiverId: teacher1.id, content: "Rahmat, ko'rib chiqdim. Juda yaxshi." },
