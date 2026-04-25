@@ -37,27 +37,23 @@ FROM node:20-alpine AS runner
 RUN addgroup --system --gid 1001 nodejs && \
     adduser  --system --uid 1001 nestjs
 
-RUN npm install -g pnpm@9
-
 WORKDIR /app
 
-# Copy workspace config + lockfile
+# Copy workspace manifests
 COPY --from=builder /app/pnpm-workspace.yaml ./
 COPY --from=builder /app/package.json ./
-COPY --from=builder /app/pnpm-lock.yaml ./
 COPY --from=builder /app/packages/types/package.json ./packages/types/
 COPY --from=builder /app/apps/backend/package.json ./apps/backend/
 
-# Install prod-only deps
-RUN pnpm install --frozen-lockfile --prod
+# Copy node_modules from builder — includes the generated Prisma client.
+# prisma CLI is a devDependency so we cannot run `prisma generate` in a
+# prod-only install; copying the pre-built modules is the safe alternative.
+COPY --from=builder /app/node_modules ./node_modules
 
 # Copy built artifacts
 COPY --from=builder /app/apps/backend/dist    ./apps/backend/dist
 COPY --from=builder /app/apps/backend/prisma  ./apps/backend/prisma
 COPY --from=builder /app/packages/types/dist  ./packages/types/dist
-
-# Regenerate Prisma client in runner stage
-RUN pnpm --filter backend prisma generate
 
 # Create uploads dir
 RUN mkdir -p /app/apps/backend/uploads && \
