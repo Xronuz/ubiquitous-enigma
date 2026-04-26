@@ -142,13 +142,14 @@ function AwardDialog({ open, onClose }: { open: boolean; onClose: () => void }) 
   const [studentId, setStudentId] = useState('');
   const [amount, setAmount] = useState('');
 
-  const { data: users = [] } = useQuery({
+  const { data: usersResp } = useQuery({
     queryKey: ['users-list'],
-    queryFn:  () => usersApi.getAll({ role: 'student' }),
+    queryFn:  () => usersApi.getAll({ role: 'student', limit: 500 }),
     enabled:  open,
   });
+  const usersList: any[] = (usersResp as any)?.data ?? [];
 
-  const filtered = (users as any[]).filter((u: any) =>
+  const filtered = usersList.filter((u: any) =>
     `${u.firstName} ${u.lastName}`.toLowerCase().includes(search.toLowerCase()),
   );
 
