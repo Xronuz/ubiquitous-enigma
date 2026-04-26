@@ -596,6 +596,7 @@ function StudentExamView({ examId, exam }: {
   examId: string;
   exam: ExamResult['exam'];
 }) {
+  const ask = useConfirm();
   const { toast } = useToast();
   const [phase, setPhase] = useState<ExamPhase>('pre');
   const [session, setSession] = useState<ExamSession | null>(null);
@@ -981,7 +982,6 @@ function SessionMonitorTab({ examId }: { examId: string }) {
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 export default function ExamResultsPage() {
-  const ask = useConfirm();
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { user } = useAuthStore();
