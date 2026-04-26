@@ -36,6 +36,7 @@ import {
   Puzzle,
   GitBranch,
   Target,
+  Coins,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/auth.store';
@@ -115,6 +116,7 @@ const navGroups: NavGroup[] = [
       { label: 'Kutubxona',    href: '/dashboard/library',         icon: Library,        roles: ['director', 'school_admin', 'vice_principal', 'librarian'] },
       { label: "O'quv markazi",href: '/dashboard/learning-center', icon: MonitorPlay,    roles: ['director', 'school_admin', 'vice_principal', 'teacher', 'class_teacher', 'student'] },
       { label: "To'garaklar",  href: '/dashboard/clubs',           icon: Puzzle,         roles: ['director', 'school_admin', 'vice_principal', 'teacher', 'class_teacher', 'accountant', 'librarian', 'student'] },
+      { label: 'EduCoin',       href: '/dashboard/coins',           icon: Coins,          roles: ['director', 'school_admin', 'vice_principal', 'student'] },
       { label: 'Ovqatxona',    href: '/dashboard/canteen',         icon: UtensilsCrossed,roles: ['director', 'school_admin', 'vice_principal', 'teacher', 'class_teacher', 'student'] },
       { label: 'Transport',    href: '/dashboard/transport',       icon: Bus,            roles: ['director', 'school_admin', 'vice_principal', 'student', 'parent'] },
     ],
