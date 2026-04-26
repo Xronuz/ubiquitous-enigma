@@ -65,7 +65,7 @@ const navGroups: NavGroup[] = [
     title: 'ASOSIY',
     items: [
       { label: 'Dashboard',      href: '/dashboard',          icon: LayoutDashboard, roles: ['director', 'school_admin', 'vice_principal', 'teacher', 'class_teacher', 'accountant', 'librarian'] },
-      { label: 'Mening sinfim',  href: '/dashboard/my-class', icon: School,          roles: ['class_teacher', 'teacher'] },
+      { label: 'Mening sinfim',  href: '/dashboard/my-class', icon: School,          roles: ['class_teacher'] },
       { label: 'Mening portalim',href: '/dashboard/student',  icon: UserCircle,      roles: ['student'] },
       { label: 'Farzandlarim',   href: '/dashboard/parent',   icon: Heart,           roles: ['parent'] },
     ],
@@ -74,7 +74,7 @@ const navGroups: NavGroup[] = [
     title: "TA'LIM",
     items: [
       { label: 'Sinflar',           href: '/dashboard/classes',           icon: School,       roles: ACADEMIC_STAFF },
-      { label: 'Dars jadvali',      href: '/dashboard/schedule',          icon: Calendar,     roles: SCHOOL_ROLES },
+      { label: 'Dars jadvali',      href: '/dashboard/schedule',          icon: Calendar,     roles: SCHOOL_ROLES.filter(r => r !== 'parent') },
       { label: 'Akademik kalendar', href: '/dashboard/academic-calendar', icon: CalendarDays, roles: ACADEMIC_STAFF },
       { label: 'Fanlar',            href: '/dashboard/subjects',          icon: BookOpen,     roles: ['school_admin', 'vice_principal'] },
     ],
@@ -104,10 +104,10 @@ const navGroups: NavGroup[] = [
     items: [
       { label: 'Foydalanuvchilar',      href: '/dashboard/users',          icon: Users,        roles: ['school_admin'] },
       { label: 'Filiallar',             href: '/dashboard/branches',       icon: GitBranch,    roles: ['school_admin', 'director'] },
-      { label: 'CRM — Leadlar',         href: '/dashboard/crm',            icon: Target,       roles: ['school_admin', 'director', 'branch_admin', 'vice_principal', 'accountant'] },
+      { label: 'CRM — Leadlar',         href: '/dashboard/crm',            icon: Target,       roles: ['school_admin', 'director', 'branch_admin', 'vice_principal'] },
       { label: "Ta'til so'rovlari",     href: '/dashboard/leave-requests', icon: CalendarOff,  roles: [...ALL_STAFF, 'student'] },
       { label: 'Intizom jurnali',       href: '/dashboard/discipline',     icon: ShieldAlert,  roles: ACADEMIC_STAFF },
-      { label: 'Ota-ona uchrashuvlari', href: '/dashboard/meetings',       icon: CalendarCheck,roles: ACADEMIC_STAFF },
+      { label: 'Ota-ona uchrashuvlari', href: '/dashboard/meetings',       icon: CalendarCheck,roles: ['director', 'school_admin', 'vice_principal', 'class_teacher'] },
     ],
   },
   {
@@ -115,7 +115,7 @@ const navGroups: NavGroup[] = [
     items: [
       { label: 'Kutubxona',    href: '/dashboard/library',         icon: Library,        roles: ['director', 'school_admin', 'vice_principal', 'librarian'] },
       { label: "O'quv markazi",href: '/dashboard/learning-center', icon: MonitorPlay,    roles: ['director', 'school_admin', 'vice_principal', 'teacher', 'class_teacher', 'student'] },
-      { label: "To'garaklar",  href: '/dashboard/clubs',           icon: Puzzle,         roles: ['director', 'school_admin', 'vice_principal', 'teacher', 'class_teacher', 'accountant', 'librarian', 'student'] },
+      { label: "To'garaklar",  href: '/dashboard/clubs',           icon: Puzzle,         roles: ['director', 'school_admin', 'vice_principal', 'teacher', 'class_teacher', 'student'] },
       { label: 'EduCoin',       href: '/dashboard/coins',           icon: Coins,          roles: ['director', 'school_admin', 'vice_principal', 'student'] },
       { label: 'Oshxona',      href: '/dashboard/canteen',         icon: UtensilsCrossed,roles: ['director', 'school_admin', 'vice_principal', 'teacher', 'class_teacher', 'student'] },
       { label: 'Transport',    href: '/dashboard/transport',       icon: Bus,            roles: ['director', 'school_admin', 'vice_principal', 'student', 'parent'] },
