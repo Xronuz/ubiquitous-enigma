@@ -687,7 +687,7 @@ export default function ExamsPage() {
 
       {/* ── Bulk create dialog ── */}
       <Dialog open={bulkOpen} onOpenChange={setBulkOpen}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[92vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2"><Layers className="h-5 w-5 text-primary" /> Ommaviy imtihon yaratish</DialogTitle>
             <DialogDescription>Ko'p sinf × ko'p fan kombinatsiyasi uchun bir vaqtda imtihon yarating</DialogDescription>
@@ -729,56 +729,97 @@ export default function ExamsPage() {
               </div>
             </div>
 
-            {/* Sinflar */}
-            <div className="space-y-1.5">
-              <Label className="flex items-center justify-between">
-                <span>Sinflar <span className="text-destructive">*</span></span>
-                {bForm.classIds.length > 0 && <span className="text-xs text-primary font-normal">{bForm.classIds.length} tanlandi</span>}
-              </Label>
-              {(classes as any[]).length === 0 ? (
-                <p className="text-xs text-muted-foreground italic">Yuklanmoqda...</p>
-              ) : (
-                <div className="max-h-36 overflow-y-auto rounded-lg border p-2 space-y-1">
-                  {(classes as any[]).map((c: any) => (
-                    <label key={c.id} className="flex items-center gap-2 rounded px-2 py-1.5 hover:bg-accent cursor-pointer text-sm">
-                      <Checkbox checked={bForm.classIds.includes(c.id)} onCheckedChange={() => toggleClass(c.id)} />
-                      <span>{c.name}</span>
-                      {bForm.classIds.includes(c.id) && <Check className="h-3 w-3 text-primary ml-auto" />}
-                    </label>
-                  ))}
+            {/* Sinflar + Fanlar (side by side) */}
+            <div className="grid grid-cols-2 gap-4">
+              {/* Sinflar */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <Label>Sinflar <span className="text-destructive">*</span></Label>
+                  <div className="flex gap-1.5">
+                    {bForm.classIds.length > 0 && (
+                      <span className="text-xs text-primary font-medium">{bForm.classIds.length} tanlandi</span>
+                    )}
+                    <button
+                      type="button"
+                      className="text-xs text-muted-foreground hover:text-primary underline"
+                      onClick={() => {
+                        const allIds = (classes as any[]).map((c: any) => c.id);
+                        setBForm(f => ({
+                          ...f,
+                          classIds: f.classIds.length === allIds.length ? [] : allIds,
+                        }));
+                      }}
+                    >
+                      {bForm.classIds.length === (classes as any[]).length ? 'Barchasini bekor' : 'Barchasini tanlash'}
+                    </button>
+                  </div>
                 </div>
-              )}
-              {bErrors.classIds && <p className="text-xs text-destructive">{bErrors.classIds}</p>}
-            </div>
+                {(classes as any[]).length === 0 ? (
+                  <p className="text-xs text-muted-foreground italic">Yuklanmoqda...</p>
+                ) : (
+                  <div className="max-h-60 overflow-y-auto rounded-lg border p-2 space-y-0.5">
+                    {(classes as any[]).map((c: any) => (
+                      <label key={c.id} className={`flex items-center gap-2 rounded px-2 py-1.5 cursor-pointer text-sm transition-colors ${bForm.classIds.includes(c.id) ? 'bg-primary/10 text-primary' : 'hover:bg-accent'}`}>
+                        <Checkbox checked={bForm.classIds.includes(c.id)} onCheckedChange={() => toggleClass(c.id)} />
+                        <span className="flex-1">{c.name}</span>
+                        {bForm.classIds.includes(c.id) && <Check className="h-3 w-3 text-primary shrink-0" />}
+                      </label>
+                    ))}
+                  </div>
+                )}
+                {bErrors.classIds && <p className="text-xs text-destructive">{bErrors.classIds}</p>}
+              </div>
 
-            {/* Fanlar */}
-            <div className="space-y-1.5">
-              <Label className="flex items-center justify-between">
-                <span>Fanlar <span className="text-destructive">*</span></span>
-                {bForm.subjectIds.length > 0 && <span className="text-xs text-primary font-normal">{bForm.subjectIds.length} tanlandi</span>}
-              </Label>
-              {(subjects as any[]).length === 0 ? (
-                <p className="text-xs text-muted-foreground italic">Yuklanmoqda...</p>
-              ) : (
-                <div className="max-h-36 overflow-y-auto rounded-lg border p-2 space-y-1">
-                  {(subjects as any[]).map((s: any) => (
-                    <label key={s.id} className="flex items-center gap-2 rounded px-2 py-1.5 hover:bg-accent cursor-pointer text-sm">
-                      <Checkbox checked={bForm.subjectIds.includes(s.id)} onCheckedChange={() => toggleSubject(s.id)} />
-                      <span>{s.name}</span>
-                      {s.class && <Badge variant="secondary" className="text-xs ml-1">{s.class.name}</Badge>}
-                      {bForm.subjectIds.includes(s.id) && <Check className="h-3 w-3 text-primary ml-auto" />}
-                    </label>
-                  ))}
+              {/* Fanlar */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <Label>Fanlar <span className="text-destructive">*</span></Label>
+                  <div className="flex gap-1.5">
+                    {bForm.subjectIds.length > 0 && (
+                      <span className="text-xs text-primary font-medium">{bForm.subjectIds.length} tanlandi</span>
+                    )}
+                    <button
+                      type="button"
+                      className="text-xs text-muted-foreground hover:text-primary underline"
+                      onClick={() => {
+                        const allIds = (subjects as any[]).map((s: any) => s.id);
+                        setBForm(f => ({
+                          ...f,
+                          subjectIds: f.subjectIds.length === allIds.length ? [] : allIds,
+                        }));
+                      }}
+                    >
+                      {bForm.subjectIds.length === (subjects as any[]).length ? 'Barchasini bekor' : 'Barchasini tanlash'}
+                    </button>
+                  </div>
                 </div>
-              )}
-              {bErrors.subjectIds && <p className="text-xs text-destructive">{bErrors.subjectIds}</p>}
+                {(subjects as any[]).length === 0 ? (
+                  <p className="text-xs text-muted-foreground italic">Yuklanmoqda...</p>
+                ) : (
+                  <div className="max-h-60 overflow-y-auto rounded-lg border p-2 space-y-0.5">
+                    {(subjects as any[]).map((s: any) => (
+                      <label key={s.id} className={`flex items-center gap-2 rounded px-2 py-1.5 cursor-pointer text-sm transition-colors ${bForm.subjectIds.includes(s.id) ? 'bg-primary/10 text-primary' : 'hover:bg-accent'}`}>
+                        <Checkbox checked={bForm.subjectIds.includes(s.id)} onCheckedChange={() => toggleSubject(s.id)} />
+                        <span className="flex-1">{s.name}</span>
+                        {s.class && <Badge variant="secondary" className="text-xs">{s.class.name}</Badge>}
+                        {bForm.subjectIds.includes(s.id) && <Check className="h-3 w-3 text-primary shrink-0" />}
+                      </label>
+                    ))}
+                  </div>
+                )}
+                {bErrors.subjectIds && <p className="text-xs text-destructive">{bErrors.subjectIds}</p>}
+              </div>
             </div>
 
             {/* Preview count */}
             {bForm.classIds.length > 0 && bForm.subjectIds.length > 0 && (
-              <div className="rounded-lg bg-primary/5 border border-primary/20 px-3 py-2 text-sm text-center">
-                <span className="font-semibold text-primary">{bForm.classIds.length * bForm.subjectIds.length}</span> ta imtihon yaratiladi
-                <span className="text-muted-foreground ml-1">({bForm.classIds.length} sinf × {bForm.subjectIds.length} fan)</span>
+              <div className="rounded-lg bg-primary/5 border border-primary/20 px-4 py-3 text-sm text-center">
+                Jami{' '}
+                <span className="font-bold text-primary text-base">{bForm.classIds.length * bForm.subjectIds.length}</span>
+                {' '}ta imtihon yaratiladi
+                <span className="text-muted-foreground ml-1.5 block text-xs mt-0.5">
+                  {bForm.classIds.length} ta sinf × {bForm.subjectIds.length} ta fan
+                </span>
               </div>
             )}
           </div>
