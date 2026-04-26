@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { IsString, IsOptional, IsDateString, IsBoolean, IsEnum } from 'class-validator';
-import * as PDFDocument from 'pdfkit';
+import PDFDocument from 'pdfkit';
 import { PrismaService } from '@/common/prisma/prisma.service';
 import { JwtPayload } from '@eduplatform/types';
 
@@ -119,7 +119,7 @@ export class AcademicCalendarService {
 
     return new Promise((resolve, reject) => {
       const chunks: Buffer[] = [];
-      const doc = new (PDFDocument as any)({ margin: 40, size: 'A4' });
+      const doc = new PDFDocument({ margin: 40, size: 'A4' });
       doc.on('data', (c: Buffer) => chunks.push(c));
       doc.on('end',  () => resolve(Buffer.concat(chunks)));
       doc.on('error', reject);
