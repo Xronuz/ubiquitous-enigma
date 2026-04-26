@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/store/auth.store';
 import { clubsApi, ClubCategory, ClubJoinRequest } from '@/lib/api/clubs';
+import { useConfirm } from '@/store/confirm.store';
 import { usersApi } from '@/lib/api/users';
 import {
   Puzzle, Plus, Users, Calendar, Search, Loader2,
@@ -457,6 +458,7 @@ function LedClubCard({
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function ClubsPage() {
+  const confirm = useConfirm();
   const { user } = useAuthStore();
   const { toast } = useToast();
   const qc = useQueryClient();
@@ -542,8 +544,8 @@ export default function ClubsPage() {
     onError: (err: any) => toast({ title: 'Xatolik', description: err?.response?.data?.message, variant: 'destructive' }),
   });
 
-  const handleDelete = (club: any) => {
-    if (!confirm(`"${club.name}" to'garagini o'chirishni tasdiqlaysizmi?`)) return;
+  const handleDelete = async (club: any) => {
+    if (!await confirm({ title: `"${club.name}" to'garagini o'chirishni tasdiqlaysizmi?`, variant: 'destructive', confirmText: "O'chirish" })) return;
     deleteMutation.mutate(club.id);
   };
 

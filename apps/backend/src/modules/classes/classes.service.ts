@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '@/common/prisma/prisma.service';
 import { RedisService } from '@/common/redis/redis.service';
 import { JwtPayload } from '@eduplatform/types';
@@ -143,6 +143,15 @@ export class ClassesService {
 
   async addStudent(classId: string, studentId: string, currentUser: JwtPayload, branchCtx: string | null = null) {
     await this.findOne(classId, currentUser, branchCtx);
+    const existing = await this.prisma.classStudent.findFirst({
+      where: { studentId, class: { schoolId: currentUser.schoolId! } },
+      select: { classId: true, class: { select: { name: true } } },
+    });
+    if (existing) {
+      throw new ConflictException(
+        `O'quvchi allaqachon "${(existing as any).class?.name ?? 'boshqa'}" sinfida ro'yxatda.`,
+      );
+    }
     const result = await this.prisma.classStudent.create({ data: { classId, studentId } });
     await this.invalidate(currentUser.schoolId!);
     return result;

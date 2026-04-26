@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/store/auth.store';
 import { coinsApi, CoinTransaction, ShopItem } from '@/lib/api/coins';
+import { useConfirm } from '@/store/confirm.store';
 import { usersApi } from '@/lib/api/users';
 import {
   Coins, TrendingUp, TrendingDown, ShoppingBag, History,
@@ -221,6 +222,7 @@ function AwardDialog({ open, onClose }: { open: boolean; onClose: () => void }) 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function CoinsPage() {
+  const confirm = useConfirm();
   const { user } = useAuthStore();
   const { toast } = useToast();
   const qc = useQueryClient();
@@ -386,8 +388,8 @@ export default function CoinsPage() {
                   key={item.id}
                   item={item}
                   balance={balance}
-                  onBuy={() => {
-                    if (!confirm(`"${item.name}" — ${item.cost} coin uchun sotib olasizmi?`)) return;
+                  onBuy={async () => {
+                    if (!await confirm({ title: `"${item.name}" — ${item.cost} coin uchun sotib olasizmi?`, confirmText: 'Sotib olish' })) return;
                     buyMutation.mutate(item.id);
                   }}
                   buying={buyingId === item.id}

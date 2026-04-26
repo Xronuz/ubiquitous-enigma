@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useConfirm } from '@/store/confirm.store';
 import {
   ArrowLeft, Trophy, Users, TrendingUp, TrendingDown,
   CheckCircle, XCircle, Calendar, Clock, BookOpen, Download,
@@ -822,8 +823,8 @@ function StudentExamView({ examId, exam }: {
           ) : (
             <Button
               className="bg-green-600 hover:bg-green-700 text-white"
-              onClick={() => {
-                if (confirm(`Imtihonni topshirasizmi?\n${answeredCount}/${questions.length} ta savolga javob berdingiz.`)) {
+              onClick={async () => {
+                if (await confirm({ title: 'Imtihonni topshirasizmi?', description: `${answeredCount}/${questions.length} ta savolga javob berdingiz.`, confirmText: 'Topshirish' })) {
                   handleSubmit();
                 }
               }}
@@ -980,6 +981,7 @@ function SessionMonitorTab({ examId }: { examId: string }) {
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 export default function ExamResultsPage() {
+  const confirm = useConfirm();
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { user } = useAuthStore();

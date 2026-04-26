@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useConfirm } from '@/store/confirm.store';
 import {
   FileText, Plus, Calendar, CheckCircle, Clock, Loader2,
   Layers, Check, BarChart2, BookOpen, Trash2, HelpCircle,
@@ -57,6 +58,7 @@ function ExamDetailDialog({ exam, open, onClose, canManage }: {
   onClose: () => void;
   canManage: boolean;
 }) {
+  const confirm = useConfirm();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [expandedQ, setExpandedQ] = useState<string | null>(null);
@@ -188,7 +190,7 @@ function ExamDetailDialog({ exam, open, onClose, canManage }: {
                         </Button>
                         {canManage && (
                           <Button size="icon" variant="ghost" className="h-7 w-7 hover:text-destructive"
-                            onClick={() => { if (confirm('Savolni o\'chirasizmi?')) deleteMutation.mutate(q.id); }}
+                            onClick={async () => { if (await confirm({ title: "Savolni o'chirasizmi?", variant: 'destructive', confirmText: "O'chirish" })) deleteMutation.mutate(q.id); }}
                             disabled={deleteMutation.isPending}>
                             <Trash2 className="h-3.5 w-3.5" />
                           </Button>

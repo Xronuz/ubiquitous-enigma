@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useConfirm } from '@/store/confirm.store';
 import {
   MonitorPlay, Plus, Search, BookOpen, Users, TrendingUp,
   Pencil, Trash2, Loader2, UserPlus, X, Star,
@@ -54,6 +55,7 @@ function formatCurrency(n: number) {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function LearningCenterPage() {
+  const confirm = useConfirm();
   const { user } = useAuthStore();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -442,8 +444,8 @@ export default function LearningCenterPage() {
                         <Pencil className="h-3 w-3" />
                       </Button>
                       <Button size="icon" variant="ghost" className="h-6 w-6 text-muted-foreground hover:text-destructive"
-                        onClick={() => {
-                          if (confirm(`"${course.name}" kursini o'chirasizmi?`)) deleteMutation.mutate(course.id);
+                        onClick={async () => {
+                          if (await confirm({ title: `"${course.name}" kursini o'chirasizmi?`, variant: 'destructive', confirmText: "O'chirish" })) deleteMutation.mutate(course.id);
                         }}
                         disabled={deleteMutation.isPending}>
                         <Trash2 className="h-3 w-3" />

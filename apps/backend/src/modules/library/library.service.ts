@@ -104,6 +104,11 @@ export class LibraryService {
       if (!book) throw new NotFoundException('Kitob topilmadi');
       if (book.copiesAvailable < 1) throw new BadRequestException('Kitob nusxasi qolmagan');
 
+      const activeLoan = await tx.libraryLoan.findFirst({
+        where: { bookId: dto.bookId, studentId: dto.studentId, returnDate: null },
+      });
+      if (activeLoan) throw new BadRequestException('Bu o\'quvchi ushbu kitobni hali qaytarmagan.');
+
       const dueDate = new Date();
       dueDate.setDate(dueDate.getDate() + 14); // 2 hafta
 

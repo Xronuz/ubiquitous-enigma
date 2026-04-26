@@ -229,6 +229,18 @@ export class ScheduleService {
     if (!cls) throw new NotFoundException('Sinf topilmadi');
     const branchId = cls.branchId;
 
+    // Teacher ↔ Subject bog'liqligini tekshirish
+    const subject = await this.prisma.subject.findFirst({
+      where: { id: dto.subjectId, schoolId },
+      select: { teacherId: true, name: true },
+    });
+    if (!subject) throw new NotFoundException('Fan topilmadi');
+    if (subject.teacherId !== dto.teacherId) {
+      throw new ConflictException(
+        `Tanlangan o'qituvchi "${subject.name}" faniga biriktirilmagan.`,
+      );
+    }
+
     // UTC minutlar hisoblash
     const startDayMinUtc = toWeeklyUtcMin(dto.dayOfWeek, dto.startTime, timezone);
     const endDayMinUtc   = toWeeklyUtcMin(dto.dayOfWeek, dto.endTime, timezone);
@@ -287,6 +299,22 @@ export class ScheduleService {
     if (!slot) throw new NotFoundException('Jadval sloti topilmadi');
 
     const timezone = await this.getSchoolTimezone(schoolId);
+
+    // Teacher ↔ Subject bog'liqligini tekshirish (agar o'zgartirilsa)
+    const effectiveSubjectId  = dto.subjectId  ?? slot.subjectId;
+    const effectiveTeacherId  = dto.teacherId  ?? slot.teacherId;
+    if (dto.subjectId || dto.teacherId) {
+      const subject = await this.prisma.subject.findFirst({
+        where: { id: effectiveSubjectId, schoolId },
+        select: { teacherId: true, name: true },
+      });
+      if (!subject) throw new NotFoundException('Fan topilmadi');
+      if (subject.teacherId !== effectiveTeacherId) {
+        throw new ConflictException(
+          `Tanlangan o'qituvchi "${subject.name}" faniga biriktirilmagan.`,
+        );
+      }
+    }
 
     // Yangilangan vaqtlar
     const newStart = dto.startTime ?? slot.startTime;

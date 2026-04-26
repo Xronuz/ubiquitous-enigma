@@ -36,7 +36,7 @@ export class GradesController {
   }
 
   @Post()
-  @Roles(UserRole.TEACHER, UserRole.CLASS_TEACHER, UserRole.VICE_PRINCIPAL, UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR)
+  @Roles(UserRole.TEACHER, UserRole.CLASS_TEACHER, UserRole.VICE_PRINCIPAL, UserRole.DIRECTOR)
   @ApiOperation({ summary: 'Baho qo\'shish' })
   create(
     @Body() dto: CreateGradeDto,
@@ -47,7 +47,7 @@ export class GradesController {
   }
 
   @Post('bulk')
-  @Roles(UserRole.TEACHER, UserRole.CLASS_TEACHER, UserRole.VICE_PRINCIPAL, UserRole.SCHOOL_ADMIN)
+  @Roles(UserRole.TEACHER, UserRole.CLASS_TEACHER, UserRole.VICE_PRINCIPAL)
   @ApiOperation({ summary: 'Bir vaqtda butun sinf uchun baho kiritish' })
   bulkCreate(
     @Body() dto: BulkGradesDto,
@@ -106,7 +106,7 @@ export class GradesController {
   }
 
   @Put(':id')
-  @Roles(UserRole.TEACHER, UserRole.CLASS_TEACHER, UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL)
+  @Roles(UserRole.TEACHER, UserRole.CLASS_TEACHER, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL)
   @ApiOperation({ summary: 'Bahoni yangilash' })
   update(
     @Param('id') id: string,
@@ -118,7 +118,7 @@ export class GradesController {
   }
 
   @Delete(':id')
-  @Roles(UserRole.TEACHER, UserRole.VICE_PRINCIPAL, UserRole.SCHOOL_ADMIN)
+  @Roles(UserRole.TEACHER, UserRole.VICE_PRINCIPAL)
   @ApiOperation({ summary: 'Bahoni o\'chirish' })
   remove(
     @Param('id') id: string,

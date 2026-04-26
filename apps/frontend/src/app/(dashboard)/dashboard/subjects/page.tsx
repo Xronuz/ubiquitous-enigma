@@ -17,10 +17,12 @@ import { classesApi } from '@/lib/api/classes';
 import { usersApi } from '@/lib/api/users';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuthStore } from '@/store/auth.store';
+import { useConfirm } from '@/store/confirm.store';
 
 const EMPTY = { name: '', classIds: [] as string[], teacherId: '' };
 
 export default function SubjectsPage() {
+  const confirm = useConfirm();
   const { user } = useAuthStore();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -128,8 +130,8 @@ export default function SubjectsPage() {
                         size="icon"
                         className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
                         disabled={deleteMutation.isPending}
-                        onClick={() => {
-                          if (confirm(`"${subject.name}" fanini o'chirishni tasdiqlaysizmi?`)) {
+                        onClick={async () => {
+                          if (await confirm({ title: `"${subject.name}" fanini o'chirishni tasdiqlaysizmi?`, variant: 'destructive', confirmText: "O'chirish" })) {
                             deleteMutation.mutate(subject.id);
                           }
                         }}

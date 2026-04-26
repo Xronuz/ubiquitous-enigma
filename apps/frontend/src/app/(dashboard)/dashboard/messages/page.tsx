@@ -19,6 +19,7 @@ import { usersApi } from '@/lib/api/users';
 import { useAuthStore } from '@/store/auth.store';
 import { useSocket } from '@/hooks/use-socket';
 import { getInitials, cn } from '@/lib/utils';
+import { useConfirm } from '@/store/confirm.store';
 
 // ─── Read receipt icon ─────────────────────────────────────────────────────
 function ReadStatus({ isRead }: { isRead: boolean }) {
@@ -160,6 +161,7 @@ function CreateGroupDialog({
 
 // ─── Main page ─────────────────────────────────────────────────────────────
 export default function MessagesPage() {
+  const confirm = useConfirm();
   const { user } = useAuthStore();
   const queryClient = useQueryClient();
   const [tab, setTab] = useState<'direct' | 'group'>('direct');
@@ -534,8 +536,8 @@ export default function MessagesPage() {
                     size="icon" variant="ghost"
                     className="h-8 w-8 text-muted-foreground hover:text-destructive"
                     title="Suhbatni o'chirish"
-                    onClick={() => {
-                      if (confirm('Bu suhbatdagi barcha o\'z xabarlaringizni o\'chirasizmi?')) {
+                    onClick={async () => {
+                      if (await confirm({ title: "Bu suhbatdagi barcha o'z xabarlaringizni o'chirasizmi?", variant: 'destructive', confirmText: "O'chirish" })) {
                         deleteConvMutation.mutate(selectedUserId!);
                       }
                     }}
@@ -632,8 +634,8 @@ export default function MessagesPage() {
                   <Button
                     size="sm" variant="ghost"
                     className="text-xs text-muted-foreground hover:text-destructive gap-1"
-                    onClick={() => {
-                      if (confirm('Guruhdan chiqasizmi?')) leaveGroupMutation.mutate(selectedGroupId!);
+                    onClick={async () => {
+                      if (await confirm({ title: 'Guruhdan chiqasizmi?', confirmText: 'Chiqish' })) leaveGroupMutation.mutate(selectedGroupId!);
                     }}
                     disabled={leaveGroupMutation.isPending}
                   >

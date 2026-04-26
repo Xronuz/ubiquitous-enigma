@@ -10,6 +10,7 @@ import { useAuthStore } from '@/store/auth.store';
 import { PageErrorBoundary } from '@/components/providers/error-boundary';
 import { useRealtimeNotifications } from '@/hooks/use-realtime-notifications';
 import { CommandPalette } from '@/components/command-palette';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 function RealtimeProvider() {
   useRealtimeNotifications();
@@ -70,6 +71,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </main>
       </div>
       <CommandPalette open={commandOpen} onOpenChange={setCommandOpen} />
+      <ConfirmDialog />
       <MobileFab />
     </div>
   );

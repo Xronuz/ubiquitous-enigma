@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label';
 import { notificationsApi } from '@/lib/api/notifications';
 import { formatDate, cn } from '@/lib/utils';
 import { useToast } from '@/components/ui/use-toast';
+import { useConfirm } from '@/store/confirm.store';
 
 // ── Notification type → icon + color ──────────────────────────────────────
 const TYPE_CONFIG: Record<string, { icon: React.ElementType; color: string; bg: string }> = {
@@ -131,6 +132,7 @@ function PreferencesPanel() {
 }
 
 export default function NotificationsPage() {
+  const confirm = useConfirm();
   const [showPrefs, setShowPrefs] = useState(false);
   const queryClient = useQueryClient();
 
@@ -196,8 +198,8 @@ export default function NotificationsPage() {
               variant="outline"
               size="sm"
               className="text-destructive hover:text-destructive"
-              onClick={() => {
-                if (confirm('Barcha bildirishnomalarni o\'chirasizmi?')) deleteAllMutation.mutate();
+              onClick={async () => {
+                if (await confirm({ title: "Barcha bildirishnomalarni o'chirasizmi?", variant: 'destructive', confirmText: "O'chirish" })) deleteAllMutation.mutate();
               }}
               disabled={deleteAllMutation.isPending}
             >
