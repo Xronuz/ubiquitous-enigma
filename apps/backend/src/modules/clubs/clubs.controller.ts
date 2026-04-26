@@ -1,10 +1,10 @@
 import {
-  Controller, Get, Post, Put, Delete,
+  Controller, Get, Post, Put, Delete, Patch,
   Body, Param, Query, UseGuards, HttpCode, HttpStatus,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { ClubsService } from './clubs.service';
-import { CreateClubDto, UpdateClubDto } from './dto/clubs.dto';
+import { CreateClubDto, UpdateClubDto, ClubJoinRequestDto } from './dto/clubs.dto';
 import { CurrentUser } from '@/common/decorators/current-user.decorator';
 import { BranchContext } from '@/common/decorators/branch-context.decorator';
 import { Roles } from '@/common/decorators/roles.decorator';
@@ -42,6 +42,13 @@ export class ClubsController {
   @ApiOperation({ summary: 'Mening to\'garaklarim (student)' })
   findMine(@CurrentUser() user: JwtPayload) {
     return this.clubsService.findMine(user);
+  }
+
+  @Get('my-requests')
+  @Roles(UserRole.STUDENT)
+  @ApiOperation({ summary: 'Mening arizalarim (student)' })
+  findMyRequests(@CurrentUser() user: JwtPayload) {
+    return this.clubsService.findMyRequests(user);
   }
 
   @Get('led')
@@ -88,12 +95,54 @@ export class ClubsController {
     return this.clubsService.remove(id, user);
   }
 
+  // ─── Join Request Flow ────────────────────────────────────────────────────
+
   @Post(':id/join')
   @Roles(UserRole.STUDENT)
-  @ApiOperation({ summary: 'To\'garakka a\'zo bo\'lish' })
-  join(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
-    return this.clubsService.join(id, user);
+  @ApiOperation({ summary: 'To\'garakka qo\'shilish arizasi yuborish (PENDING)' })
+  requestJoin(
+    @Param('id') id: string,
+    @Body() dto: ClubJoinRequestDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.clubsService.requestJoin(id, dto, user);
   }
+
+  @Get(':id/requests')
+  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.TEACHER, UserRole.CLASS_TEACHER)
+  @ApiOperation({ summary: 'To\'garakka qo\'shilish arizalari ro\'yxati' })
+  @ApiQuery({ name: 'status', required: false, enum: ['PENDING', 'APPROVED', 'REJECTED'] })
+  getJoinRequests(
+    @Param('id') id: string,
+    @CurrentUser() user: JwtPayload,
+    @Query('status') status?: string,
+  ) {
+    return this.clubsService.getJoinRequests(id, user, status);
+  }
+
+  @Patch(':id/requests/:requestId/approve')
+  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.TEACHER, UserRole.CLASS_TEACHER)
+  @ApiOperation({ summary: 'Arizani tasdiqlash (rahbar yoki admin)' })
+  approveRequest(
+    @Param('id') id: string,
+    @Param('requestId') requestId: string,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.clubsService.approveRequest(id, requestId, user);
+  }
+
+  @Patch(':id/requests/:requestId/reject')
+  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.TEACHER, UserRole.CLASS_TEACHER)
+  @ApiOperation({ summary: 'Arizani rad etish (rahbar yoki admin)' })
+  rejectRequest(
+    @Param('id') id: string,
+    @Param('requestId') requestId: string,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.clubsService.rejectRequest(id, requestId, user);
+  }
+
+  // ─── Membership Management ────────────────────────────────────────────────
 
   @Delete(':id/leave')
   @Roles(UserRole.STUDENT)

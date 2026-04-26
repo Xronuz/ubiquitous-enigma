@@ -1,5 +1,8 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
-import { IsString, IsOptional, IsUUID, IsInt, IsEnum, IsBoolean, MaxLength, Min } from 'class-validator';
+import {
+  IsString, IsOptional, IsUUID, IsInt, IsEnum, IsBoolean,
+  MaxLength, Min, IsArray, Matches,
+} from 'class-validator';
 
 export enum ClubCategoryDto {
   sport    = 'sport',
@@ -9,6 +12,16 @@ export enum ClubCategoryDto {
   tech     = 'tech',
   language = 'language',
   other    = 'other',
+}
+
+export enum DayOfWeekDto {
+  monday    = 'monday',
+  tuesday   = 'tuesday',
+  wednesday = 'wednesday',
+  thursday  = 'thursday',
+  friday    = 'friday',
+  saturday  = 'saturday',
+  sunday    = 'sunday',
 }
 
 export class CreateClubDto {
@@ -31,11 +44,29 @@ export class CreateClubDto {
   @IsUUID()
   leaderId: string;
 
-  @ApiPropertyOptional({ example: 'Chorshanba 15:00-16:00' })
+  @ApiPropertyOptional({ example: 'Chorshanba 15:00-16:00', description: 'Display string (legacy)' })
   @IsOptional()
   @IsString()
   @MaxLength(100)
   schedule?: string;
+
+  @ApiPropertyOptional({ type: [String], enum: DayOfWeekDto, example: ['wednesday', 'friday'] })
+  @IsOptional()
+  @IsArray()
+  @IsEnum(DayOfWeekDto, { each: true })
+  scheduleDays?: DayOfWeekDto[];
+
+  @ApiPropertyOptional({ example: '15:00', description: 'HH:mm format' })
+  @IsOptional()
+  @IsString()
+  @Matches(/^\d{2}:\d{2}$/, { message: 'scheduleStartTime must be HH:mm' })
+  scheduleStartTime?: string;
+
+  @ApiPropertyOptional({ example: '16:00', description: 'HH:mm format' })
+  @IsOptional()
+  @IsString()
+  @Matches(/^\d{2}:\d{2}$/, { message: 'scheduleEndTime must be HH:mm' })
+  scheduleEndTime?: string;
 
   @ApiPropertyOptional({ example: 20 })
   @IsOptional()
@@ -49,4 +80,12 @@ export class UpdateClubDto extends PartialType(CreateClubDto) {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+}
+
+export class ClubJoinRequestDto {
+  @ApiPropertyOptional({ example: 'Iltimos qabul qiling, men juda qiziqaman!' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(300)
+  message?: string;
 }

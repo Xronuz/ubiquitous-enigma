@@ -78,6 +78,12 @@ enum ClubCategory {
   other
 }
 
+enum ClubRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 // ─── Course Scope (O'quv kurs ko'rinishi) ─────────────────────────────────
 enum CourseScope {
   GLOBAL  // Barcha filiallar uchun ko'rinadigan markaziy kurs
@@ -448,8 +454,9 @@ model User {
   coursesTaught   Course[]           @relation("CourseTeacher")
 
   // Clubs
-  ledClubs    Club[]       @relation("ClubLeader")
-  clubMembers ClubMember[] @relation("ClubMembers")
+  ledClubs         Club[]            @relation("ClubLeader")
+  clubMembers      ClubMember[]      @relation("ClubMembers")
+  clubJoinRequests ClubJoinRequest[] @relation("ClubJoinRequests")
 
   // Notification preferences (stored as JSON)
   notifPreferences Json?
@@ -1500,23 +1507,27 @@ model CourseEnrollment {
 // ─── Clubs (To'garaklar) ─────────────────────────────────────────────────────
 
 model Club {
-  id          String       @id @default(uuid())
-  schoolId    String
-  branchId    String?      // Qaysi filialda ishlaydi
-  name        String
-  description String?
-  category    ClubCategory @default(other)
-  leaderId    String
-  schedule    String?      // e.g. "Chorshanba 15:00-16:00"
-  maxMembers  Int?
-  isActive    Boolean      @default(true)
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  id                String       @id @default(uuid())
+  schoolId          String
+  branchId          String?      // Qaysi filialda ishlaydi
+  name              String
+  description       String?
+  category          ClubCategory @default(other)
+  leaderId          String
+  schedule          String?      // Display string e.g. "Chorshanba 15:00-16:00"
+  scheduleDays      DayOfWeek[]  // Structured: days of week club meets
+  scheduleStartTime String?      // "15:00"
+  scheduleEndTime   String?      // "16:00"
+  maxMembers        Int?
+  isActive          Boolean      @default(true)
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
 
-  school   School       @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  branch   Branch?      @relation(fields: [branchId], references: [id], onDelete: SetNull)
-  leader   User         @relation("ClubLeader", fields: [leaderId], references: [id])
-  members  ClubMember[]
+  school       School            @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  branch       Branch?           @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  leader       User              @relation("ClubLeader", fields: [leaderId], references: [id])
+  members      ClubMember[]
+  joinRequests ClubJoinRequest[]
 
   @@index([schoolId])
   @@index([branchId])
@@ -1535,6 +1546,24 @@ model ClubMember {
   @@unique([clubId, studentId])
   @@index([studentId])
   @@map("club_members")
+}
+
+model ClubJoinRequest {
+  id        String            @id @default(uuid())
+  clubId    String
+  studentId String
+  status    ClubRequestStatus @default(PENDING)
+  message   String?
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+
+  club    Club @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  student User @relation("ClubJoinRequests", fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([clubId, studentId])
+  @@index([studentId])
+  @@index([clubId, status])
+  @@map("club_join_requests")
 }
 
 // ─── Treasury (G'azna / Kassa) ────────────────────────────────────────────
