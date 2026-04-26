@@ -393,7 +393,7 @@ function CreateLeadDialog({
               <Select value={form.expectedClassId} onValueChange={set('expectedClassId')}>
                 <SelectTrigger><SelectValue placeholder="Tanlang..." /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">—</SelectItem>
+                  <SelectItem value="__none__">—</SelectItem>
                   {((classesData as any[]) ?? []).map((c: any) => (
                     <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                   ))}
@@ -423,7 +423,7 @@ function CreateLeadDialog({
               phone:           form.phone,
               source:          form.source,
               note:            form.note || undefined,
-              expectedClassId: form.expectedClassId || undefined,
+              expectedClassId: (form.expectedClassId && form.expectedClassId !== '__none__') ? form.expectedClassId : undefined,
             })}
             disabled={mutation.isPending || !form.firstName || !form.lastName || !form.phone || !!dupError}
           >
