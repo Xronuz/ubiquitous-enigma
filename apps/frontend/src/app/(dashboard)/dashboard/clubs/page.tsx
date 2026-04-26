@@ -458,7 +458,7 @@ function LedClubCard({
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function ClubsPage() {
-  const confirm = useConfirm();
+  const ask = useConfirm();
   const { user } = useAuthStore();
   const { toast } = useToast();
   const qc = useQueryClient();
@@ -545,7 +545,7 @@ export default function ClubsPage() {
   });
 
   const handleDelete = async (club: any) => {
-    if (!await confirm({ title: `"${club.name}" to'garagini o'chirishni tasdiqlaysizmi?`, variant: 'destructive', confirmText: "O'chirish" })) return;
+    if (!await ask({ title: `"${club.name}" to'garagini o'chirishni tasdiqlaysizmi?`, variant: 'destructive', confirmText: "O'chirish" })) return;
     deleteMutation.mutate(club.id);
   };
 

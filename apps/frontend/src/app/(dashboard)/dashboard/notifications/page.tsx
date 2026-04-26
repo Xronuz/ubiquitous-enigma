@@ -132,7 +132,7 @@ function PreferencesPanel() {
 }
 
 export default function NotificationsPage() {
-  const confirm = useConfirm();
+  const ask = useConfirm();
   const [showPrefs, setShowPrefs] = useState(false);
   const queryClient = useQueryClient();
 
@@ -199,7 +199,7 @@ export default function NotificationsPage() {
               size="sm"
               className="text-destructive hover:text-destructive"
               onClick={async () => {
-                if (await confirm({ title: "Barcha bildirishnomalarni o'chirasizmi?", variant: 'destructive', confirmText: "O'chirish" })) deleteAllMutation.mutate();
+                if (await ask({ title: "Barcha bildirishnomalarni o'chirasizmi?", variant: 'destructive', confirmText: "O'chirish" })) deleteAllMutation.mutate();
               }}
               disabled={deleteAllMutation.isPending}
             >

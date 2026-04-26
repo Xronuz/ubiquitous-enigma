@@ -161,7 +161,7 @@ function CreateGroupDialog({
 
 // ─── Main page ─────────────────────────────────────────────────────────────
 export default function MessagesPage() {
-  const confirm = useConfirm();
+  const ask = useConfirm();
   const { user } = useAuthStore();
   const queryClient = useQueryClient();
   const [tab, setTab] = useState<'direct' | 'group'>('direct');
@@ -537,7 +537,7 @@ export default function MessagesPage() {
                     className="h-8 w-8 text-muted-foreground hover:text-destructive"
                     title="Suhbatni o'chirish"
                     onClick={async () => {
-                      if (await confirm({ title: "Bu suhbatdagi barcha o'z xabarlaringizni o'chirasizmi?", variant: 'destructive', confirmText: "O'chirish" })) {
+                      if (await ask({ title: "Bu suhbatdagi barcha o'z xabarlaringizni o'chirasizmi?", variant: 'destructive', confirmText: "O'chirish" })) {
                         deleteConvMutation.mutate(selectedUserId!);
                       }
                     }}
@@ -635,7 +635,7 @@ export default function MessagesPage() {
                     size="sm" variant="ghost"
                     className="text-xs text-muted-foreground hover:text-destructive gap-1"
                     onClick={async () => {
-                      if (await confirm({ title: 'Guruhdan chiqasizmi?', confirmText: 'Chiqish' })) leaveGroupMutation.mutate(selectedGroupId!);
+                      if (await ask({ title: 'Guruhdan chiqasizmi?', confirmText: 'Chiqish' })) leaveGroupMutation.mutate(selectedGroupId!);
                     }}
                     disabled={leaveGroupMutation.isPending}
                   >

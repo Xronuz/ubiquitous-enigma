@@ -58,7 +58,7 @@ function ExamDetailDialog({ exam, open, onClose, canManage }: {
   onClose: () => void;
   canManage: boolean;
 }) {
-  const confirm = useConfirm();
+  const ask = useConfirm();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [expandedQ, setExpandedQ] = useState<string | null>(null);
@@ -190,7 +190,7 @@ function ExamDetailDialog({ exam, open, onClose, canManage }: {
                         </Button>
                         {canManage && (
                           <Button size="icon" variant="ghost" className="h-7 w-7 hover:text-destructive"
-                            onClick={async () => { if (await confirm({ title: "Savolni o'chirasizmi?", variant: 'destructive', confirmText: "O'chirish" })) deleteMutation.mutate(q.id); }}
+                            onClick={async () => { if (await ask({ title: "Savolni o'chirasizmi?", variant: 'destructive', confirmText: "O'chirish" })) deleteMutation.mutate(q.id); }}
                             disabled={deleteMutation.isPending}>
                             <Trash2 className="h-3.5 w-3.5" />
                           </Button>

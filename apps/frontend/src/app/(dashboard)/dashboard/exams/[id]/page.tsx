@@ -824,7 +824,7 @@ function StudentExamView({ examId, exam }: {
             <Button
               className="bg-green-600 hover:bg-green-700 text-white"
               onClick={async () => {
-                if (await confirm({ title: 'Imtihonni topshirasizmi?', description: `${answeredCount}/${questions.length} ta savolga javob berdingiz.`, confirmText: 'Topshirish' })) {
+                if (await ask({ title: 'Imtihonni topshirasizmi?', description: `${answeredCount}/${questions.length} ta savolga javob berdingiz.`, confirmText: 'Topshirish' })) {
                   handleSubmit();
                 }
               }}
@@ -981,7 +981,7 @@ function SessionMonitorTab({ examId }: { examId: string }) {
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 export default function ExamResultsPage() {
-  const confirm = useConfirm();
+  const ask = useConfirm();
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { user } = useAuthStore();

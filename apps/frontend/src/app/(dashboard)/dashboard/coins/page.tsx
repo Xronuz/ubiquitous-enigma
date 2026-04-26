@@ -222,7 +222,7 @@ function AwardDialog({ open, onClose }: { open: boolean; onClose: () => void }) 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function CoinsPage() {
-  const confirm = useConfirm();
+  const ask = useConfirm();
   const { user } = useAuthStore();
   const { toast } = useToast();
   const qc = useQueryClient();
@@ -389,7 +389,7 @@ export default function CoinsPage() {
                   item={item}
                   balance={balance}
                   onBuy={async () => {
-                    if (!await confirm({ title: `"${item.name}" — ${item.cost} coin uchun sotib olasizmi?`, confirmText: 'Sotib olish' })) return;
+                    if (!await ask({ title: `"${item.name}" — ${item.cost} coin uchun sotib olasizmi?`, confirmText: 'Sotib olish' })) return;
                     buyMutation.mutate(item.id);
                   }}
                   buying={buyingId === item.id}

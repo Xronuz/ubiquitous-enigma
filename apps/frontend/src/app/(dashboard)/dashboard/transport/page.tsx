@@ -44,7 +44,7 @@ const EMPTY_ROUTE: CreateRouteDto = {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function TransportPage() {
-  const confirm = useConfirm();
+  const ask = useConfirm();
   const { user } = useAuthStore();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -450,7 +450,7 @@ export default function TransportPage() {
                     </Button>
                     <Button size="sm" variant="ghost" className="h-7 text-xs flex-1 text-muted-foreground hover:text-destructive"
                       onClick={async () => {
-                        if (await confirm({ title: `"${route.name}" marshrutini o'chirasizmi?`, variant: 'destructive', confirmText: "O'chirish" })) deleteMutation.mutate(route.id);
+                        if (await ask({ title: `"${route.name}" marshrutini o'chirasizmi?`, variant: 'destructive', confirmText: "O'chirish" })) deleteMutation.mutate(route.id);
                       }}
                       disabled={deleteMutation.isPending}>
                       <Trash2 className="mr-1 h-3 w-3" /> O&apos;chirish

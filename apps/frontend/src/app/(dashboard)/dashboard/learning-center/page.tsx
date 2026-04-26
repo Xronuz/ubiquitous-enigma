@@ -55,7 +55,7 @@ function formatCurrency(n: number) {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function LearningCenterPage() {
-  const confirm = useConfirm();
+  const ask = useConfirm();
   const { user } = useAuthStore();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -445,7 +445,7 @@ export default function LearningCenterPage() {
                       </Button>
                       <Button size="icon" variant="ghost" className="h-6 w-6 text-muted-foreground hover:text-destructive"
                         onClick={async () => {
-                          if (await confirm({ title: `"${course.name}" kursini o'chirasizmi?`, variant: 'destructive', confirmText: "O'chirish" })) deleteMutation.mutate(course.id);
+                          if (await ask({ title: `"${course.name}" kursini o'chirasizmi?`, variant: 'destructive', confirmText: "O'chirish" })) deleteMutation.mutate(course.id);
                         }}
                         disabled={deleteMutation.isPending}>
                         <Trash2 className="h-3 w-3" />
