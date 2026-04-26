@@ -37,6 +37,7 @@ export default function ClassesPage() {
   const canManage = ['school_admin', 'vice_principal'].includes(user?.role ?? '');
 
   const [open, setOpen] = useState(false);
+  const [editClass, setEditClass] = useState<any | null>(null);
   const [form, setForm] = useState(EMPTY);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -54,13 +55,27 @@ export default function ClassesPage() {
     ['teacher', 'class_teacher'].includes(u.role),
   );
 
+  const closeDialog = () => { setOpen(false); setEditClass(null); setForm(EMPTY); setErrors({}); };
+
   const createMutation = useMutation({
     mutationFn: classesApi.create,
     onSuccess: () => {
       toast({ title: "✅ Sinf qo'shildi" });
       queryClient.invalidateQueries({ queryKey: ['classes'] });
-      setOpen(false);
-      setForm(EMPTY);
+      closeDialog();
+    },
+    onError: (err: any) => {
+      const msg = err?.response?.data?.message;
+      toast({ variant: 'destructive', title: 'Xato', description: Array.isArray(msg) ? msg.join(', ') : msg ?? 'Xatolik yuz berdi' });
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: any }) => classesApi.update(id, payload),
+    onSuccess: () => {
+      toast({ title: '✅ Sinf yangilandi' });
+      queryClient.invalidateQueries({ queryKey: ['classes'] });
+      closeDialog();
     },
     onError: (err: any) => {
       const msg = err?.response?.data?.message;
@@ -90,12 +105,24 @@ export default function ClassesPage() {
 
   const handleSubmit = () => {
     if (!validate()) return;
-    createMutation.mutate({
-      name: form.name.trim(),
-      gradeLevel: Number(form.gradeLevel),
-      academicYear: form.academicYear.trim(),
-      classTeacherId: form.classTeacherId || undefined,
-    } as any);
+    const teacherId = form.classTeacherId === '__none__' ? null : (form.classTeacherId || undefined);
+    if (editClass) {
+      updateMutation.mutate({
+        id: editClass.id,
+        payload: {
+          name: form.name.trim(),
+          gradeLevel: Number(form.gradeLevel),
+          classTeacherId: teacherId,
+        },
+      });
+    } else {
+      createMutation.mutate({
+        name: form.name.trim(),
+        gradeLevel: Number(form.gradeLevel),
+        academicYear: form.academicYear.trim(),
+        classTeacherId: teacherId as any,
+      } as any);
+    }
   };
 
   const sel = (k: string) => (v: string) => {
@@ -113,7 +140,7 @@ export default function ClassesPage() {
           <p className="text-muted-foreground">{classList.length} ta sinf mavjud</p>
         </div>
         {canManage && (
-          <Button onClick={() => { setOpen(true); setForm(EMPTY); setErrors({}); }}>
+          <Button onClick={() => { setEditClass(null); setForm(EMPTY); setErrors({}); setOpen(true); }}>
             <Plus className="mr-2 h-4 w-4" /> Sinf qo'shish
           </Button>
         )}
@@ -155,7 +182,20 @@ export default function ClassesPage() {
                           <Eye className="mr-2 h-4 w-4" /> Ko'rish
                         </Link>
                       </DropdownMenuItem>
-                      <DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditClass(cls);
+                          setForm({
+                            name: cls.name,
+                            gradeLevel: String(cls.gradeLevel),
+                            academicYear: cls.academicYear,
+                            classTeacherId: cls.classTeacherId ?? '',
+                          });
+                          setErrors({});
+                          setOpen(true);
+                        }}
+                      >
                         <Pencil className="mr-2 h-4 w-4" /> Tahrirlash
                       </DropdownMenuItem>
                       <DropdownMenuItem
@@ -187,11 +227,11 @@ export default function ClassesPage() {
         </div>
       )}
 
-      {/* Create class modal */}
-      <Dialog open={open} onOpenChange={setOpen}>
+      {/* Create / Edit class modal */}
+      <Dialog open={open} onOpenChange={(v) => { if (!v) closeDialog(); }}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>Yangi sinf qo'shish</DialogTitle>
+            <DialogTitle>{editClass ? 'Sinfni tahrirlash' : "Yangi sinf qo'shish"}</DialogTitle>
             <DialogDescription>Sinf ma'lumotlarini kiriting</DialogDescription>
           </DialogHeader>
 
@@ -235,9 +275,10 @@ export default function ClassesPage() {
 
             <div className="space-y-1.5">
               <Label>Sinf rahbari</Label>
-              <Select value={form.classTeacherId} onValueChange={sel('classTeacherId')}>
+              <Select value={form.classTeacherId || '__none__'} onValueChange={sel('classTeacherId')}>
                 <SelectTrigger><SelectValue placeholder="Ixtiyoriy..." /></SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="__none__">— Sinf rahbarisiz —</SelectItem>
                   {teachers.map((t: any) => (
                     <SelectItem key={t.id} value={t.id}>
                       {t.firstName} {t.lastName}
@@ -249,10 +290,10 @@ export default function ClassesPage() {
           </div>
 
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setOpen(false)}>Bekor qilish</Button>
-            <Button onClick={handleSubmit} disabled={createMutation.isPending}>
-              {createMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Qo'shish
+            <Button variant="outline" onClick={closeDialog}>Bekor qilish</Button>
+            <Button onClick={handleSubmit} disabled={createMutation.isPending || updateMutation.isPending}>
+              {(createMutation.isPending || updateMutation.isPending) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {editClass ? 'Saqlash' : "Qo'shish"}
             </Button>
           </DialogFooter>
         </DialogContent>

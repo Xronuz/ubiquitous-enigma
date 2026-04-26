@@ -18,8 +18,8 @@ export class CreateClassDto {
   @IsNotEmpty()
   academicYear: string;
 
-  @ApiPropertyOptional({ description: 'Sinf rahbari ID' })
+  @ApiPropertyOptional({ description: 'Sinf rahbari ID (null = olib tashlash)' })
   @IsOptional()
   @IsString()
-  classTeacherId?: string;
+  classTeacherId?: string | null;
 }
