@@ -1,38 +1,34 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '@/common/prisma/prisma.service';
 import { JwtPayload } from '@eduplatform/types';
 
-// ─── Shop catalogue (MVP — DB'siz hardcode) ───────────────────────────────────
-
-export const SHOP_ITEMS = [
-  { id: 'free_lesson',  name: 'Darsdan ozod',      cost: 100, description: "1 ta darsdan ozod bo'lish" },
-  { id: 'sticker_pack', name: "Stiker to'plami",   cost:  50, description: "Ajoyib raqamli stikerlar" },
-  { id: 'certificate',  name: 'Faxriy yorliq',      cost: 200, description: 'Yutuq sertifikati (PDF)' },
-  { id: 'extra_time',   name: "Qo'shimcha vaqt",   cost:  75, description: "Uy vazifasi uchun +1 kun" },
-  { id: 'merch_pen',    name: "Maktab ruchkasi",   cost:  30, description: 'Logotipi bor ruchka' },
-] as const;
-
-export type ShopItemId = (typeof SHOP_ITEMS)[number]['id'];
-
-// ─── Coin amounts ─────────────────────────────────────────────────────────────
-
 export const COIN_RULES = {
-  GRADE_EXCELLENT: 10,
-  ATTENDANCE_WEEKLY: 20,
-  DISCIPLINE_PRAISE: 100,
+  GRADE_EXCELLENT:    10,
+  ATTENDANCE_WEEKLY:  20,
+  DISCIPLINE_PRAISE:  100,
   DISCIPLINE_WARNING: -50,
 } as const;
+
+export interface CreateShopItemDto {
+  name:        string;
+  description?: string;
+  cost:        number;
+  emoji?:      string;
+  stock?:      number | null;
+}
 
 @Injectable()
 export class CoinsService {
   constructor(private readonly prisma: PrismaService) {}
 
+  // ─── Internal helpers ──────────────────────────────────────────────────────
+
   async earnCoins(
-    userId: string,
+    userId:   string,
     schoolId: string,
-    amount: number,
-    reason: 'grade_excellent' | 'attendance_weekly' | 'discipline_praise' | 'manual_award',
+    amount:   number,
+    reason:   'grade_excellent' | 'attendance_weekly' | 'discipline_praise' | 'manual_award',
     metadata?: Record<string, unknown>,
   ) {
     if (amount <= 0) return null;
@@ -59,10 +55,10 @@ export class CoinsService {
   }
 
   async deductCoins(
-    userId: string,
+    userId:   string,
     schoolId: string,
-    amount: number,
-    reason: 'discipline_warning' | 'shop_purchase' | 'grade_excellent',
+    amount:   number,
+    reason:   'discipline_warning' | 'shop_purchase' | 'manual_deduct',
     metadata?: Record<string, unknown>,
   ) {
     if (amount <= 0) return null;
@@ -101,6 +97,8 @@ export class CoinsService {
     });
   }
 
+  // ─── Student endpoints ─────────────────────────────────────────────────────
+
   async getBalance(currentUser: JwtPayload) {
     const user = await this.prisma.user.findUnique({
       where:  { id: currentUser.sub },
@@ -117,21 +115,108 @@ export class CoinsService {
     });
   }
 
-  getShopItems() {
-    return SHOP_ITEMS;
+  // ─── Shop item CRUD ────────────────────────────────────────────────────────
+
+  async getShopItems(schoolId: string) {
+    return this.prisma.coinShopItem.findMany({
+      where:   { schoolId, isActive: true },
+      orderBy: { cost: 'asc' },
+    });
   }
 
-  async spendCoins(itemId: string, currentUser: JwtPayload) {
-    const item = SHOP_ITEMS.find((i) => i.id === itemId);
-    if (!item) throw new NotFoundException(`"${itemId}" mahsulot topilmadi`);
+  async getAllShopItems(schoolId: string) {
+    return this.prisma.coinShopItem.findMany({
+      where:   { schoolId },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
 
-    await this.deductCoins(
-      currentUser.sub,
-      currentUser.schoolId!,
-      item.cost,
-      'shop_purchase',
-      { itemId, itemName: item.name },
-    );
+  async createShopItem(dto: CreateShopItemDto, currentUser: JwtPayload) {
+    if (dto.cost <= 0) throw new BadRequestException('Narx musbat bo\'lishi kerak');
+    return this.prisma.coinShopItem.create({
+      data: {
+        schoolId:    currentUser.schoolId!,
+        name:        dto.name,
+        description: dto.description,
+        cost:        dto.cost,
+        emoji:       dto.emoji,
+        stock:       dto.stock ?? null,
+      },
+    });
+  }
+
+  async updateShopItem(id: string, dto: Partial<CreateShopItemDto> & { isActive?: boolean }, currentUser: JwtPayload) {
+    const item = await this.prisma.coinShopItem.findFirst({
+      where: { id, schoolId: currentUser.schoolId! },
+    });
+    if (!item) throw new NotFoundException('Mahsulot topilmadi');
+
+    return this.prisma.coinShopItem.update({
+      where: { id },
+      data: {
+        ...(dto.name        !== undefined && { name:        dto.name }),
+        ...(dto.description !== undefined && { description: dto.description }),
+        ...(dto.cost        !== undefined && { cost:        dto.cost }),
+        ...(dto.emoji       !== undefined && { emoji:       dto.emoji }),
+        ...(dto.stock       !== undefined && { stock:       dto.stock }),
+        ...(dto.isActive    !== undefined && { isActive:    dto.isActive }),
+      },
+    });
+  }
+
+  async deleteShopItem(id: string, currentUser: JwtPayload) {
+    const item = await this.prisma.coinShopItem.findFirst({
+      where: { id, schoolId: currentUser.schoolId! },
+    });
+    if (!item) throw new NotFoundException('Mahsulot topilmadi');
+    await this.prisma.coinShopItem.delete({ where: { id } });
+    return { message: 'Mahsulot o\'chirildi' };
+  }
+
+  // ─── Purchase ──────────────────────────────────────────────────────────────
+
+  async spendCoins(itemId: string, currentUser: JwtPayload) {
+    const item = await this.prisma.coinShopItem.findFirst({
+      where: { id: itemId, schoolId: currentUser.schoolId!, isActive: true },
+    });
+    if (!item) throw new NotFoundException(`Mahsulot topilmadi`);
+    if (item.stock !== null && item.stock <= 0) {
+      throw new BadRequestException('Mahsulot tugagan');
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      // Deduct stock
+      if (item.stock !== null) {
+        await tx.coinShopItem.update({
+          where: { id: itemId },
+          data:  { stock: { decrement: 1 } },
+        });
+      }
+      // Deduct coins (throws if insufficient)
+      const user = await tx.user.findUnique({ where: { id: currentUser.sub }, select: { coins: true } });
+      if (!user) throw new NotFoundException('Foydalanuvchi topilmadi');
+      if (user.coins < item.cost) {
+        throw new BadRequestException(
+          `Yetarli coin yo'q. Mavjud: ${user.coins}, kerak: ${item.cost}`,
+        );
+      }
+      const updated = await tx.user.update({
+        where:  { id: currentUser.sub },
+        data:   { coins: { decrement: item.cost } },
+        select: { id: true, coins: true },
+      });
+      await tx.coinTransaction.create({
+        data: {
+          userId:   currentUser.sub,
+          schoolId: currentUser.schoolId!,
+          amount:   -item.cost,
+          type:     'deduct',
+          reason:   'shop_purchase',
+          balance:  updated.coins,
+          metadata: { itemId: item.id, itemName: item.name } as any,
+        },
+      });
+    });
 
     return {
       message: `"${item.name}" muvaffaqiyatli sotib olindi`,
@@ -139,6 +224,8 @@ export class CoinsService {
       item,
     };
   }
+
+  // ─── Admin: manual award ───────────────────────────────────────────────────
 
   async awardManual(studentId: string, amount: number, currentUser: JwtPayload) {
     const student = await this.prisma.user.findFirst({
@@ -152,13 +239,38 @@ export class CoinsService {
         awardedBy: currentUser.sub,
       });
     } else {
-      await this.deductCoins(studentId, currentUser.schoolId!, Math.abs(amount), 'discipline_warning', {
+      await this.deductCoins(studentId, currentUser.schoolId!, Math.abs(amount), 'manual_deduct', {
         deductedBy: currentUser.sub,
       });
     }
 
     return { studentId, amount };
   }
+
+  // ─── Admin: all students coin balances ─────────────────────────────────────
+
+  async getStudentBalances(currentUser: JwtPayload) {
+    return this.prisma.user.findMany({
+      where:   { schoolId: currentUser.schoolId!, role: 'student' as any, isActive: true },
+      select:  { id: true, firstName: true, lastName: true, coins: true },
+      orderBy: { coins: 'desc' },
+    });
+  }
+
+  // ─── Admin: shop purchase history ─────────────────────────────────────────
+
+  async getShopOrders(currentUser: JwtPayload) {
+    return this.prisma.coinTransaction.findMany({
+      where:   { schoolId: currentUser.schoolId!, reason: 'shop_purchase' },
+      orderBy: { createdAt: 'desc' },
+      take:    100,
+      include: {
+        user: { select: { id: true, firstName: true, lastName: true } },
+      },
+    });
+  }
+
+  // ─── Cron: weekly attendance bonus ────────────────────────────────────────
 
   @Cron(CronExpression.EVERY_WEEK)
   async weeklyAttendanceBonus() {

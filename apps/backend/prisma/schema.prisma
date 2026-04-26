@@ -259,6 +259,7 @@ model School {
   leads            Lead[]            // CRM leadlar
   leadComments     LeadComment[]
   coinTransactions CoinTransaction[]
+  coinShopItems    CoinShopItem[]
 
   @@map("schools")
 }
@@ -1740,4 +1741,22 @@ model CoinTransaction {
   @@index([schoolId])
   @@index([userId, schoolId])
   @@map("coin_transactions")
+}
+
+model CoinShopItem {
+  id          String   @id @default(uuid())
+  schoolId    String
+  name        String
+  description String?
+  cost        Int
+  emoji       String?
+  stock       Int?     // null = cheksiz
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  school School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  @@index([schoolId])
+  @@map("coin_shop_items")
 }

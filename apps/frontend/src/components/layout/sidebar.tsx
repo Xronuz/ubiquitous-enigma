@@ -117,7 +117,7 @@ const navGroups: NavGroup[] = [
       { label: "O'quv markazi",href: '/dashboard/learning-center', icon: MonitorPlay,    roles: ['director', 'school_admin', 'vice_principal', 'teacher', 'class_teacher', 'student'] },
       { label: "To'garaklar",  href: '/dashboard/clubs',           icon: Puzzle,         roles: ['director', 'school_admin', 'vice_principal', 'teacher', 'class_teacher', 'accountant', 'librarian', 'student'] },
       { label: 'EduCoin',       href: '/dashboard/coins',           icon: Coins,          roles: ['director', 'school_admin', 'vice_principal', 'student'] },
-      { label: 'Ovqatxona',    href: '/dashboard/canteen',         icon: UtensilsCrossed,roles: ['director', 'school_admin', 'vice_principal', 'teacher', 'class_teacher', 'student'] },
+      { label: 'Oshxona',      href: '/dashboard/canteen',         icon: UtensilsCrossed,roles: ['director', 'school_admin', 'vice_principal', 'teacher', 'class_teacher', 'student'] },
       { label: 'Transport',    href: '/dashboard/transport',       icon: Bus,            roles: ['director', 'school_admin', 'vice_principal', 'student', 'parent'] },
     ],
   },
