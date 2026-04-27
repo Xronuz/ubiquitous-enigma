@@ -78,53 +78,47 @@ function getActiveSection(pathname: string): string {
   if (pathname === '/dashboard') return '/dashboard';
   const sorted = Object.keys(SECTION_MAP).sort((a, b) => b.length - a.length);
   for (const route of sorted) {
-    if (pathname === route || pathname.startsWith(route + '/')) {
-      return SECTION_MAP[route];
-    }
+    if (pathname === route || pathname.startsWith(route + '/')) return SECTION_MAP[route];
   }
   return '/dashboard';
 }
 
 export function Sidebar() {
-  const pathname = usePathname();
+  const pathname      = usePathname();
   const activeSection = getActiveSection(pathname);
   const { sidebarCollapsed, toggleSidebar } = useUIStore();
   const expanded = !sidebarCollapsed;
 
   return (
     <TooltipProvider delayDuration={200}>
+      {/* ── Floating capsule ──────────────────────────────────────────────── */}
       <aside
         className={cn(
-          'flex h-screen shrink-0 flex-col py-3',
+          'm-4 flex shrink-0 flex-col rounded-3xl py-3',
           'transition-all duration-300 ease-in-out',
-          expanded ? 'w-[240px]' : 'w-[72px]',
+          expanded ? 'w-[232px]' : 'w-[64px]',
         )}
         style={{
+          height: 'calc(100vh - 2rem)',
           background: '#0f3d2e',
-          boxShadow: '4px 0 24px rgba(0,0,0,0.08)',
+          boxShadow: '0 20px 60px rgba(0,0,0,0.18), 0 4px 16px rgba(0,0,0,0.12)',
         }}
       >
-        {/* ── Logo + toggle ── */}
+        {/* Logo + toggle row */}
         <div className={cn(
           'flex h-14 shrink-0 items-center px-3',
-          expanded ? 'justify-between' : 'flex-col gap-1 justify-center',
+          expanded ? 'gap-2' : 'flex-col justify-center gap-1',
         )}>
           <Link
             href="/dashboard"
             className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl transition-opacity hover:opacity-80"
-            style={{
-              background: 'rgba(34,197,94,0.12)',
-              border: '1px solid rgba(34,197,94,0.22)',
-            }}
+            style={{ background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.22)' }}
           >
             <XeduMark />
           </Link>
 
           {expanded && (
-            <span
-              className="ml-2 flex-1 truncate text-sm font-semibold tracking-wide"
-              style={{ color: 'rgba(255,255,255,0.85)' }}
-            >
+            <span className="flex-1 truncate text-sm font-semibold tracking-wide" style={{ color: 'rgba(255,255,255,0.85)' }}>
               Xedu
             </span>
           )}
@@ -132,34 +126,31 @@ export function Sidebar() {
           <button
             onClick={toggleSidebar}
             title={expanded ? 'Yopish' : 'Kengaytirish'}
-            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-all duration-150 hover:bg-white/10"
-            style={{ color: 'rgba(255,255,255,0.4)' }}
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl transition-all hover:bg-white/10"
+            style={{ color: 'rgba(255,255,255,0.38)' }}
           >
             {expanded
-              ? <PanelLeftClose className="h-4 w-4" />
-              : <PanelLeftOpen  className="h-3.5 w-3.5" />
-            }
+              ? <PanelLeftClose className="h-3.5 w-3.5" />
+              : <PanelLeftOpen  className="h-3.5 w-3.5" />}
           </button>
         </div>
 
         {/* Divider */}
         <div className="mx-4 mb-2" style={{ height: '1px', background: 'rgba(255,255,255,0.07)' }} />
 
-        {/* ── Nav ── */}
+        {/* Nav */}
         <nav className="flex flex-1 flex-col gap-[2px] overflow-y-auto overflow-x-hidden px-2 scrollbar-sidebar">
           {NAV.map((item) => {
-            const active = item.exact
-              ? pathname === item.href
-              : activeSection === item.href;
-            const Icon = item.icon;
+            const active = item.exact ? pathname === item.href : activeSection === item.href;
+            const Icon   = item.icon;
 
             const linkEl = (
               <Link
                 href={item.href}
                 className={cn(
-                  'relative flex h-11 items-center gap-3 rounded-xl px-2.5',
+                  'relative flex h-11 items-center gap-3 rounded-2xl px-2.5',
                   'transition-all duration-200',
-                  expanded ? 'w-full' : 'w-11 justify-center',
+                  expanded ? 'w-full' : 'w-10 justify-center',
                   !active && 'hover:bg-white/[0.08]',
                 )}
                 style={active ? {
@@ -174,13 +165,13 @@ export function Sidebar() {
                   />
                 )}
                 <Icon
-                  className="h-[19px] w-[19px] shrink-0 transition-colors duration-200"
+                  className="h-[18px] w-[18px] shrink-0 transition-colors"
                   style={{ color: active ? '#22c55e' : 'rgba(255,255,255,0.38)' }}
                 />
                 {expanded && (
                   <span
-                    className="truncate text-[13.5px] font-medium transition-all duration-200"
-                    style={{ color: active ? '#22c55e' : 'rgba(255,255,255,0.72)' }}
+                    className="truncate text-[13px] font-medium"
+                    style={{ color: active ? '#22c55e' : 'rgba(255,255,255,0.70)' }}
                   >
                     {item.label}
                   </span>
@@ -195,8 +186,8 @@ export function Sidebar() {
                 <TooltipTrigger asChild>{linkEl}</TooltipTrigger>
                 <TooltipContent
                   side="right"
-                  sideOffset={14}
-                  className="rounded-[10px] border px-3 py-1.5 text-[13px] font-medium text-white shadow-[0_8px_32px_rgba(0,0,0,0.45)]"
+                  sideOffset={12}
+                  className="rounded-xl border px-3 py-1.5 text-[13px] font-medium text-white shadow-2xl"
                   style={{
                     background: 'rgba(15,61,46,0.92)',
                     backdropFilter: 'blur(24px) saturate(200%)',

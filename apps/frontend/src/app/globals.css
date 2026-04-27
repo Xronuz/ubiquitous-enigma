@@ -4,7 +4,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ── NProgress — route transition bar ──────────────────────────────────────── */
+/* ── NProgress ──────────────────────────────────────────────────────────────── */
 #nprogress { pointer-events: none; }
 #nprogress .bar {
   background: #22c55e;
@@ -20,45 +20,29 @@
 /* ── Design Tokens ──────────────────────────────────────────────────────────── */
 @layer base {
   :root {
-    /* ─ Core palette (Xedu green brand) ─ */
-    --background:         120 14% 97%;
+    --background:         120 10% 96%;
     --foreground:         222 47% 11%;
     --card:               0 0% 100%;
     --card-foreground:    222 47% 11%;
     --popover:            0 0% 100%;
     --popover-foreground: 222 47% 11%;
-    --primary:            142 71% 45%;
+    --primary:            142 71% 40%;
     --primary-foreground: 0 0% 100%;
-    --secondary:          120 10% 94%;
+    --secondary:          120 8% 93%;
     --secondary-foreground: 222 47% 11%;
-    --muted:              120 8% 93%;
+    --muted:              120 6% 92%;
     --muted-foreground:   215 16% 47%;
-    --accent:             120 10% 91%;
+    --accent:             120 8% 90%;
     --accent-foreground:  222 47% 11%;
     --destructive:        0 84% 60%;
     --destructive-foreground: 0 0% 100%;
-    --border:             120 14% 88%;
-    --input:              120 14% 88%;
-    --ring:               142 71% 45%;
+    --border:             120 10% 87%;
+    --input:              120 10% 87%;
+    --ring:               142 71% 40%;
+    --radius:             0.75rem;
 
-    /* ─ Radius ─ */
-    --radius: 0.75rem;
-
-    /* ─ Elevation shadows (soft) ─ */
-    --shadow-xs:       0 1px 2px 0 rgba(0,0,0,0.03);
-    --shadow-sm:       0 1px 3px 0 rgba(0,0,0,0.05), 0 1px 2px 0 rgba(0,0,0,0.03);
-    --shadow-md:       0 4px 16px -2px rgba(0,0,0,0.06), 0 2px 4px -2px rgba(0,0,0,0.03);
-    --shadow-card:     0 8px 30px 0 rgba(0,0,0,0.04), 0 0 0 1px rgba(255,255,255,0.8);
-    --shadow-elevated: 0 12px 40px -8px rgba(0,0,0,0.10), 0 4px 12px -4px rgba(0,0,0,0.05);
-    --shadow-dialog:   0 20px 60px -12px rgba(0,0,0,0.14), 0 0 0 1px rgba(255,255,255,0.6);
     --shadow-pill:     0 2px 8px rgba(0,0,0,0.06), 0 0 0 1px rgba(255,255,255,0.9);
-
-    /* ─ Sidebar ─ */
-    --sidebar-bg:       215 30% 97%;
-    --sidebar-border:   214 32% 91%;
-    --sidebar-width:    240px;
-    --sidebar-collapsed: 72px;
-    --header-height:    64px;
+    --shadow-elevated: 0 12px 40px -8px rgba(0,0,0,0.10), 0 4px 12px -4px rgba(0,0,0,0.05);
   }
 
   .dark {
@@ -82,75 +66,66 @@
     --input:              217 33% 16%;
     --ring:               142 71% 45%;
 
-    --shadow-xs:       0 1px 2px 0 rgba(0,0,0,0.2);
-    --shadow-sm:       0 1px 3px 0 rgba(0,0,0,0.3), 0 1px 2px 0 rgba(0,0,0,0.2);
-    --shadow-md:       0 4px 6px -1px rgba(0,0,0,0.3), 0 2px 4px -2px rgba(0,0,0,0.2);
-    --shadow-card:     0 8px 30px 0 rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.04);
-    --shadow-elevated: 0 12px 40px -8px rgba(0,0,0,0.5), 0 4px 12px -4px rgba(0,0,0,0.3);
-    --shadow-dialog:   0 20px 60px -12px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.06);
     --shadow-pill:     0 2px 8px rgba(0,0,0,0.3);
-
-    --sidebar-bg:       222 40% 6%;
-    --sidebar-border:   217 33% 14%;
+    --shadow-elevated: 0 12px 40px -8px rgba(0,0,0,0.5);
   }
 }
 
-/* ── Base styles ────────────────────────────────────────────────────────────── */
+/* ── Base ───────────────────────────────────────────────────────────────────── */
 @layer base {
   * { @apply border-border; }
 
   html {
-    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-[#f0f5f1] text-foreground;
     font-feature-settings: 'rlig' 1, 'calt' 1, 'cv02' 1, 'cv03' 1;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
-  h1, h2, h3, h4 {
-    letter-spacing: -0.01em;
-  }
+  h1, h2, h3, h4 { letter-spacing: -0.015em; }
 }
 
-/* ── Component utilities ────────────────────────────────────────────────────── */
+/* ── Components ─────────────────────────────────────────────────────────────── */
 @layer components {
 
-  /* ── Glassmorphism Card (global override) ──────────────────────────────── */
-  .glass-card {
-    background: rgba(255, 255, 255, 0.65);
-    backdrop-filter: blur(20px) saturate(160%);
-    -webkit-backdrop-filter: blur(20px) saturate(160%);
-    border: 1px solid rgba(255, 255, 255, 0.82);
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04), 0 1px 0 rgba(255,255,255,0.9) inset;
-    border-radius: 1.5rem; /* 24px */
-  }
-
-  /* shadcn Card — glass by default on the green-tinted background */
+  /* ── Glassmorphism Card — universal ────────────────────────────────────── */
   .card {
-    background: rgba(255, 255, 255, 0.65) !important;
+    background: rgba(255, 255, 255, 0.60) !important;
     backdrop-filter: blur(20px) saturate(160%);
     -webkit-backdrop-filter: blur(20px) saturate(160%);
-    border: 1px solid rgba(255, 255, 255, 0.82) !important;
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04) !important;
-    border-radius: 1.25rem !important; /* 20px = rounded-2xl */
+    border: 1px solid rgba(255, 255, 255, 0.80) !important;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.05) !important;
+    border-radius: 1.25rem !important;
   }
   .dark .card {
-    background: rgba(15, 23, 42, 0.50) !important;
+    background: rgba(15, 23, 42, 0.55) !important;
     backdrop-filter: blur(20px) saturate(160%);
     -webkit-backdrop-filter: blur(20px) saturate(160%);
-    border: 1px solid rgba(255, 255, 255, 0.08) !important;
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25) !important;
+    border: 1px solid rgba(255, 255, 255, 0.07) !important;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.28) !important;
   }
 
-  /* ── Table: Data Density Preserved ─────────────────────────────────────── */
-  table td,
-  table th {
-    font-size: 0.8125rem;
-    line-height: 1.45;
+  /* ── Empty state — dashed border ───────────────────────────────────────── */
+  .empty-state {
+    border: 2px dashed rgb(226 232 240 / 0.8);
+    background: rgba(255, 255, 255, 0.30);
+    border-radius: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2.5rem 2rem;
+    text-align: center;
+    gap: 0.75rem;
+    color: hsl(var(--muted-foreground));
   }
+
+  /* ── Tables ─────────────────────────────────────────────────────────────── */
+  table td, table th { font-size: 0.8125rem; line-height: 1.45; }
   table th {
     font-weight: 600;
     font-size: 0.75rem;
@@ -158,29 +133,9 @@
     text-transform: uppercase;
     color: hsl(var(--muted-foreground));
   }
-  .table-cell-dense {
-    padding: 0.5rem 0.75rem !important;
-  }
+  .table-cell-dense { padding: 0.5rem 0.75rem !important; }
 
-  /* ── Sidebar nav pill ───────────────────────────────────────────────────── */
-  .nav-pill-active {
-    position: relative;
-    background-color: rgba(34, 197, 94, 0.14);
-    color: #22c55e;
-    font-weight: 600;
-  }
-
-  /* ── Card elevation ─────────────────────────────────────────────────────── */
-  .card-elevated {
-    box-shadow: var(--shadow-card);
-  }
-  .card-elevated:hover {
-    box-shadow: var(--shadow-elevated);
-    transform: translateY(-1px);
-    transition: box-shadow 0.2s ease, transform 0.2s ease;
-  }
-
-  /* ── KPI card accent borders ────────────────────────────────────────────── */
+  /* ── KPI accents ─────────────────────────────────────────────────────────  */
   .kpi-blue   { border-left: 3px solid hsl(221 83% 53%); }
   .kpi-violet { border-left: 3px solid hsl(263 70% 58%); }
   .kpi-emerald{ border-left: 3px solid hsl(142 71% 45%); }
@@ -191,26 +146,24 @@
   .kpi-rose   { border-left: 3px solid hsl(347 77% 55%); }
 }
 
-/* ── Utility overrides ──────────────────────────────────────────────────────── */
+/* ── Utilities ──────────────────────────────────────────────────────────────── */
 @layer utilities {
 
+  /* Scrollbars */
   .scrollbar-sidebar::-webkit-scrollbar { width: 3px; }
   .scrollbar-sidebar::-webkit-scrollbar-track { background: transparent; }
-  .scrollbar-sidebar::-webkit-scrollbar-thumb {
-    background: hsl(var(--border));
-    border-radius: 999px;
-  }
+  .scrollbar-sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 999px; }
 
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+  /* Interactions */
   .btn-press:active { transform: scale(0.97); }
 
-  .card-lift {
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
-  }
-  .card-lift:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-elevated);
-  }
+  .card-lift { transition: transform 0.15s ease, box-shadow 0.15s ease; }
+  .card-lift:hover { transform: translateY(-2px); box-shadow: var(--shadow-elevated); }
 
+  /* Text gradient */
   .text-gradient {
     background: linear-gradient(135deg, #166534, #22c55e);
     -webkit-background-clip: text;
@@ -218,16 +171,14 @@
     background-clip: text;
   }
 
+  /* Glass surface */
   .glass {
-    background: rgba(255, 255, 255, 0.65);
+    background: rgba(255, 255, 255, 0.60);
     backdrop-filter: blur(20px) saturate(160%);
     -webkit-backdrop-filter: blur(20px) saturate(160%);
   }
 
-  .shadow-pill { box-shadow: var(--shadow-pill); }
+  /* Shadows */
+  .shadow-pill     { box-shadow: var(--shadow-pill); }
   .shadow-elevated { box-shadow: var(--shadow-elevated); }
-
-  /* ── Hide scrollbar ────────────────────────────────────────────────────── */
-  .no-scrollbar::-webkit-scrollbar { display: none; }
-  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 }
