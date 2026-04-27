@@ -56,11 +56,9 @@ export function Header() {
     <header
       className={cn(
         'flex h-16 shrink-0 items-center justify-between',
-        // True glassmorphism — works on the slate-100 canvas
-        'bg-white/70 dark:bg-slate-900/70',
+        'bg-white/60 dark:bg-slate-900/70',
         'backdrop-blur-xl',
-        'border-b border-slate-200/60 dark:border-slate-700/40',
-        'shadow-[0_1px_0_rgba(0,0,0,0.04)]',
+        'shadow-[0_4px_24px_rgba(0,0,0,0.05)]',
         'px-4 sm:px-5',
         'sticky top-0 z-30',
       )}

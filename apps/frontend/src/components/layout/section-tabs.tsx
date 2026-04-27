@@ -16,10 +16,10 @@ interface SectionTabsProps {
 }
 
 export function SectionTabs({ tabs, defaultTab }: SectionTabsProps) {
-  const router      = useRouter();
-  const pathname    = usePathname();
+  const router       = useRouter();
+  const pathname     = usePathname();
   const searchParams = useSearchParams();
-  const { user }   = useAuthStore();
+  const { user }     = useAuthStore();
 
   const activeTab = searchParams.get('tab') ?? defaultTab ?? tabs[0]?.id;
 
@@ -39,8 +39,15 @@ export function SectionTabs({ tabs, defaultTab }: SectionTabsProps) {
   };
 
   return (
-    <div className="mb-5 flex items-center gap-1 overflow-x-auto no-scrollbar rounded-full p-1 w-fit max-w-full"
-      style={{ background: 'rgba(15,61,46,0.07)' }}
+    /* Pill container — subtle glass tray */
+    <div
+      className="mb-5 flex items-center gap-1 overflow-x-auto no-scrollbar w-fit max-w-full rounded-full p-1"
+      style={{
+        background: 'rgba(255,255,255,0.55)',
+        backdropFilter: 'blur(16px) saturate(140%)',
+        WebkitBackdropFilter: 'blur(16px) saturate(140%)',
+        boxShadow: '0 2px 12px rgba(0,0,0,0.05), 0 0 0 1px rgba(255,255,255,0.8)',
+      }}
     >
       {visibleTabs.map((tab) => {
         const active = tab.id === activeTab;
@@ -49,15 +56,12 @@ export function SectionTabs({ tabs, defaultTab }: SectionTabsProps) {
             key={tab.id}
             onClick={() => go(tab.id)}
             className={cn(
-              'flex items-center whitespace-nowrap rounded-full px-4 py-1.5',
+              'whitespace-nowrap rounded-full px-4 py-1.5',
               'text-[13.5px] font-medium transition-all duration-200',
               active
-                ? 'text-white shadow-[0_2px_14px_rgba(34,197,94,0.38)]'
-                : 'text-slate-500 hover:text-[#166534] hover:bg-[#22c55e]/10',
+                ? 'bg-white text-emerald-700 shadow-md'
+                : 'text-slate-500 hover:text-slate-700 hover:bg-white/60',
             )}
-            style={active ? {
-              background: 'linear-gradient(135deg, #166534 0%, #22c55e 100%)',
-            } : undefined}
           >
             {tab.label}
           </button>
