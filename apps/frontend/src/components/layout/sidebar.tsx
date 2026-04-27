@@ -63,7 +63,11 @@ const SECTION_MAP: Record<string, string> = {
   '/dashboard/announcements':    '/dashboard/comms',
 };
 
-const NAV = [
+import type { LucideIcon } from 'lucide-react';
+
+type NavItem = { label: string; href: string; icon: LucideIcon; exact?: boolean };
+
+const NAV: NavItem[] = [
   { label: 'Dashboard',       href: '/dashboard',            icon: LayoutDashboard, exact: true },
   { label: "Ta'lim",          href: '/dashboard/education',  icon: BookOpen },
   { label: "O'quvchilar",     href: '/dashboard/students',   icon: Users },
@@ -71,7 +75,7 @@ const NAV = [
   { label: 'Xodimlar',        href: '/dashboard/staff',      icon: Briefcase },
   { label: 'Resurslar',       href: '/dashboard/resources',  icon: Package },
   { label: 'Kommunikatsiya',  href: '/dashboard/comms',      icon: MessageSquare },
-] as const;
+];
 
 function XeduMark() {
   return (
