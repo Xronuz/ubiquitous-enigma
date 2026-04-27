@@ -31,10 +31,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        e.preventDefault();
-        setCommandOpen((p) => !p);
-      }
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); setCommandOpen(p => !p); }
     };
     document.addEventListener('keydown', down);
     return () => document.removeEventListener('keydown', down);
@@ -48,7 +45,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   if (!_hasHydrated) {
     return (
-      <div className="flex h-screen items-center justify-center bg-[#f0f5f1]">
+      <div className="flex h-screen items-center justify-center bg-[#f4f7f4]">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-emerald-500 border-t-transparent" />
       </div>
     );
@@ -59,30 +56,39 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <HeaderActionsProvider>
       {/*
-        Island UI — mayin yashil kanvas ustida 3 ta mustaqil orolcha:
-          1. Sidebar island   (chapda, o'z m-4 rounded-3xl bilan)
-          2. Header island    (o'ng ustida, m-4 rounded-3xl bilan)
-          3. Main content     (shaffof, ramkasiz — faqat ichki card'lar glass)
+        Island UI kanvasi:
+        ┌─────────────────────────────────────────────────────┐
+        │  bg-[#f4f7f4]  (ochiq yashil-kulrang kanvas)        │
+        │                                                     │
+        │  [Sidebar island]  [Header island        ]          │
+        │  (m-4 rounded-3xl) (mt-4 mx-4 rounded-3xl)         │
+        │                    [Shaffof kontent oyna ]          │
+        │                    (card'lar glass, wrapper yo'q)   │
+        └─────────────────────────────────────────────────────┘
+
+        ⚠️  Root div da overflow-hidden YO'Q — orolchalar soyasi ko'rinadi.
+            overflow-hidden faqat ichki kontent ustuniga berilgan.
       */}
-      <div className="flex h-screen overflow-hidden bg-[#f0f5f1] dark:bg-[#0a0f0a]">
+      <div className="flex h-screen bg-[#f4f7f4] dark:bg-[#0a0f0a]">
         <RealtimeProvider />
 
-        {/* ── Sidebar island ──────────────────────────────────────────────── */}
+        {/* ── Sidebar island — root farzandi, soyasi to'liq ko'rinadi ──── */}
         <div className="hidden md:block shrink-0">
           <Sidebar />
         </div>
 
-        {/* ── Right column: header island + transparent content ───────────── */}
+        {/* ── O'ng ustun: header + kontent ────────────────────────────── */}
+        {/* overflow-hidden faqat shu ustun ichida — sidebar soyasiga ta'sir etmaydi */}
         <div className="flex flex-1 min-w-0 flex-col overflow-hidden">
 
-          {/* Header island */}
-          <div className="shrink-0 px-4 pt-4 pb-3">
+          {/* Header island: mt-4 mx-4 — kanvasdan ajralib turadi */}
+          <div className="shrink-0 mt-4 mx-4">
             <Header />
           </div>
 
-          {/* Main content — shaffof, ramkasiz, faqat ichki card'lar glass */}
+          {/* Shaffof kontent oyna — ramkasiz, fonsiz */}
           <main
-            className="flex-1 overflow-y-auto px-4 pb-4"
+            className="flex-1 overflow-y-auto px-4 pt-3 pb-4 min-h-0"
             onClick={() => { if (!sidebarCollapsed) setSidebarCollapsed(true); }}
           >
             <BreadcrumbNav />

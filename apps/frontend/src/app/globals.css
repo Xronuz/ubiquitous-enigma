@@ -80,7 +80,7 @@
   }
 
   body {
-    @apply bg-[#f0f5f1] text-foreground;
+    @apply bg-[#f4f7f4] text-foreground;
     font-feature-settings: 'rlig' 1, 'calt' 1, 'cv02' 1, 'cv03' 1;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;

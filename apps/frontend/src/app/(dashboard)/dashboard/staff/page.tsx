@@ -1,54 +1,56 @@
 'use client';
 
-import { Suspense } from 'react';
+import { Suspense, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { Plus, UserPlus } from 'lucide-react';
 import { SectionTabs } from '@/components/layout/section-tabs';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
+import { usePageActions } from '@/lib/header-actions-context';
 
-import UsersPage        from '../users/page';
-import BranchesPage     from '../branches/page';
-import CrmPage          from '../crm/page';
+import UsersPage         from '../users/page';
+import BranchesPage      from '../branches/page';
+import CrmPage           from '../crm/page';
 import LeaveRequestsPage from '../leave-requests/page';
-import DisciplinePage   from '../discipline/page';
-import MeetingsPage     from '../meetings/page';
+import DisciplinePage    from '../discipline/page';
+import MeetingsPage      from '../meetings/page';
 
 const TABS = [
-  {
-    id: 'users',
-    label: 'Foydalanuvchilar',
-    roles: ['school_admin'],
-  },
-  {
-    id: 'branches',
-    label: 'Filiallar',
-    roles: ['school_admin', 'director'],
-  },
-  {
-    id: 'crm',
-    label: 'CRM — Leadlar',
-    roles: ['school_admin', 'director', 'branch_admin', 'vice_principal'],
-  },
-  {
-    id: 'leave',
-    label: "Ta'til so'rovlari",
-    roles: ['director', 'school_admin', 'vice_principal', 'teacher', 'class_teacher', 'accountant', 'librarian'],
-  },
-  {
-    id: 'discipline',
-    label: 'Intizom jurnali',
-    roles: ['director', 'school_admin', 'vice_principal', 'teacher', 'class_teacher'],
-  },
-  {
-    id: 'meetings',
-    label: 'Uchrashuvlar',
-    roles: ['director', 'school_admin', 'vice_principal', 'class_teacher'],
-  },
+  { id: 'users',      label: 'Foydalanuvchilar', roles: ['school_admin'] },
+  { id: 'branches',   label: 'Filiallar',         roles: ['school_admin', 'director'] },
+  { id: 'crm',        label: 'CRM — Leadlar',     roles: ['school_admin', 'director', 'branch_admin', 'vice_principal'] },
+  { id: 'leave',      label: "Ta'til so'rovlari", roles: ['director', 'school_admin', 'vice_principal', 'teacher', 'class_teacher', 'accountant', 'librarian'] },
+  { id: 'discipline', label: 'Intizom jurnali',   roles: ['director', 'school_admin', 'vice_principal', 'teacher', 'class_teacher'] },
+  { id: 'meetings',   label: 'Uchrashuvlar',      roles: ['director', 'school_admin', 'vice_principal', 'class_teacher'] },
 ];
+
+const TAB_ACTIONS: Record<string, React.ReactNode> = {
+  users: (
+    <Button size="sm" onClick={() => document.dispatchEvent(new CustomEvent('users:open-add'))}>
+      <UserPlus className="h-4 w-4" /> Foydalanuvchi qo&apos;shish
+    </Button>
+  ),
+  branches: (
+    <Button size="sm" onClick={() => document.dispatchEvent(new CustomEvent('branches:open-add'))}>
+      <Plus className="h-4 w-4" /> Filial qo&apos;shish
+    </Button>
+  ),
+  crm: (
+    <Button size="sm" onClick={() => document.dispatchEvent(new CustomEvent('crm:open-add'))}>
+      <Plus className="h-4 w-4" /> Lead qo&apos;shish
+    </Button>
+  ),
+  meetings: (
+    <Button size="sm" onClick={() => document.dispatchEvent(new CustomEvent('meetings:open-add'))}>
+      <Plus className="h-4 w-4" /> Uchrashuv qo&apos;shish
+    </Button>
+  ),
+};
 
 function TabFallback() {
   return (
     <div className="space-y-2">
-      {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-14 rounded-lg" />)}
+      {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-14 rounded-2xl" />)}
     </div>
   );
 }
@@ -65,20 +67,24 @@ function TabContent({ tab }: { tab: string }) {
 }
 
 function StaffContent() {
-  const searchParams = useSearchParams();
-  const tab = searchParams.get('tab') ?? 'users';
+  const searchParams   = useSearchParams();
+  const tab            = searchParams.get('tab') ?? 'users';
+  const { setActions } = usePageActions();
+
+  useEffect(() => {
+    setActions(TAB_ACTIONS[tab] ?? null);
+    return () => setActions(null);
+  }, [tab, setActions]);
 
   return (
     <div>
       <div className="mb-1">
-        <h1 className="text-2xl font-bold text-[#1e293b] dark:text-white">Xodimlar</h1>
+        <h1 className="text-xl font-bold text-[#1e293b] dark:text-white">Xodimlar</h1>
         <p className="text-sm text-muted-foreground">Foydalanuvchilar, filiallar, CRM va boshqaruv</p>
       </div>
-
-      <div className="mt-4">
+      <div className="mt-3">
         <SectionTabs tabs={TABS} defaultTab="users" />
       </div>
-
       <Suspense fallback={<TabFallback />}>
         <TabContent tab={tab} />
       </Suspense>
@@ -87,9 +93,5 @@ function StaffContent() {
 }
 
 export default function StaffPage() {
-  return (
-    <Suspense>
-      <StaffContent />
-    </Suspense>
-  );
+  return <Suspense><StaffContent /></Suspense>;
 }
