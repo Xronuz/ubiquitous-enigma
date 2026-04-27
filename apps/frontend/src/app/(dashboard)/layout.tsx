@@ -58,31 +58,31 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <HeaderActionsProvider>
-      {/* ── Canvas ─────────────────────────────────────────────────────────── */}
-      <div className="flex h-screen bg-[#f0f5f1] dark:bg-[#0a0f0a] overflow-hidden">
+      {/*
+        Island UI — mayin yashil kanvas ustida 3 ta mustaqil orolcha:
+          1. Sidebar island   (chapda, o'z m-4 rounded-3xl bilan)
+          2. Header island    (o'ng ustida, m-4 rounded-3xl bilan)
+          3. Main content     (shaffof, ramkasiz — faqat ichki card'lar glass)
+      */}
+      <div className="flex h-screen overflow-hidden bg-[#f0f5f1] dark:bg-[#0a0f0a]">
         <RealtimeProvider />
 
-        {/* ── Sidebar capsule ─────────────────────────────────────────────── */}
+        {/* ── Sidebar island ──────────────────────────────────────────────── */}
         <div className="hidden md:block shrink-0">
           <Sidebar />
         </div>
 
-        {/* ── Main capsule ────────────────────────────────────────────────── */}
-        <div
-          className="flex flex-1 min-w-0 flex-col my-4 mr-4 overflow-hidden rounded-3xl"
-          style={{
-            background: 'rgba(255,255,255,0.62)',
-            backdropFilter: 'blur(24px) saturate(180%)',
-            WebkitBackdropFilter: 'blur(24px) saturate(180%)',
-            border: '1px solid rgba(255,255,255,0.82)',
-            boxShadow: '0 8px 40px rgba(0,0,0,0.06), 0 1px 0 rgba(255,255,255,0.9) inset',
-          }}
-        >
-          <Header />
+        {/* ── Right column: header island + transparent content ───────────── */}
+        <div className="flex flex-1 min-w-0 flex-col overflow-hidden">
 
-          {/* Content area — click collapses sidebar */}
+          {/* Header island */}
+          <div className="shrink-0 px-4 pt-4 pb-3">
+            <Header />
+          </div>
+
+          {/* Main content — shaffof, ramkasiz, faqat ichki card'lar glass */}
           <main
-            className="flex-1 overflow-y-auto px-5 pt-2 pb-6"
+            className="flex-1 overflow-y-auto px-4 pb-4"
             onClick={() => { if (!sidebarCollapsed) setSidebarCollapsed(true); }}
           >
             <BreadcrumbNav />

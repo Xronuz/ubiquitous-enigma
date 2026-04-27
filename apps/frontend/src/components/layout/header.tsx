@@ -1,7 +1,10 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { LogOut, Moon, Sun, Search, User, ChevronDown, Settings, ClipboardList, GraduationCap, Activity } from 'lucide-react';
+import {
+  LogOut, Moon, Sun, Search, User, ChevronDown,
+  Settings, ClipboardList, GraduationCap, Activity,
+} from 'lucide-react';
 import { MobileNav } from '@/components/layout/mobile-nav';
 import { NotificationDrawer } from '@/components/layout/notification-drawer';
 import { BranchSwitcher } from '@/components/layout/branch-switcher';
@@ -46,46 +49,45 @@ export function Header() {
   const ringColor = user ? (ROLE_COLORS[user.role] ?? 'ring-emerald-500') : 'ring-emerald-500';
 
   return (
-    /* Sits at the top of the main capsule — no border, just a subtle separator */
-    <header className="flex h-14 shrink-0 items-center justify-between gap-3 px-5 border-b border-black/[0.05] dark:border-white/[0.06]">
-
+    /* ── Header island — suzuvchi kapsula ───────────────────────────────── */
+    <header
+      className="flex h-14 w-full items-center justify-between gap-3 rounded-3xl px-4"
+      style={{
+        background: 'rgba(255,255,255,0.72)',
+        backdropFilter: 'blur(24px) saturate(180%)',
+        WebkitBackdropFilter: 'blur(24px) saturate(180%)',
+        border: '1px solid rgba(255,255,255,0.86)',
+        boxShadow: '0 4px 24px rgba(0,0,0,0.05), 0 1px 0 rgba(255,255,255,0.9) inset',
+      }}
+    >
       {/* Left: mobile nav + search */}
       <div className="flex items-center gap-2.5">
         <MobileNav />
-
-        {/* Search pill */}
         <button
           onClick={() => document.dispatchEvent(new CustomEvent('open-command-palette'))}
-          className={cn(
-            'hidden md:flex items-center gap-2.5 rounded-full px-4 h-9 w-56',
-            'bg-black/[0.04] dark:bg-white/[0.06]',
-            'text-sm text-muted-foreground',
-            'hover:bg-black/[0.07] transition-colors duration-150 cursor-pointer',
-            'border border-black/[0.05] dark:border-white/[0.07]',
-          )}
+          className="hidden md:flex items-center gap-2.5 rounded-full px-4 h-9 w-52 bg-black/[0.04] border border-black/[0.05] text-[13px] text-muted-foreground hover:bg-black/[0.07] transition-colors cursor-pointer"
         >
           <Search className="h-3.5 w-3.5 shrink-0 text-slate-400" />
-          <span className="flex-1 text-left text-[13px]">Qidiruv...</span>
-          <kbd className="hidden sm:inline-flex h-5 select-none items-center gap-1 rounded-md bg-black/[0.06] px-1.5 font-mono text-[10px] text-slate-500">
+          <span className="flex-1 text-left">Qidiruv...</span>
+          <kbd className="hidden sm:inline-flex h-5 select-none items-center rounded-md bg-black/[0.06] px-1.5 font-mono text-[10px] text-slate-500">
             <span className="text-[11px]">⌘</span>K
           </kbd>
         </button>
       </div>
 
-      {/* Center: contextual page actions (injected by current page) */}
+      {/* Center: contextual page actions */}
       <div className="flex flex-1 items-center justify-center">
         <HeaderActionsSlot />
       </div>
 
-      {/* Right: utility buttons + profile */}
+      {/* Right: utilities + profile */}
       <div className="flex items-center gap-1.5">
         <BranchSwitcher />
 
-        {/* Theme toggle */}
         <button
           onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
           title="Temani almashtirish"
-          className="relative flex h-9 w-9 items-center justify-center rounded-full bg-black/[0.04] dark:bg-white/[0.06] border border-black/[0.05] hover:bg-black/[0.08] transition-colors duration-150 text-slate-500"
+          className="relative flex h-9 w-9 items-center justify-center rounded-full bg-black/[0.04] border border-black/[0.05] hover:bg-black/[0.08] transition-colors text-slate-500"
         >
           <Sun  className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
           <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
@@ -93,16 +95,15 @@ export function Header() {
 
         <NotificationDrawer />
 
-        {/* Profile dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button className={cn(
               'flex items-center gap-2 rounded-full pl-1.5 pr-3 py-1.5 ml-1',
-              'bg-black/[0.04] dark:bg-white/[0.06] border border-black/[0.05] dark:border-white/[0.07]',
-              'hover:bg-black/[0.07] transition-colors duration-150',
+              'bg-black/[0.04] border border-black/[0.05]',
+              'hover:bg-black/[0.07] transition-colors',
               'focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40',
             )}>
-              <Avatar className={cn('h-7 w-7 ring-2 ring-offset-1 ring-offset-white/80 transition-all', ringColor)}>
+              <Avatar className={cn('h-7 w-7 ring-2 ring-offset-1 ring-offset-white/80', ringColor)}>
                 <AvatarImage src={undefined} />
                 <AvatarFallback className="text-[11px] font-semibold bg-emerald-500/10 text-emerald-700">
                   {user ? getInitials(user.firstName, user.lastName) : 'U'}
@@ -122,14 +123,12 @@ export function Header() {
               <p className="text-xs font-normal text-muted-foreground mt-0.5">{user ? getRoleLabel(user.role) : ''}</p>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-
             <DropdownMenuItem onClick={() => router.push('/dashboard/profile')} className="cursor-pointer">
               <User className="mr-2 h-4 w-4 text-muted-foreground" /> Profil
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => router.push('/dashboard/settings')} className="cursor-pointer">
               <Settings className="mr-2 h-4 w-4 text-muted-foreground" /> Sozlamalar
             </DropdownMenuItem>
-
             {user && ['director', 'school_admin', 'vice_principal', 'super_admin'].includes(user.role) && (
               <>
                 <DropdownMenuSeparator />
@@ -149,12 +148,8 @@ export function Header() {
                 )}
               </>
             )}
-
             <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onClick={handleLogout}
-              className="cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/8"
-            >
+            <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/8">
               <LogOut className="mr-2 h-4 w-4" /> Chiqish
             </DropdownMenuItem>
           </DropdownMenuContent>
