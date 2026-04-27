@@ -58,7 +58,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     // ── App shell — slate-100 canvas so shadows/glass pop visually ──
-    <div className="flex h-screen overflow-hidden bg-[#EEF0F6] dark:bg-slate-950">
+    <div className="flex h-screen overflow-hidden bg-[#EEF5EE] dark:bg-slate-950">
       <RealtimeProvider />
       <div className="hidden md:flex">
         <Sidebar />

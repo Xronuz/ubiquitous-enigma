@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { LogOut, Moon, Sun, Search, User, ChevronDown } from 'lucide-react';
+import { LogOut, Moon, Sun, Search, User, ChevronDown, Settings, ClipboardList, GraduationCap, Activity } from 'lucide-react';
 import { MobileNav } from '@/components/layout/mobile-nav';
 import { NotificationDrawer } from '@/components/layout/notification-drawer';
 import { BranchSwitcher } from '@/components/layout/branch-switcher';
@@ -141,18 +141,50 @@ export function Header() {
             </button>
           </DropdownMenuTrigger>
 
-          <DropdownMenuContent align="end" className="w-52 shadow-elevated">
-            <DropdownMenuLabel className="text-xs font-normal text-muted-foreground pb-1">
-              Mening akkauntim
+          <DropdownMenuContent align="end" className="w-56 shadow-elevated">
+            {/* User info */}
+            <DropdownMenuLabel className="pb-1">
+              <p className="text-sm font-semibold">{user?.firstName} {user?.lastName}</p>
+              <p className="text-xs font-normal text-muted-foreground mt-0.5">{user ? getRoleLabel(user.role) : ''}</p>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onClick={() => router.push('/dashboard/profile')}
-              className="cursor-pointer"
-            >
-              <User className="mr-2 h-4 w-4" />
+
+            {/* Personal */}
+            <DropdownMenuItem onClick={() => router.push('/dashboard/profile')} className="cursor-pointer">
+              <User className="mr-2 h-4 w-4 text-muted-foreground" />
               Profil
             </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => router.push('/dashboard/settings')} className="cursor-pointer">
+              <Settings className="mr-2 h-4 w-4 text-muted-foreground" />
+              Sozlamalar
+            </DropdownMenuItem>
+
+            {/* Admin-only system items */}
+            {user && ['director', 'school_admin', 'vice_principal', 'super_admin'].includes(user.role) && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel className="text-[11px] font-normal text-muted-foreground/70 py-0.5">
+                  Tizim
+                </DropdownMenuLabel>
+                <DropdownMenuItem onClick={() => router.push('/dashboard/audit-log')} className="cursor-pointer">
+                  <ClipboardList className="mr-2 h-4 w-4 text-muted-foreground" />
+                  Audit Log
+                </DropdownMenuItem>
+                {user.role === 'super_admin' && (
+                  <>
+                    <DropdownMenuItem onClick={() => router.push('/dashboard/schools')} className="cursor-pointer">
+                      <GraduationCap className="mr-2 h-4 w-4 text-muted-foreground" />
+                      Maktablar
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => router.push('/dashboard/system-health')} className="cursor-pointer">
+                      <Activity className="mr-2 h-4 w-4 text-muted-foreground" />
+                      Tizim holati
+                    </DropdownMenuItem>
+                  </>
+                )}
+              </>
+            )}
+
             <DropdownMenuSeparator />
             <DropdownMenuItem
               onClick={handleLogout}
