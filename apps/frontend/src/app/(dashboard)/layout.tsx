@@ -7,6 +7,7 @@ import { Header } from '@/components/layout/header';
 import { BreadcrumbNav } from '@/components/layout/breadcrumb-nav';
 import { MobileFab } from '@/components/layout/mobile-fab';
 import { useAuthStore } from '@/store/auth.store';
+import { useUIStore } from '@/store/ui.store';
 import { PageErrorBoundary } from '@/components/providers/error-boundary';
 import { useRealtimeNotifications } from '@/hooks/use-realtime-notifications';
 import { CommandPalette } from '@/components/command-palette';
@@ -20,6 +21,7 @@ function RealtimeProvider() {
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { isAuthenticated, _hasHydrated } = useAuthStore();
+  const { sidebarCollapsed, setSidebarCollapsed } = useUIStore();
   const [commandOpen, setCommandOpen] = useState(false);
 
   useEffect(() => {
@@ -45,11 +47,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return () => document.removeEventListener('open-command-palette', handler);
   }, []);
 
-  // Wait for store hydration before deciding to redirect or render
   if (!_hasHydrated) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-emerald-500 border-t-transparent" />
       </div>
     );
   }
@@ -57,7 +58,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   if (!isAuthenticated) return null;
 
   return (
-    // ── App shell — slate-100 canvas so shadows/glass pop visually ──
     <div className="flex h-screen overflow-hidden bg-gradient-to-br from-[#f4f7f4] to-[#e8eee8] dark:bg-slate-950">
       <RealtimeProvider />
       <div className="hidden md:flex">
@@ -65,7 +65,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </div>
       <div className="flex flex-1 flex-col overflow-hidden">
         <Header />
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6">
+        {/* Click anywhere in main content → collapse sidebar */}
+        <main
+          className="flex-1 overflow-y-auto p-4 sm:p-6"
+          onClick={() => {
+            if (!sidebarCollapsed) setSidebarCollapsed(true);
+          }}
+        >
           <BreadcrumbNav />
           <PageErrorBoundary>{children}</PageErrorBoundary>
         </main>

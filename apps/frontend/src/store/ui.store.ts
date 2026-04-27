@@ -10,7 +10,7 @@ interface UIState {
 export const useUIStore = create<UIState>()(
   persist(
     (set) => ({
-      sidebarCollapsed: false,
+      sidebarCollapsed: true, // default: 72px icon-only
 
       setSidebarCollapsed: (v) => set({ sidebarCollapsed: v }),
 

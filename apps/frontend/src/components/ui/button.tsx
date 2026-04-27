@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 
 const buttonVariants = cva(
   [
-    'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-medium',
+    'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full text-sm font-medium',
     'ring-offset-background transition-all duration-150',
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
     'disabled:pointer-events-none disabled:opacity-50',
@@ -15,36 +15,35 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        /* Primary CTA — sophisticated dark emphasis (Phase 14 premium) */
+        /* Primary CTA — emerald pill with glass glow */
         default:
-          'bg-slate-900 text-white shadow-sm hover:bg-slate-800 hover:shadow-md dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100',
+          'bg-emerald-600 text-white shadow-md shadow-emerald-600/20 hover:bg-emerald-500 hover:shadow-lg hover:shadow-emerald-600/25',
         destructive:
           'bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90',
-        /* Outline — visible "floating" button on the premium canvas */
+        /* Outline — glass border pill */
         outline:
-          'bg-white text-slate-700 border border-slate-200 shadow-xs hover:border-slate-300 hover:shadow-sm hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-200 dark:border-slate-700 dark:hover:bg-slate-800',
-        /* Secondary — soft tinted pill, distinct from muted/canvas */
+          'bg-white/70 text-slate-700 border border-white/90 shadow-sm backdrop-blur-sm hover:bg-white/90 hover:shadow-md dark:bg-slate-800/60 dark:text-slate-200 dark:border-white/10 dark:hover:bg-slate-700/60',
+        /* Secondary — soft tinted pill */
         secondary:
-          'bg-slate-100 text-slate-900 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700',
-        /* Ghost — transparent rest, subtle hover (classic correct ghost) */
+          'bg-slate-100/80 text-slate-900 backdrop-blur-sm hover:bg-slate-200/80 dark:bg-slate-800/60 dark:text-slate-100 dark:hover:bg-slate-700/60',
+        /* Ghost — transparent */
         ghost:
-          'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white',
+          'text-slate-600 hover:bg-white/60 hover:text-slate-900 backdrop-blur-sm dark:text-slate-300 dark:hover:bg-slate-800/50 dark:hover:text-white',
         link:
-          'text-primary underline-offset-4 hover:underline p-0 h-auto',
-        /* ── Semantic ── */
+          'text-emerald-600 underline-offset-4 hover:underline p-0 h-auto',
         success:
-          'bg-emerald-600 text-white shadow-sm hover:bg-emerald-700',
+          'bg-emerald-600 text-white shadow-md shadow-emerald-600/20 hover:bg-emerald-500',
         warning:
-          'bg-amber-500 text-white shadow-sm hover:bg-amber-600',
+          'bg-amber-500 text-white shadow-sm hover:bg-amber-400',
       },
       size: {
-        default: 'h-9 px-4 py-2',
-        sm:      'h-8 rounded-md px-3 text-xs',
-        lg:      'h-11 rounded-xl px-6',
-        xl:      'h-12 rounded-xl px-8 text-base',
+        default: 'h-9 px-5 py-2',
+        sm:      'h-8 px-4 text-xs',
+        lg:      'h-11 px-7',
+        xl:      'h-12 px-9 text-base',
         icon:    'h-9 w-9',
-        'icon-sm': 'h-7 w-7 rounded-md',
-        'icon-lg': 'h-11 w-11 rounded-xl',
+        'icon-sm': 'h-7 w-7',
+        'icon-lg': 'h-11 w-11',
       },
     },
     defaultVariants: { variant: 'default', size: 'default' },

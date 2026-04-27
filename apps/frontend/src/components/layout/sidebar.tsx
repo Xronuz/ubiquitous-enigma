@@ -1,29 +1,19 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  LayoutDashboard,
-  BookOpen,
-  Users,
-  TrendingUp,
-  Briefcase,
-  Package,
-  MessageSquare,
-  PanelLeftClose,
-  PanelLeftOpen,
+  LayoutDashboard, BookOpen, Users, TrendingUp,
+  Briefcase, Package, MessageSquare,
+  PanelLeftClose, PanelLeftOpen,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useUIStore } from '@/store/ui.store';
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
+  Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
 } from '@/components/ui/tooltip';
 
-// ── Route → section mapping ──────────────────────────────────────────────────
 const SECTION_MAP: Record<string, string> = {
   '/dashboard/education':         '/dashboard/education',
   '/dashboard/classes':           '/dashboard/education',
@@ -95,24 +85,11 @@ function getActiveSection(pathname: string): string {
   return '/dashboard';
 }
 
-const STORAGE_KEY = 'xedu-sidebar-expanded';
-
 export function Sidebar() {
   const pathname = usePathname();
   const activeSection = getActiveSection(pathname);
-  const [expanded, setExpanded] = useState(false);
-
-  // Persist expanded state
-  useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved === 'true') setExpanded(true);
-  }, []);
-  const toggle = () => {
-    setExpanded((prev) => {
-      localStorage.setItem(STORAGE_KEY, String(!prev));
-      return !prev;
-    });
-  };
+  const { sidebarCollapsed, toggleSidebar } = useUIStore();
+  const expanded = !sidebarCollapsed;
 
   return (
     <TooltipProvider delayDuration={200}>
@@ -124,16 +101,14 @@ export function Sidebar() {
         )}
         style={{
           background: '#0f3d2e',
-          // Soft right shadow instead of border — "floating" look
           boxShadow: '4px 0 24px rgba(0,0,0,0.08)',
         }}
       >
         {/* ── Logo + toggle ── */}
         <div className={cn(
           'flex h-14 shrink-0 items-center px-3',
-          expanded ? 'justify-between' : 'justify-center',
+          expanded ? 'justify-between' : 'flex-col gap-1 justify-center',
         )}>
-          {/* Logo mark */}
           <Link
             href="/dashboard"
             className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl transition-opacity hover:opacity-80"
@@ -145,7 +120,6 @@ export function Sidebar() {
             <XeduMark />
           </Link>
 
-          {/* Brand name — only when expanded */}
           {expanded && (
             <span
               className="ml-2 flex-1 truncate text-sm font-semibold tracking-wide"
@@ -155,43 +129,23 @@ export function Sidebar() {
             </span>
           )}
 
-          {/* Toggle button */}
           <button
-            onClick={toggle}
+            onClick={toggleSidebar}
             title={expanded ? 'Yopish' : 'Kengaytirish'}
-            className={cn(
-              'flex h-8 w-8 shrink-0 items-center justify-center rounded-xl',
-              'transition-all duration-150',
-              'hover:bg-white/10',
-              !expanded && 'hidden', // in collapsed mode show toggle only in logo row on hover — we use a separate trigger below
-            )}
-            style={{ color: 'rgba(255,255,255,0.5)' }}
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-all duration-150 hover:bg-white/10"
+            style={{ color: 'rgba(255,255,255,0.4)' }}
           >
-            <PanelLeftClose className="h-4 w-4" />
+            {expanded
+              ? <PanelLeftClose className="h-4 w-4" />
+              : <PanelLeftOpen  className="h-3.5 w-3.5" />
+            }
           </button>
         </div>
 
-        {/* Collapsed-mode toggle (at bottom of logo area) */}
-        {!expanded && (
-          <div className="flex justify-center px-2 pb-1">
-            <button
-              onClick={toggle}
-              title="Kengaytirish"
-              className="flex h-8 w-8 items-center justify-center rounded-xl transition-all duration-150 hover:bg-white/10"
-              style={{ color: 'rgba(255,255,255,0.35)' }}
-            >
-              <PanelLeftOpen className="h-4 w-4" />
-            </button>
-          </div>
-        )}
-
         {/* Divider */}
-        <div
-          className="mx-4 mb-2"
-          style={{ height: '1px', background: 'rgba(255,255,255,0.07)' }}
-        />
+        <div className="mx-4 mb-2" style={{ height: '1px', background: 'rgba(255,255,255,0.07)' }} />
 
-        {/* ── Nav items ── */}
+        {/* ── Nav ── */}
         <nav className="flex flex-1 flex-col gap-[2px] overflow-y-auto overflow-x-hidden px-2 scrollbar-sidebar">
           {NAV.map((item) => {
             const active = item.exact
@@ -199,7 +153,7 @@ export function Sidebar() {
               : activeSection === item.href;
             const Icon = item.icon;
 
-            const linkContent = (
+            const linkEl = (
               <Link
                 href={item.href}
                 className={cn(
@@ -213,14 +167,10 @@ export function Sidebar() {
                   boxShadow: '0 0 20px rgba(34,197,94,0.12)',
                 } : undefined}
               >
-                {/* Active left accent bar */}
                 {active && (
                   <span
                     className="absolute -left-[9px] top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full"
-                    style={{
-                      background: '#22c55e',
-                      boxShadow: '0 0 8px rgba(34,197,94,0.7)',
-                    }}
+                    style={{ background: '#22c55e', boxShadow: '0 0 8px rgba(34,197,94,0.7)' }}
                   />
                 )}
                 <Icon
@@ -229,9 +179,7 @@ export function Sidebar() {
                 />
                 {expanded && (
                   <span
-                    className={cn(
-                      'truncate text-[13.5px] font-medium transition-all duration-200',
-                    )}
+                    className="truncate text-[13.5px] font-medium transition-all duration-200"
                     style={{ color: active ? '#22c55e' : 'rgba(255,255,255,0.72)' }}
                   >
                     {item.label}
@@ -240,12 +188,11 @@ export function Sidebar() {
               </Link>
             );
 
-            // Tooltip only when collapsed
-            if (expanded) return <div key={item.href}>{linkContent}</div>;
+            if (expanded) return <div key={item.href}>{linkEl}</div>;
 
             return (
               <Tooltip key={item.href}>
-                <TooltipTrigger asChild>{linkContent}</TooltipTrigger>
+                <TooltipTrigger asChild>{linkEl}</TooltipTrigger>
                 <TooltipContent
                   side="right"
                   sideOffset={14}

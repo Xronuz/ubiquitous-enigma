@@ -138,9 +138,11 @@
     border-radius: 1.25rem !important; /* 20px = rounded-2xl */
   }
   .dark .card {
-    background: rgba(30, 40, 55, 0.72) !important;
-    border: 1px solid rgba(255, 255, 255, 0.06) !important;
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3) !important;
+    background: rgba(15, 23, 42, 0.50) !important;
+    backdrop-filter: blur(20px) saturate(160%);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25) !important;
   }
 
   /* ── Table: Data Density Preserved ─────────────────────────────────────── */
