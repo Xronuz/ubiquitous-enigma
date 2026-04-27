@@ -270,6 +270,69 @@ export class CoinsService {
     });
   }
 
+  // ─── Cron: weekly GPA decline alert → notify parents ──────────────────────
+
+  @Cron('0 18 * * 5') // Har juma soat 18:00 da
+  async weeklyGpaDeclineAlert() {
+    const now        = new Date();
+    const day        = now.getDay();
+    const thisMonday = new Date(now);
+    thisMonday.setDate(now.getDate() - (day === 0 ? 6 : day - 1));
+    thisMonday.setHours(0, 0, 0, 0);
+    const lastMonday = new Date(thisMonday);
+    lastMonday.setDate(thisMonday.getDate() - 7);
+
+    const avgPct = (grades: { score: number; maxScore: number }[]) =>
+      grades.reduce((s, g) => s + (g.maxScore > 0 ? g.score / g.maxScore * 100 : 0), 0) / grades.length;
+
+    const schools = await this.prisma.school.findMany({
+      where:  { isActive: true },
+      select: { id: true },
+    });
+
+    for (const school of schools) {
+      const students = await this.prisma.user.findMany({
+        where:  { schoolId: school.id, role: 'student' as any, isActive: true },
+        select: { id: true, firstName: true, lastName: true },
+      });
+
+      for (const student of students) {
+        const [thisWeek, lastWeek] = await Promise.all([
+          this.prisma.grade.findMany({
+            where:  { studentId: student.id, schoolId: school.id, date: { gte: thisMonday } },
+            select: { score: true, maxScore: true },
+          }),
+          this.prisma.grade.findMany({
+            where:  { studentId: student.id, schoolId: school.id, date: { gte: lastMonday, lt: thisMonday } },
+            select: { score: true, maxScore: true },
+          }),
+        ]);
+
+        if (!thisWeek.length || !lastWeek.length) continue;
+
+        const thisAvg = avgPct(thisWeek);
+        const lastAvg = avgPct(lastWeek);
+
+        if (thisAvg < lastAvg - 10) {
+          const parents = await this.prisma.parentStudent.findMany({
+            where:  { studentId: student.id },
+            select: { parentId: true },
+          });
+          if (!parents.length) continue;
+
+          await this.prisma.notification.createMany({
+            data: parents.map(p => ({
+              schoolId:    school.id,
+              recipientId: p.parentId,
+              title:       "Farzandingizning natijalari pasaymoqda",
+              body:        `${student.firstName} ${student.lastName}ning bu haftadagi o'rtacha ko'rsatkichi ${thisAvg.toFixed(0)}% (o'tgan hafta: ${lastAvg.toFixed(0)}%). E'tibor qarating!`,
+            })),
+          }).catch(() => {});
+        }
+      }
+    }
+  }
+
   // ─── Cron: weekly attendance bonus ────────────────────────────────────────
 
   @Cron(CronExpression.EVERY_WEEK)

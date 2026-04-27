@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -21,6 +21,10 @@ import {
   Send,
   Loader2,
   FileText,
+  Coins,
+  Trophy,
+  ArrowUpCircle,
+  ArrowDownCircle,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -43,6 +47,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useAuthStore } from '@/store/auth.store';
 import { UserRole } from '@eduplatform/types';
 import { formatDate, formatCurrency, getInitials, getAttendanceLabel, getGradeTypeLabel } from '@/lib/utils';
+import { useSocket } from '@/hooks/use-socket';
 
 // ─── Config maps ────────────────────────────────────────────────────────────
 
@@ -180,6 +185,25 @@ export default function ParentPage() {
     queryFn: () => parentApi.getChildLeaveRequests(childId),
     enabled: !!childId && activeTab === 'leave',
     select: (data: any) => (Array.isArray(data) ? data : data?.data ?? []),
+  });
+
+  const { data: coinsData, isLoading: coinsLoading } = useQuery({
+    queryKey: ['parent', 'coins', childId],
+    queryFn: () => parentApi.getChildCoins(childId),
+    enabled: !!childId,
+  });
+
+  // ── Real-time WebSocket: ota-onaga davomat ogohlantiruvi ────────────────
+  useSocket({
+    handlers: {
+      'attendance:alert': (payload: any) => {
+        toast({
+          title: `⚠️ ${payload.studentName} ${payload.statusText}`,
+          description: `${payload.date} — ${payload.schoolName}`,
+          variant: 'destructive',
+        });
+      },
+    },
   });
 
   const submitLeaveMutation = useMutation({
@@ -392,8 +416,8 @@ export default function ParentPage() {
       {/* Only render stats + tabs when a child is selected */}
       {childId && (
         <>
-          {/* ── 4 Stat Cards ── */}
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {/* ── Stat Cards ── */}
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
             {/* Davomat */}
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -486,6 +510,29 @@ export default function ParentPage() {
                 )}
               </CardContent>
             </Card>
+
+            {/* EduCoin */}
+            <Card
+              className="cursor-pointer hover:shadow-md transition-shadow border-amber-200 dark:border-amber-800/50"
+              onClick={() => setActiveTab('coins')}
+            >
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">EduCoin</CardTitle>
+                <Coins className="h-4 w-4 text-amber-500" />
+              </CardHeader>
+              <CardContent>
+                {coinsLoading ? (
+                  <Skeleton className="h-7 w-16" />
+                ) : coinsData ? (
+                  <>
+                    <div className="text-2xl font-bold text-amber-600">{coinsData.balance.toLocaleString()} 🪙</div>
+                    <p className="text-xs text-muted-foreground mt-0.5">Reyting: #{coinsData.rank}</p>
+                  </>
+                ) : (
+                  <p className="text-sm text-muted-foreground">—</p>
+                )}
+              </CardContent>
+            </Card>
           </div>
 
           {/* ── Tabs ── */}
@@ -510,6 +557,10 @@ export default function ParentPage() {
               <TabsTrigger value="leave">
                 <CalendarOff className="mr-1.5 h-4 w-4" />
                 Ta&apos;til so&apos;rovi
+              </TabsTrigger>
+              <TabsTrigger value="coins">
+                <Coins className="mr-1.5 h-4 w-4" />
+                EduCoin
               </TabsTrigger>
             </TabsList>
 
@@ -957,6 +1008,97 @@ export default function ParentPage() {
                   )}
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            {/* ── EduCoin ── */}
+            <TabsContent value="coins" className="mt-4 space-y-4">
+              {coinsLoading ? (
+                <ListSkeleton rows={5} />
+              ) : !coinsData ? (
+                <Card>
+                  <CardContent className="py-10">
+                    <EmptyState icon={Coins} title="Coin ma'lumoti yo'q" />
+                  </CardContent>
+                </Card>
+              ) : (
+                <>
+                  {/* Balance + Rank */}
+                  <div className="grid gap-4 sm:grid-cols-3">
+                    <Card className="col-span-1 sm:col-span-2 bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-950/30 dark:to-yellow-950/30 border-amber-200 dark:border-amber-800">
+                      <CardContent className="flex items-center gap-5 py-5">
+                        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-amber-100 dark:bg-amber-900/40">
+                          <Coins className="h-8 w-8 text-amber-600" />
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Joriy balans</p>
+                          <p className="text-4xl font-bold text-amber-600">{coinsData.balance.toLocaleString()}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">🪙 EduCoin</p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="flex flex-col items-center justify-center gap-1 py-5">
+                        <Trophy className="h-7 w-7 text-yellow-500" />
+                        <p className="text-3xl font-bold">{coinsData.rank}</p>
+                        <p className="text-xs text-muted-foreground text-center">
+                          {coinsData.total} o&apos;quvchi ichida<br />maktab reytingi
+                        </p>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* History */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base">Coin harakatlari tarixi</CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-0">
+                      {coinsData.history.length === 0 ? (
+                        <EmptyState icon={Coins} title="Hali hech qanday harakat yo'q" description="Baholar va davomat orqali coin to'plash mumkin" />
+                      ) : (
+                        <div className="divide-y">
+                          {coinsData.history.map((tx: any) => {
+                            const isEarn = tx.type === 'earn';
+                            const reasonLabels: Record<string, string> = {
+                              grade_excellent:   '📚 A\'lo baho',
+                              attendance_weekly: '📅 Haftalik 100% davomat',
+                              discipline_praise: '🏅 O\'qituvchi maqtovi',
+                              manual_award:      '🎁 Qo\'lda berildi',
+                              discipline_warning:'⚠️ Intizom buzilishi',
+                              shop_purchase:     '🛍️ Do\'konda xarid',
+                              manual_deduct:     '📉 Qo\'lda ayirildi',
+                            };
+                            const label = reasonLabels[tx.reason] ?? tx.reason;
+                            return (
+                              <div key={tx.id} className="flex items-center gap-3 px-4 py-3">
+                                <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${isEarn ? 'bg-green-100 dark:bg-green-900/30' : 'bg-red-100 dark:bg-red-900/30'}`}>
+                                  {isEarn
+                                    ? <ArrowUpCircle className="h-5 w-5 text-green-600" />
+                                    : <ArrowDownCircle className="h-5 w-5 text-red-500" />}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-medium truncate">{label}</p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {new Date(tx.createdAt).toLocaleString('uz-UZ')}
+                                  </p>
+                                </div>
+                                <div className="text-right shrink-0">
+                                  <p className={`font-bold ${isEarn ? 'text-green-600' : 'text-red-500'}`}>
+                                    {isEarn ? '+' : ''}{tx.amount} 🪙
+                                  </p>
+                                  <p className="text-xs text-muted-foreground">
+                                    Balans: {tx.balance}
+                                  </p>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </>
+              )}
             </TabsContent>
           </Tabs>
         </>

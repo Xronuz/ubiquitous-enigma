@@ -43,4 +43,9 @@ export const parentApi = {
     const { data } = await apiClient.get(`/parent/child/${studentId}/leave-requests`);
     return data;
   },
+
+  getChildCoins: async (studentId: string) => {
+    const { data } = await apiClient.get(`/parent/child/${studentId}/coins`);
+    return data as { balance: number; rank: number; total: number; history: any[] };
+  },
 };

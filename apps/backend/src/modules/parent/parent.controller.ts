@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Query, DefaultValuePipe, ParseIntPipe, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
@@ -73,5 +73,15 @@ export class ParentController {
   @ApiOperation({ summary: 'Farzandning ta\'til so\'rovlari' })
   getChildLeaveRequests(@Param('id') studentId: string, @CurrentUser() user: JwtPayload) {
     return this.parentService.getChildLeaveRequests(studentId, user);
+  }
+
+  @Get('child/:id/coins')
+  @ApiOperation({ summary: "Farzandning EduCoin balansi, reytingi va tarixi" })
+  getChildCoins(
+    @Param('id') studentId: string,
+    @CurrentUser() user: JwtPayload,
+    @Query('limit', new DefaultValuePipe(30), ParseIntPipe) limit: number,
+  ) {
+    return this.parentService.getChildCoins(studentId, user, limit);
   }
 }

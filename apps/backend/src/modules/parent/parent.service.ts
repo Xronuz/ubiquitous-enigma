@@ -198,6 +198,39 @@ export class ParentService {
   }
 
   /**
+   * Ota-ona farzandining EduCoin balansi, reytingi va tarixi
+   */
+  async getChildCoins(studentId: string, currentUser: JwtPayload, limit = 30) {
+    await this.verifyParentAccess(currentUser.sub, studentId, currentUser.schoolId!);
+
+    const [student, history, classmates] = await Promise.all([
+      this.prisma.user.findUnique({
+        where: { id: studentId },
+        select: { coins: true },
+      }),
+      this.prisma.coinTransaction.findMany({
+        where:   { userId: studentId, schoolId: currentUser.schoolId! },
+        orderBy: { createdAt: 'desc' },
+        take:    +limit,
+      }),
+      this.prisma.user.findMany({
+        where:   { schoolId: currentUser.schoolId!, role: 'student' as any, isActive: true },
+        select:  { id: true, coins: true },
+        orderBy: { coins: 'desc' },
+      }),
+    ]);
+
+    const rank = classmates.findIndex(s => s.id === studentId) + 1;
+
+    return {
+      balance: student?.coins ?? 0,
+      rank:    rank > 0 ? rank : classmates.length,
+      total:   classmates.length,
+      history,
+    };
+  }
+
+  /**
    * Ota-ona o'z farzandining ta'til so'rovlarini ko'rishi
    */
   async getChildLeaveRequests(studentId: string, currentUser: JwtPayload) {

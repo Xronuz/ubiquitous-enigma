@@ -119,6 +119,7 @@ export class AttendanceService {
         lastName:  string;
         childParents: Array<{
           parent: {
+            id:    string;
             phone: string | null;
             email: string | null;
           };
@@ -139,7 +140,7 @@ export class AttendanceService {
             firstName: true,
             lastName: true,
             childParents: {
-              include: { parent: { select: { phone: true, email: true } } },
+              include: { parent: { select: { id: true, phone: true, email: true } } },
             },
           },
         }),
@@ -169,6 +170,25 @@ export class AttendanceService {
       });
 
       await Promise.allSettled(queueJobs);
+
+      // ─── WebSocket: real-vaqt push ota-onaga ──────────────────────────────
+      if (this.eventsGateway) {
+        for (const entry of alertEntries) {
+          const student = studentMap.get(entry.studentId);
+          if (!student) continue;
+          const statusText = entry.status === 'absent' ? 'darsga kelmadi' : 'darsga kech qoldi';
+          for (const rel of student.childParents) {
+            this.eventsGateway.emitToUser(rel.parent.id, 'attendance:alert', {
+              studentId:   entry.studentId,
+              studentName: `${student.firstName} ${student.lastName}`,
+              status:      entry.status,
+              statusText,
+              date:        dateStr,
+              schoolName:  school.name,
+            });
+          }
+        }
+      }
     } catch (err) {
       // Alert xatosi asosiy jarayonni to'xtatmasligi kerak
     }
