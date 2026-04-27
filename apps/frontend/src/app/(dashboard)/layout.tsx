@@ -45,7 +45,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   if (!_hasHydrated) {
     return (
-      <div className="flex h-screen items-center justify-center bg-[#f4f7f4]">
+      <div className="flex h-screen items-center justify-center bg-[#f8faf8]">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-emerald-500 border-t-transparent" />
       </div>
     );
@@ -56,39 +56,31 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <HeaderActionsProvider>
       {/*
-        Island UI kanvasi:
-        ┌─────────────────────────────────────────────────────┐
-        │  bg-[#f4f7f4]  (ochiq yashil-kulrang kanvas)        │
-        │                                                     │
-        │  [Sidebar island]  [Header island        ]          │
-        │  (m-4 rounded-3xl) (mt-4 mx-4 rounded-3xl)         │
-        │                    [Shaffof kontent oyna ]          │
-        │                    (card'lar glass, wrapper yo'q)   │
-        └─────────────────────────────────────────────────────┘
-
-        ⚠️  Root div da overflow-hidden YO'Q — orolchalar soyasi ko'rinadi.
-            overflow-hidden faqat ichki kontent ustuniga berilgan.
+        Modern Bento Box:
+        bg-[#f8faf8] + p-3 gap-3 = yaxlit, ixcham, tartibli
+        ┌──────────┬────────────────────────────┐
+        │ Sidebar  │ Header                     │  <- yagona chiziqda
+        │ rounded  ├────────────────────────────│
+        │          │ Main content (transparent) │
+        └──────────┴────────────────────────────┘
       */}
-      <div className="flex h-screen bg-[#f4f7f4] dark:bg-[#0a0f0a]">
+      <div className="flex h-screen bg-[#f8faf8] dark:bg-[#0d1117] p-3 gap-3 overflow-hidden">
         <RealtimeProvider />
 
-        {/* ── Sidebar island — root farzandi, soyasi to'liq ko'rinadi ──── */}
+        {/* Sidebar bento panel */}
         <div className="hidden md:block shrink-0">
           <Sidebar />
         </div>
 
-        {/* ── O'ng ustun: header + kontent ────────────────────────────── */}
-        {/* overflow-hidden faqat shu ustun ichida — sidebar soyasiga ta'sir etmaydi */}
-        <div className="flex flex-1 min-w-0 flex-col overflow-hidden">
+        {/* O'ng ustun: header + content */}
+        <div className="flex flex-1 min-w-0 flex-col gap-3 overflow-hidden">
 
-          {/* Header island: mt-4 mx-4 — kanvasdan ajralib turadi */}
-          <div className="shrink-0 mt-4 mx-4">
-            <Header />
-          </div>
+          {/* Header panel */}
+          <Header />
 
-          {/* Shaffof kontent oyna — ramkasiz, fonsiz */}
+          {/* Transparent content — ramka yo'q, faqat ichki card'lar styled */}
           <main
-            className="flex-1 overflow-y-auto px-4 pt-3 pb-4 min-h-0"
+            className="flex-1 min-h-0 overflow-y-auto"
             onClick={() => { if (!sidebarCollapsed) setSidebarCollapsed(true); }}
           >
             <BreadcrumbNav />

@@ -7,42 +7,43 @@
 /* ── NProgress ──────────────────────────────────────────────────────────────── */
 #nprogress { pointer-events: none; }
 #nprogress .bar {
-  background: #22c55e;
+  background: #10b981;
   position: fixed; z-index: 9999; top: 0; left: 0;
   width: 100%; height: 2px;
 }
 #nprogress .peg {
   display: block; position: absolute; right: 0; width: 100px; height: 100%;
-  box-shadow: 0 0 10px #22c55e, 0 0 5px #22c55e;
+  box-shadow: 0 0 10px #10b981, 0 0 5px #10b981;
   opacity: 1; transform: rotate(3deg) translate(0, -4px);
 }
 
 /* ── Design Tokens ──────────────────────────────────────────────────────────── */
 @layer base {
   :root {
-    --background:         120 10% 96%;
+    --background:         0 0% 97.5%;
     --foreground:         222 47% 11%;
     --card:               0 0% 100%;
     --card-foreground:    222 47% 11%;
     --popover:            0 0% 100%;
     --popover-foreground: 222 47% 11%;
-    --primary:            142 71% 40%;
+    --primary:            160 84% 39%;
     --primary-foreground: 0 0% 100%;
-    --secondary:          120 8% 93%;
+    --secondary:          210 40% 96%;
     --secondary-foreground: 222 47% 11%;
-    --muted:              120 6% 92%;
+    --muted:              210 40% 96%;
     --muted-foreground:   215 16% 47%;
-    --accent:             120 8% 90%;
-    --accent-foreground:  222 47% 11%;
+    --accent:             160 40% 94%;
+    --accent-foreground:  160 60% 20%;
     --destructive:        0 84% 60%;
     --destructive-foreground: 0 0% 100%;
-    --border:             120 10% 87%;
-    --input:              120 10% 87%;
-    --ring:               142 71% 40%;
+    --border:             214 32% 91%;
+    --input:              214 32% 91%;
+    --ring:               160 84% 39%;
     --radius:             0.75rem;
 
-    --shadow-pill:     0 2px 8px rgba(0,0,0,0.06), 0 0 0 1px rgba(255,255,255,0.9);
-    --shadow-elevated: 0 12px 40px -8px rgba(0,0,0,0.10), 0 4px 12px -4px rgba(0,0,0,0.05);
+    --shadow-card:     0 2px 10px rgba(0,0,0,0.04), 0 0 0 1px rgba(0,0,0,0.02);
+    --shadow-elevated: 0 8px 24px rgba(0,0,0,0.08);
+    --shadow-pill:     0 1px 3px rgba(0,0,0,0.06);
   }
 
   .dark {
@@ -52,7 +53,7 @@
     --card-foreground:    210 40% 96%;
     --popover:            222 40% 8%;
     --popover-foreground: 210 40% 96%;
-    --primary:            142 71% 45%;
+    --primary:            160 84% 39%;
     --primary-foreground: 0 0% 100%;
     --secondary:          217 33% 14%;
     --secondary-foreground: 210 40% 96%;
@@ -64,10 +65,10 @@
     --destructive-foreground: 210 40% 98%;
     --border:             217 33% 16%;
     --input:              217 33% 16%;
-    --ring:               142 71% 45%;
+    --ring:               160 84% 39%;
 
-    --shadow-pill:     0 2px 8px rgba(0,0,0,0.3);
-    --shadow-elevated: 0 12px 40px -8px rgba(0,0,0,0.5);
+    --shadow-card:     0 2px 10px rgba(0,0,0,0.3);
+    --shadow-elevated: 0 8px 24px rgba(0,0,0,0.4);
   }
 }
 
@@ -80,7 +81,7 @@
   }
 
   body {
-    @apply bg-[#f4f7f4] text-foreground;
+    @apply bg-[#f8faf8] text-foreground;
     font-feature-settings: 'rlig' 1, 'calt' 1, 'cv02' 1, 'cv03' 1;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -92,28 +93,26 @@
 /* ── Components ─────────────────────────────────────────────────────────────── */
 @layer components {
 
-  /* ── Glassmorphism Card — universal ────────────────────────────────────── */
+  /* ── Bento Card — clean white, soft shadow ─────────────────────────────── */
   .card {
-    background: rgba(255, 255, 255, 0.60) !important;
-    backdrop-filter: blur(20px) saturate(160%);
-    -webkit-backdrop-filter: blur(20px) saturate(160%);
-    border: 1px solid rgba(255, 255, 255, 0.80) !important;
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.05) !important;
-    border-radius: 1.25rem !important;
+    background: #ffffff !important;
+    border: 1px solid rgb(241 245 249) !important; /* slate-100 */
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04) !important;
+    border-radius: 1.25rem !important;  /* rounded-2xl */
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
   }
   .dark .card {
-    background: rgba(15, 23, 42, 0.55) !important;
-    backdrop-filter: blur(20px) saturate(160%);
-    -webkit-backdrop-filter: blur(20px) saturate(160%);
-    border: 1px solid rgba(255, 255, 255, 0.07) !important;
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.28) !important;
+    background: rgb(22 28 40) !important;
+    border: 1px solid rgb(30 41 59) !important;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25) !important;
   }
 
-  /* ── Empty state — dashed border ───────────────────────────────────────── */
+  /* ── Empty state ────────────────────────────────────────────────────────── */
   .empty-state {
-    border: 2px dashed rgb(226 232 240 / 0.8);
-    background: rgba(255, 255, 255, 0.30);
-    border-radius: 1.5rem;
+    border: 2px dashed rgb(226 232 240);
+    background: rgba(248,250,248,0.8);
+    border-radius: 1.25rem;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -124,7 +123,7 @@
     color: hsl(var(--muted-foreground));
   }
 
-  /* ── Tables ─────────────────────────────────────────────────────────────── */
+  /* ── Tables ──────────────────────────────────────────────────────────────── */
   table td, table th { font-size: 0.8125rem; line-height: 1.45; }
   table th {
     font-weight: 600;
@@ -135,50 +134,39 @@
   }
   .table-cell-dense { padding: 0.5rem 0.75rem !important; }
 
-  /* ── KPI accents ─────────────────────────────────────────────────────────  */
-  .kpi-blue   { border-left: 3px solid hsl(221 83% 53%); }
-  .kpi-violet { border-left: 3px solid hsl(263 70% 58%); }
-  .kpi-emerald{ border-left: 3px solid hsl(142 71% 45%); }
-  .kpi-amber  { border-left: 3px solid hsl(37 91% 55%);  }
-  .kpi-red    { border-left: 3px solid hsl(0 84% 60%);   }
-  .kpi-indigo { border-left: 3px solid hsl(239 84% 67%); }
-  .kpi-cyan   { border-left: 3px solid hsl(189 94% 43%); }
-  .kpi-rose   { border-left: 3px solid hsl(347 77% 55%); }
+  /* ── KPI accent borders ──────────────────────────────────────────────────── */
+  .kpi-blue    { border-left: 3px solid hsl(221 83% 53%); }
+  .kpi-violet  { border-left: 3px solid hsl(263 70% 58%); }
+  .kpi-emerald { border-left: 3px solid hsl(160 84% 39%); }
+  .kpi-amber   { border-left: 3px solid hsl(37 91% 55%);  }
+  .kpi-red     { border-left: 3px solid hsl(0 84% 60%);   }
+  .kpi-indigo  { border-left: 3px solid hsl(239 84% 67%); }
+  .kpi-cyan    { border-left: 3px solid hsl(189 94% 43%); }
+  .kpi-rose    { border-left: 3px solid hsl(347 77% 55%); }
 }
 
 /* ── Utilities ──────────────────────────────────────────────────────────────── */
 @layer utilities {
 
-  /* Scrollbars */
   .scrollbar-sidebar::-webkit-scrollbar { width: 3px; }
   .scrollbar-sidebar::-webkit-scrollbar-track { background: transparent; }
-  .scrollbar-sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 999px; }
+  .scrollbar-sidebar::-webkit-scrollbar-thumb { background: rgb(203 213 225); border-radius: 999px; }
 
   .no-scrollbar::-webkit-scrollbar { display: none; }
   .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-  /* Interactions */
   .btn-press:active { transform: scale(0.97); }
 
   .card-lift { transition: transform 0.15s ease, box-shadow 0.15s ease; }
-  .card-lift:hover { transform: translateY(-2px); box-shadow: var(--shadow-elevated); }
+  .card-lift:hover { transform: translateY(-1px); box-shadow: var(--shadow-elevated); }
 
-  /* Text gradient */
   .text-gradient {
-    background: linear-gradient(135deg, #166534, #22c55e);
+    background: linear-gradient(135deg, #059669, #10b981);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
 
-  /* Glass surface */
-  .glass {
-    background: rgba(255, 255, 255, 0.60);
-    backdrop-filter: blur(20px) saturate(160%);
-    -webkit-backdrop-filter: blur(20px) saturate(160%);
-  }
-
-  /* Shadows */
   .shadow-pill     { box-shadow: var(--shadow-pill); }
   .shadow-elevated { box-shadow: var(--shadow-elevated); }
 }

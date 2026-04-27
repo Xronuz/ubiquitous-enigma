@@ -5,14 +5,11 @@ import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard, BookOpen, Users, TrendingUp,
   Briefcase, Package, MessageSquare,
-  PanelLeftClose, PanelLeftOpen,
+  ChevronLeft, ChevronRight,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useUIStore } from '@/store/ui.store';
-import {
-  Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
-} from '@/components/ui/tooltip';
 
 const SECTION_MAP: Record<string, string> = {
   '/dashboard/education':         '/dashboard/education',
@@ -63,13 +60,13 @@ const NAV: NavItem[] = [
   { label: 'Kommunikatsiya', href: '/dashboard/comms',     icon: MessageSquare },
 ];
 
-function XeduMark() {
+function XeduMark({ size = 22 }: { size?: number }) {
   return (
-    <svg width="24" height="24" viewBox="0 0 26 26" fill="none" aria-label="Xedu">
-      <path d="M3 4 L13 13 L23 4"  stroke="#22c55e" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"/>
-      <path d="M3 22 L13 13 L23 22" stroke="#4ade80" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" opacity="0.55"/>
-      <rect x="7.5" y="3.5" width="11" height="4" rx="2" fill="#166534"/>
-      <rect x="10" y="1.5" width="6" height="2.5" rx="1.25" fill="#22c55e"/>
+    <svg width={size} height={size} viewBox="0 0 26 26" fill="none" aria-label="Xedu">
+      <path d="M3 4 L13 13 L23 4"  stroke="#10b981" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M3 22 L13 13 L23 22" stroke="#34d399" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" opacity="0.6"/>
+      <rect x="7.5" y="3.5" width="11" height="3.5" rx="1.75" fill="#059669"/>
+      <rect x="10" y="1.5" width="6" height="2.5" rx="1.25" fill="#10b981"/>
     </svg>
   );
 }
@@ -90,120 +87,85 @@ export function Sidebar() {
   const expanded = !sidebarCollapsed;
 
   return (
-    <TooltipProvider delayDuration={200}>
-      {/* ── Floating capsule ──────────────────────────────────────────────── */}
-      <aside
-        className={cn(
-          'm-4 flex shrink-0 flex-col rounded-3xl py-3',
-          'transition-all duration-300 ease-in-out',
-          expanded ? 'w-[232px]' : 'w-[64px]',
+    <aside
+      className={cn(
+        'flex h-full shrink-0 flex-col rounded-2xl transition-all duration-300 ease-in-out overflow-hidden',
+        expanded ? 'w-[220px]' : 'w-[56px]',
+      )}
+      style={{
+        background: 'rgba(255,255,255,0.92)',
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
+        border: '1px solid rgba(226,232,240,0.8)',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03)',
+      }}
+    >
+      {/* Logo row */}
+      <div className={cn(
+        'flex h-14 shrink-0 items-center px-3 border-b border-slate-100',
+        expanded ? 'justify-between' : 'flex-col justify-center gap-1.5',
+      )}>
+        <Link
+          href="/dashboard"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-50 border border-emerald-100 hover:bg-emerald-100 transition-colors"
+        >
+          <XeduMark size={20} />
+        </Link>
+
+        {expanded && (
+          <span className="flex-1 ml-2 text-[13px] font-semibold text-slate-700 tracking-tight truncate">
+            Xedu
+          </span>
         )}
-        style={{
-          height: 'calc(100vh - 2rem)',
-          background: '#0f3d2e',
-          boxShadow: '0 20px 60px rgba(0,0,0,0.18), 0 4px 16px rgba(0,0,0,0.12)',
-        }}
-      >
-        {/* Logo + toggle row */}
-        <div className={cn(
-          'flex h-14 shrink-0 items-center px-3',
-          expanded ? 'gap-2' : 'flex-col justify-center gap-1',
-        )}>
-          <Link
-            href="/dashboard"
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl transition-opacity hover:opacity-80"
-            style={{ background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.22)' }}
-          >
-            <XeduMark />
-          </Link>
 
-          {expanded && (
-            <span className="flex-1 truncate text-sm font-semibold tracking-wide" style={{ color: 'rgba(255,255,255,0.85)' }}>
-              Xedu
-            </span>
-          )}
+        <button
+          onClick={toggleSidebar}
+          title={expanded ? 'Yopish' : 'Kengaytirish'}
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+        >
+          {expanded ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+        </button>
+      </div>
 
-          <button
-            onClick={toggleSidebar}
-            title={expanded ? 'Yopish' : 'Kengaytirish'}
-            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl transition-all hover:bg-white/10"
-            style={{ color: 'rgba(255,255,255,0.38)' }}
-          >
-            {expanded
-              ? <PanelLeftClose className="h-3.5 w-3.5" />
-              : <PanelLeftOpen  className="h-3.5 w-3.5" />}
-          </button>
-        </div>
+      {/* Nav */}
+      <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto overflow-x-hidden p-2">
+        {NAV.map((item) => {
+          const active = item.exact ? pathname === item.href : activeSection === item.href;
+          const Icon   = item.icon;
 
-        {/* Divider */}
-        <div className="mx-4 mb-2" style={{ height: '1px', background: 'rgba(255,255,255,0.07)' }} />
-
-        {/* Nav */}
-        <nav className="flex flex-1 flex-col gap-[2px] overflow-y-auto overflow-x-hidden px-2 scrollbar-sidebar">
-          {NAV.map((item) => {
-            const active = item.exact ? pathname === item.href : activeSection === item.href;
-            const Icon   = item.icon;
-
-            const linkEl = (
-              <Link
-                href={item.href}
-                className={cn(
-                  'relative flex h-11 items-center gap-3 rounded-2xl px-2.5',
-                  'transition-all duration-200',
-                  expanded ? 'w-full' : 'w-10 justify-center',
-                  !active && 'hover:bg-white/[0.08]',
-                )}
-                style={active ? {
-                  background: 'rgba(34,197,94,0.15)',
-                  boxShadow: '0 0 20px rgba(34,197,94,0.12)',
-                } : undefined}
-              >
-                {active && (
-                  <span
-                    className="absolute -left-[9px] top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full"
-                    style={{ background: '#22c55e', boxShadow: '0 0 8px rgba(34,197,94,0.7)' }}
-                  />
-                )}
-                <Icon
-                  className="h-[18px] w-[18px] shrink-0 transition-colors"
-                  style={{ color: active ? '#22c55e' : 'rgba(255,255,255,0.38)' }}
-                />
-                {expanded && (
-                  <span
-                    className="truncate text-[13px] font-medium"
-                    style={{ color: active ? '#22c55e' : 'rgba(255,255,255,0.70)' }}
-                  >
-                    {item.label}
-                  </span>
-                )}
-              </Link>
-            );
-
-            if (expanded) return <div key={item.href}>{linkEl}</div>;
-
-            return (
-              <Tooltip key={item.href}>
-                <TooltipTrigger asChild>{linkEl}</TooltipTrigger>
-                <TooltipContent
-                  side="right"
-                  sideOffset={12}
-                  className="rounded-xl border px-3 py-1.5 text-[13px] font-medium text-white shadow-2xl"
-                  style={{
-                    background: 'rgba(15,61,46,0.92)',
-                    backdropFilter: 'blur(24px) saturate(200%)',
-                    WebkitBackdropFilter: 'blur(24px) saturate(200%)',
-                    borderColor: 'rgba(34,197,94,0.28)',
-                  }}
-                >
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              title={!expanded ? item.label : undefined}
+              className={cn(
+                'flex h-10 items-center gap-2.5 rounded-xl px-2.5 transition-all duration-150',
+                expanded ? 'w-full' : 'w-10 justify-center',
+                active
+                  ? 'bg-emerald-50 text-emerald-700'
+                  : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700',
+              )}
+            >
+              <Icon className={cn('h-4.5 w-4.5 shrink-0', active ? 'text-emerald-600' : 'text-slate-400')} style={{ width: 18, height: 18 }} />
+              {expanded && (
+                <span className={cn('text-[13px] font-medium truncate', active ? 'text-emerald-700' : 'text-slate-600')}>
                   {item.label}
-                </TooltipContent>
-              </Tooltip>
-            );
-          })}
-        </nav>
+                </span>
+              )}
+              {active && expanded && (
+                <span className="ml-auto h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
+              )}
+            </Link>
+          );
+        })}
+      </nav>
 
-        <div className="h-3" />
-      </aside>
-    </TooltipProvider>
+      {/* Footer hint */}
+      {expanded && (
+        <div className="shrink-0 border-t border-slate-100 p-3">
+          <p className="text-[11px] text-slate-400 text-center">Xedu v1.0</p>
+        </div>
+      )}
+    </aside>
   );
 }
