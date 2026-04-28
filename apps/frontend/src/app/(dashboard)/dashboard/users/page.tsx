@@ -60,6 +60,7 @@ const ROLES = [
 
 export default function UsersPage() {
   const isSuperAdmin = useSuperAdminGuard();
+  const { user, activeBranchId } = useAuthStore();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
