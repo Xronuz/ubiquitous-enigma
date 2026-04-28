@@ -48,17 +48,20 @@ const SECTION_MAP: Record<string, string> = {
   '/dashboard/announcements':     '/dashboard/comms',
 };
 
-type NavItem = { label: string; href: string; icon: LucideIcon; exact?: boolean };
+type NavItem = { label: string; href: string; icon: LucideIcon; exact?: boolean; section: 'main' | 'system' };
 
 const NAV: NavItem[] = [
-  { label: 'Dashboard',      href: '/dashboard',           icon: LayoutDashboard, exact: true },
-  { label: "Ta'lim",         href: '/dashboard/education', icon: BookOpen },
-  { label: "O'quvchilar",    href: '/dashboard/students',  icon: Users },
-  { label: 'Moliya',         href: '/dashboard/finance',   icon: TrendingUp },
-  { label: 'Xodimlar',       href: '/dashboard/staff',     icon: Briefcase },
-  { label: 'Resurslar',      href: '/dashboard/resources', icon: Package },
-  { label: 'Kommunikatsiya', href: '/dashboard/comms',     icon: MessageSquare },
+  { label: 'Dashboard',      href: '/dashboard',           icon: LayoutDashboard, exact: true, section: 'main' },
+  { label: "Ta'lim",         href: '/dashboard/education', icon: BookOpen,                     section: 'main' },
+  { label: "O'quvchilar",    href: '/dashboard/students',  icon: Users,                        section: 'main' },
+  { label: 'Moliya',         href: '/dashboard/finance',   icon: TrendingUp,                   section: 'main' },
+  { label: 'Xodimlar',       href: '/dashboard/staff',     icon: Briefcase,                    section: 'system' },
+  { label: 'Resurslar',      href: '/dashboard/resources', icon: Package,                      section: 'system' },
+  { label: 'Kommunikatsiya', href: '/dashboard/comms',     icon: MessageSquare,                section: 'system' },
 ];
+
+const MAIN_ITEMS  = NAV.filter(n => n.section === 'main');
+const SYSTEM_ITEMS = NAV.filter(n => n.section === 'system');
 
 function XeduMark({ size = 22 }: { size?: number }) {
   return (
@@ -80,6 +83,52 @@ function getActiveSection(pathname: string): string {
   return '/dashboard';
 }
 
+function NavLink({ item, active, expanded }: { item: NavItem; active: boolean; expanded: boolean }) {
+  const Icon = item.icon;
+  return (
+    <Link
+      href={item.href}
+      title={!expanded ? item.label : undefined}
+      className={cn(
+        'relative flex items-center gap-3 rounded-xl transition-all duration-150',
+        expanded ? 'h-[50px] w-full px-3.5' : 'h-[50px] w-[50px] justify-center',
+        active
+          ? 'text-emerald-700'
+          : 'text-slate-500 hover:bg-slate-100/80 hover:text-slate-700',
+      )}
+      style={active ? {
+        background: '#DDF5EA',
+        boxShadow: '0 2px 8px rgba(15,123,83,0.12)',
+      } : undefined}
+    >
+      <Icon
+        style={{ width: 18, height: 18 }}
+        className={cn('shrink-0', active ? 'text-emerald-600' : 'text-slate-400')}
+      />
+      {expanded && (
+        <span className={cn(
+          'text-[15px] font-semibold truncate',
+          active ? 'text-emerald-700' : 'text-slate-600',
+        )}>
+          {item.label}
+        </span>
+      )}
+      {active && expanded && (
+        <span className="ml-auto h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
+      )}
+    </Link>
+  );
+}
+
+function SectionLabel({ label, expanded }: { label: string; expanded: boolean }) {
+  if (!expanded) return <div className="h-px w-8 my-1.5 mx-auto bg-slate-100 rounded-full" />;
+  return (
+    <p className="mt-4 mb-1 px-3.5 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400 select-none">
+      {label}
+    </p>
+  );
+}
+
 export function Sidebar() {
   const pathname      = usePathname();
   const activeSection = getActiveSection(pathname);
@@ -90,30 +139,30 @@ export function Sidebar() {
     <aside
       className={cn(
         'flex h-full shrink-0 flex-col rounded-2xl transition-all duration-300 ease-in-out overflow-hidden',
-        expanded ? 'w-[220px]' : 'w-[56px]',
+        expanded ? 'w-[260px]' : 'w-[62px]',
       )}
       style={{
-        background: 'rgba(255,255,255,0.92)',
-        backdropFilter: 'blur(16px)',
-        WebkitBackdropFilter: 'blur(16px)',
-        border: '1px solid rgba(226,232,240,0.8)',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03)',
+        background: 'rgba(255,255,255,0.95)',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
+        border: '1px solid rgba(226,232,240,0.7)',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.04)',
       }}
     >
       {/* Logo row */}
       <div className={cn(
-        'flex h-14 shrink-0 items-center px-3 border-b border-slate-100',
-        expanded ? 'justify-between' : 'flex-col justify-center gap-1.5',
+        'flex h-[70px] shrink-0 items-center px-4 border-b border-slate-100/80',
+        expanded ? 'justify-between' : 'flex-col justify-center gap-2',
       )}>
         <Link
           href="/dashboard"
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-50 border border-emerald-100 hover:bg-emerald-100 transition-colors"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 border border-emerald-100/80 hover:bg-emerald-100 transition-colors"
         >
-          <XeduMark size={20} />
+          <XeduMark size={22} />
         </Link>
 
         {expanded && (
-          <span className="flex-1 ml-2 text-[13px] font-semibold text-slate-700 tracking-tight truncate">
+          <span className="flex-1 ml-2.5 text-[15px] font-bold text-slate-800 tracking-tight truncate">
             Xedu
           </span>
         )}
@@ -128,44 +177,38 @@ export function Sidebar() {
       </div>
 
       {/* Nav */}
-      <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto overflow-x-hidden p-2">
-        {NAV.map((item) => {
-          const active = item.exact ? pathname === item.href : activeSection === item.href;
-          const Icon   = item.icon;
+      <nav className="flex flex-1 flex-col overflow-y-auto overflow-x-hidden px-2.5 pb-2">
+        <SectionLabel label="Asosiy" expanded={expanded} />
+        <div className="flex flex-col gap-0.5">
+          {MAIN_ITEMS.map((item) => {
+            const active = item.exact ? pathname === item.href : activeSection === item.href;
+            return <NavLink key={item.href} item={item} active={active} expanded={expanded} />;
+          })}
+        </div>
 
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              title={!expanded ? item.label : undefined}
-              className={cn(
-                'flex h-10 items-center gap-2.5 rounded-xl px-2.5 transition-all duration-150',
-                expanded ? 'w-full' : 'w-10 justify-center',
-                active
-                  ? 'bg-emerald-50 text-emerald-700'
-                  : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700',
-              )}
-            >
-              <Icon className={cn('h-4.5 w-4.5 shrink-0', active ? 'text-emerald-600' : 'text-slate-400')} style={{ width: 18, height: 18 }} />
-              {expanded && (
-                <span className={cn('text-[13px] font-medium truncate', active ? 'text-emerald-700' : 'text-slate-600')}>
-                  {item.label}
-                </span>
-              )}
-              {active && expanded && (
-                <span className="ml-auto h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
-              )}
-            </Link>
-          );
-        })}
+        <SectionLabel label="Tizim" expanded={expanded} />
+        <div className="flex flex-col gap-0.5">
+          {SYSTEM_ITEMS.map((item) => {
+            const active = item.exact ? pathname === item.href : activeSection === item.href;
+            return <NavLink key={item.href} item={item} active={active} expanded={expanded} />;
+          })}
+        </div>
       </nav>
 
-      {/* Footer hint */}
-      {expanded && (
-        <div className="shrink-0 border-t border-slate-100 p-3">
-          <p className="text-[11px] text-slate-400 text-center">Xedu v1.0</p>
-        </div>
-      )}
+      {/* Footer */}
+      <div className={cn(
+        'shrink-0 border-t border-slate-100/80 py-3',
+        expanded ? 'px-4' : 'px-2.5',
+      )}>
+        {expanded ? (
+          <div className="flex items-center justify-between">
+            <p className="text-[11px] text-slate-400 font-medium">Xedu Platform</p>
+            <span className="text-[10px] text-slate-300 font-semibold bg-slate-100 px-2 py-0.5 rounded-full">v1.0</span>
+          </div>
+        ) : (
+          <p className="text-[10px] text-slate-300 text-center font-semibold">v1</p>
+        )}
+      </div>
     </aside>
   );
 }

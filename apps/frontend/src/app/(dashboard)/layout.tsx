@@ -64,7 +64,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         │          │ Main content (transparent) │
         └──────────┴────────────────────────────┘
       */}
-      <div className="flex h-screen bg-[#f8faf8] dark:bg-[#0d1117] p-3 gap-3 overflow-hidden">
+      <div className="flex h-screen bg-[#F7F8F8] dark:bg-[#0d1117] p-3 gap-3 overflow-hidden">
         <RealtimeProvider />
 
         {/* Sidebar bento panel */}

@@ -49,10 +49,10 @@ const C = {
   primaryLight:'#DDF5EA',
   text:        '#111827',
   muted:       '#6B7280',
-  border:      '#EEF1F0',
+  border:      'rgba(0,0,0,0.05)',
   bg:          '#F7F8F8',
   card:        '#FFFFFF',
-  shadow:      '0 10px 30px rgba(16,24,40,0.06)',
+  shadow:      '0 10px 30px rgba(0,0,0,0.04)',
 } as const;
 
 // ── Icon bubble color configs ─────────────────────────────────────────────────
@@ -110,30 +110,30 @@ function StatCard({
     <Wrapper
       {...(wrapperProps as any)}
       className={cn(
-        'group block rounded-[22px] bg-white border p-6 transition-all duration-200',
-        'border-[#EEF1F0] shadow-[0_10px_30px_rgba(16,24,40,0.06)]',
-        (href || onClick) && 'cursor-pointer hover:-translate-y-0.5 hover:shadow-[0_16px_40px_rgba(16,24,40,0.10)]',
+        'group block rounded-[24px] bg-white p-7 transition-all duration-200',
+        (href || onClick) && 'cursor-pointer hover:-translate-y-[2px] hover:shadow-[0_20px_48px_rgba(0,0,0,0.08)]',
       )}
+      style={{ border: '1px solid rgba(0,0,0,0.04)', boxShadow: '0 10px 30px rgba(0,0,0,0.04)' }}
     >
       {/* Top row */}
-      <div className="flex items-start justify-between mb-5">
-        <p className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: C.muted }}>
+      <div className="flex items-start justify-between mb-4">
+        <p className="text-[10px] font-bold uppercase tracking-[0.12em]" style={{ color: C.muted }}>
           {title}
         </p>
         <div
           className="h-10 w-10 rounded-2xl flex items-center justify-center shrink-0"
           style={{ background: cfg.bg }}
         >
-          <Icon className="h-5 w-5" style={{ color: cfg.icon }} />
+          <Icon className="h-[18px] w-[18px]" style={{ color: cfg.icon }} />
         </div>
       </div>
 
       {/* Value */}
       {loading
-        ? <Skeleton className="h-11 w-28 mb-3" />
+        ? <Skeleton className="h-10 w-28 mb-3 rounded-xl" />
         : (
           <p
-            className="text-[40px] font-black leading-none tracking-tight mb-3 animate-count-up"
+            className="text-[38px] font-black leading-none tracking-tight mb-3"
             style={{ color: C.text }}
           >
             {value}
@@ -143,7 +143,7 @@ function StatCard({
 
       {/* Description */}
       {description && (
-        <p className="flex items-center gap-1.5 text-[13px]" style={{ color: C.muted }}>
+        <p className="flex items-center gap-1.5 text-[12px] font-medium" style={{ color: C.muted }}>
           {trend === 'up'   && <TrendingUp  className="h-3.5 w-3.5 text-emerald-500 shrink-0" />}
           {trend === 'down' && <TrendingDown className="h-3.5 w-3.5 text-red-500 shrink-0" />}
           {description}
@@ -167,8 +167,8 @@ function SectionHeader({ title, action }: { title: string; action?: React.ReactN
 function PCard({ className, style, children }: { className?: string; style?: React.CSSProperties; children: React.ReactNode }) {
   return (
     <div
-      className={cn('rounded-[22px] bg-white border p-6', className)}
-      style={{ borderColor: C.border, boxShadow: C.shadow, ...style }}
+      className={cn('rounded-[24px] bg-white p-7', className)}
+      style={{ border: '1px solid rgba(0,0,0,0.04)', boxShadow: '0 10px 30px rgba(0,0,0,0.04)', ...style }}
     >
       {children}
     </div>
@@ -771,27 +771,34 @@ function AdminChartsSection() {
     <div className="grid gap-4 md:grid-cols-2">
       {/* Revenue bar chart */}
       <PCard>
-        <div className="flex items-start justify-between mb-5">
+        <div className="flex items-start justify-between mb-6">
           <div>
             <p className="font-bold text-[15px]" style={{ color: C.text }}>Oylik daromad</p>
-            <p className="text-xs mt-0.5" style={{ color: C.muted }}>So'nggi 6 oy (so'm)</p>
+            <p className="text-[12px] mt-1 font-medium" style={{ color: C.muted }}>So&apos;nggi 6 oy (so&apos;m)</p>
           </div>
-          <div className="h-9 w-9 rounded-xl flex items-center justify-center" style={{ background: '#DBEAFE' }}>
-            <BarChart2 className="h-4.5 w-4.5 text-blue-600" />
+          <div className="h-10 w-10 rounded-2xl flex items-center justify-center" style={{ background: '#DBEAFE' }}>
+            <BarChart2 className="h-5 w-5 text-blue-600" />
           </div>
         </div>
-        {payLoading ? <Skeleton className="h-52" /> : (
-          <ResponsiveContainer width="100%" height={208}>
-            <BarChart data={revenueData} margin={{ top: 4, right: 4, left: -12, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#EEF1F0" />
+        {payLoading ? <Skeleton className="h-52 rounded-2xl" /> : (
+          <ResponsiveContainer width="100%" height={216}>
+            <BarChart data={revenueData} margin={{ top: 4, right: 4, left: -16, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="2 4" stroke="rgba(0,0,0,0.04)" vertical={false} />
               <XAxis dataKey="month" tick={{ fontSize: 12, fill: C.muted }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fontSize: 11, fill: C.muted }} axisLine={false} tickLine={false}
                 tickFormatter={(v) => v >= 1000000 ? `${(v/1000000).toFixed(1)}M` : v >= 1000 ? `${(v/1000).toFixed(0)}K` : String(v)} />
               <Tooltip
                 formatter={(v: number) => [formatCurrency(v), 'Tushum']}
-                contentStyle={{ borderRadius: 12, border: 'none', boxShadow: C.shadow, fontSize: 12 }}
+                contentStyle={{ borderRadius: 14, border: 'none', boxShadow: '0 8px 24px rgba(0,0,0,0.1)', fontSize: 12 }}
+                cursor={{ fill: 'rgba(15,123,83,0.04)' }}
               />
-              <Bar dataKey="amount" fill={C.primary} radius={[8, 8, 0, 0]} maxBarSize={40} />
+              <defs>
+                <linearGradient id="revenueBarGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#10b981" stopOpacity={0.95} />
+                  <stop offset="100%" stopColor="#0F7B53" stopOpacity={1} />
+                </linearGradient>
+              </defs>
+              <Bar dataKey="amount" fill="url(#revenueBarGrad)" radius={[10, 10, 3, 3]} maxBarSize={36} />
             </BarChart>
           </ResponsiveContainer>
         )}
@@ -799,31 +806,32 @@ function AdminChartsSection() {
 
       {/* Attendance trend */}
       <PCard>
-        <div className="flex items-start justify-between mb-5">
+        <div className="flex items-start justify-between mb-6">
           <div>
             <p className="font-bold text-[15px]" style={{ color: C.text }}>Davomat trendi</p>
-            <p className="text-xs mt-0.5" style={{ color: C.muted }}>So'nggi 7 kun (%)</p>
+            <p className="text-[12px] mt-1 font-medium" style={{ color: C.muted }}>So&apos;nggi 7 kun (%)</p>
           </div>
-          <div className="h-9 w-9 rounded-xl flex items-center justify-center" style={{ background: C.primaryLight }}>
-            <TrendingUp className="h-4.5 w-4.5" style={{ color: C.primary }} />
+          <div className="h-10 w-10 rounded-2xl flex items-center justify-center" style={{ background: C.primaryLight }}>
+            <TrendingUp className="h-5 w-5" style={{ color: C.primary }} />
           </div>
         </div>
-        {attLoading ? <Skeleton className="h-52" /> : attendanceTrend.length === 0 ? (
-          <div className="flex h-52 items-center justify-center text-sm" style={{ color: C.muted }}>Ma'lumot yo'q</div>
+        {attLoading ? <Skeleton className="h-52 rounded-2xl" /> : attendanceTrend.length === 0 ? (
+          <div className="flex h-52 items-center justify-center text-sm" style={{ color: C.muted }}>Ma&apos;lumot yo&apos;q</div>
         ) : (
-          <ResponsiveContainer width="100%" height={208}>
-            <LineChart data={attendanceTrend} margin={{ top: 4, right: 4, left: -12, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#EEF1F0" />
+          <ResponsiveContainer width="100%" height={216}>
+            <LineChart data={attendanceTrend} margin={{ top: 4, right: 4, left: -16, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="2 4" stroke="rgba(0,0,0,0.04)" vertical={false} />
               <XAxis dataKey="day" tick={{ fontSize: 12, fill: C.muted }} axisLine={false} tickLine={false} />
               <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: C.muted }} axisLine={false} tickLine={false}
                 tickFormatter={(v) => `${v}%`} />
               <Tooltip
                 formatter={(v: number) => [`${v}%`, 'Davomat']}
-                contentStyle={{ borderRadius: 12, border: 'none', boxShadow: C.shadow, fontSize: 12 }}
+                contentStyle={{ borderRadius: 14, border: 'none', boxShadow: '0 8px 24px rgba(0,0,0,0.1)', fontSize: 12 }}
+                cursor={{ stroke: 'rgba(15,123,83,0.1)', strokeWidth: 1 }}
               />
               <Line type="monotone" dataKey="pct" stroke={C.primary} strokeWidth={2.5}
-                dot={{ r: 4, fill: C.primary, strokeWidth: 0 }}
-                activeDot={{ r: 6, fill: C.primary }}
+                dot={{ r: 4, fill: '#fff', stroke: C.primary, strokeWidth: 2 }}
+                activeDot={{ r: 6, fill: C.primary, strokeWidth: 0 }}
               />
             </LineChart>
           </ResponsiveContainer>
@@ -836,16 +844,25 @@ function AdminChartsSection() {
 // ── Quick action grid ──────────────────────────────────────────────────────────
 function QuickActions({ items }: { items: { label: string; href: string; icon: React.ElementType; iconColor: string }[] }) {
   return (
-    <div className="grid grid-cols-2 gap-2">
+    <div className="grid grid-cols-2 gap-2.5">
       {items.map(({ label, href, icon: Icon, iconColor }) => (
         <Link
           key={href + label}
           href={href}
-          className="flex items-center gap-2.5 rounded-[14px] border p-3.5 transition-colors hover:bg-slate-50"
-          style={{ borderColor: C.border }}
+          className="flex items-center gap-3 rounded-[16px] p-4 transition-all duration-150 hover:-translate-y-[1px]"
+          style={{
+            border: '1px solid rgba(0,0,0,0.05)',
+            background: 'rgba(0,0,0,0.01)',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
+          }}
         >
-          <Icon className="h-4 w-4 shrink-0" style={{ color: iconColor }} />
-          <span className="text-xs font-semibold" style={{ color: C.text }}>{label}</span>
+          <div
+            className="h-8 w-8 rounded-xl flex items-center justify-center shrink-0"
+            style={{ background: `${iconColor}18` }}
+          >
+            <Icon className="h-4 w-4 shrink-0" style={{ color: iconColor }} />
+          </div>
+          <span className="text-[13px] font-semibold" style={{ color: C.text }}>{label}</span>
         </Link>
       ))}
     </div>
@@ -900,10 +917,10 @@ function AccountantDashboard() {
     <div className="space-y-6">
       <div className="flex items-end justify-between">
         <div>
-          <h1 className="text-[32px] font-black tracking-tight leading-none" style={{ color: C.text }}>
+          <h1 className="text-[36px] font-extrabold tracking-tight leading-[1.1]" style={{ color: C.text }}>
             Moliya boshqaruvi
           </h1>
-          <p className="text-sm mt-1.5" style={{ color: C.muted }}>Hisobchi — {user?.firstName}</p>
+          <p className="text-[15px] mt-1.5 font-medium" style={{ color: C.muted }}>Hisobchi — {user?.firstName}</p>
         </div>
         <Button asChild><a href="/dashboard/payments"><CreditCard className="mr-2 h-4 w-4" />To&apos;lovlar</a></Button>
       </div>
@@ -1002,8 +1019,8 @@ function SuperAdminDashboard() {
     <div className="space-y-6">
       <div className="flex items-end justify-between">
         <div>
-          <h1 className="text-[32px] font-black tracking-tight leading-none" style={{ color: C.text }}>Platform boshqaruvi</h1>
-          <p className="text-sm mt-1.5" style={{ color: C.muted }}>EduPlatform — Super Admin paneli</p>
+          <h1 className="text-[36px] font-extrabold tracking-tight leading-[1.1]" style={{ color: C.text }}>Platform boshqaruvi</h1>
+          <p className="text-[15px] mt-1.5 font-medium" style={{ color: C.muted }}>EduPlatform — Super Admin paneli</p>
         </div>
         <Button asChild><Link href="/dashboard/schools"><Building2 className="mr-2 h-4 w-4" />Maktablar</Link></Button>
       </div>
@@ -1102,8 +1119,8 @@ function LibrarianDashboard() {
     <div className="space-y-6">
       <div className="flex items-end justify-between">
         <div>
-          <h1 className="text-[32px] font-black tracking-tight leading-none" style={{ color: C.text }}>Kutubxona boshqaruvi</h1>
-          <p className="text-sm mt-1.5" style={{ color: C.muted }}>Kutubxonachi — {user?.firstName}</p>
+          <h1 className="text-[36px] font-extrabold tracking-tight leading-[1.1]" style={{ color: C.text }}>Kutubxona boshqaruvi</h1>
+          <p className="text-[15px] mt-1.5 font-medium" style={{ color: C.muted }}>Kutubxonachi — {user?.firstName}</p>
         </div>
         <Button asChild><a href="/dashboard/library"><Library className="mr-2 h-4 w-4" />Kutubxona</a></Button>
       </div>
@@ -1189,14 +1206,19 @@ function SchoolDashboard() {
   return (
     <div className="space-y-6">
       {/* ── Welcome header ── */}
-      <div className="flex items-start justify-between">
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-[40px] font-black tracking-tight leading-none" style={{ color: C.text }}>
+          <h1 className="text-[42px] font-extrabold tracking-tight leading-[1.1]" style={{ color: C.text }}>
             Xush kelibsiz,{' '}
-            <span style={{ color: C.primary }}>{user?.firstName}!</span>
+            <span style={{
+              background: 'linear-gradient(135deg, #0F7B53 0%, #10b981 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+            }}>{user?.firstName}!</span>
           </h1>
-          <p className="text-sm mt-2" style={{ color: C.muted }}>
-            {getRoleLabel(user?.role ?? '')} — EduPlatform &middot; {dayLabel}
+          <p className="text-[15px] mt-1.5 font-medium" style={{ color: C.muted }}>
+            {getRoleLabel(user?.role ?? '')} &middot; {dayLabel}
           </p>
         </div>
       </div>
@@ -1371,10 +1393,16 @@ function ParentDashboard() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-[40px] font-black tracking-tight leading-none" style={{ color: C.text }}>
-          Xush kelibsiz, <span style={{ color: C.primary }}>{user?.firstName}!</span>
+        <h1 className="text-[42px] font-extrabold tracking-tight leading-[1.1]" style={{ color: C.text }}>
+          Xush kelibsiz,{' '}
+          <span style={{
+            background: 'linear-gradient(135deg, #0F7B53 0%, #10b981 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text',
+          }}>{user?.firstName}!</span>
         </h1>
-        <p className="text-sm mt-2" style={{ color: C.muted }}>Farzandlaringizning o'qish holati</p>
+        <p className="text-[15px] mt-1.5 font-medium" style={{ color: C.muted }}>Farzandlaringizning o&apos;qish holati</p>
       </div>
 
       {childList.length > 1 && (
