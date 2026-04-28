@@ -472,6 +472,7 @@ function UpcomingExamsWidget() {
 // ── Class Teacher My Class ─────────────────────────────────────────────────────
 function ClassTeacherMyClassSection() {
   const router = useRouter();
+  const { activeBranchId } = useAuthStore();
 
   const { data: myClass, isLoading } = useQuery({
     queryKey: ['classes', 'my-class', activeBranchId],
