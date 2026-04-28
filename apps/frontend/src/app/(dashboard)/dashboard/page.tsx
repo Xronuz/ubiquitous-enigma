@@ -7,7 +7,7 @@ import {
   AlertCircle, Globe, CheckCircle2, Building2, LayoutGrid,
   BookOpen, BookMarked, ClipboardCheck, Calendar, GraduationCap, ChevronRight,
   Rocket, X, Library, BookCopy, Hourglass, DollarSign, BarChart2,
-  CalendarOff, ShieldAlert, CalendarCheck, Activity, Bell,
+  CalendarOff, ShieldAlert, CalendarCheck, Activity, Bell, ArrowUpRight,
 } from 'lucide-react';
 import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid,
@@ -40,9 +40,35 @@ import { useAuthStore } from '@/store/auth.store';
 import { formatCurrency, getRoleLabel } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/components/ui/use-toast';
+import { cn } from '@/lib/utils';
 
-// ── Backwards-compat: map old "bg-*-500" class strings → new token keys ──────
-const LEGACY_COLOR_MAP: Record<string, string> = {
+// ── Design tokens ─────────────────────────────────────────────────────────────
+const C = {
+  primary:     '#0F7B53',
+  primaryMid:  '#1C8E61',
+  primaryLight:'#DDF5EA',
+  text:        '#111827',
+  muted:       '#6B7280',
+  border:      '#EEF1F0',
+  bg:          '#F7F8F8',
+  card:        '#FFFFFF',
+  shadow:      '0 10px 30px rgba(16,24,40,0.06)',
+} as const;
+
+// ── Icon bubble color configs ─────────────────────────────────────────────────
+const ICON_CFG = {
+  emerald: { bg: '#DDF5EA', icon: '#0F7B53' },
+  blue:    { bg: '#DBEAFE', icon: '#2563EB' },
+  violet:  { bg: '#EDE9FE', icon: '#7C3AED' },
+  amber:   { bg: '#FEF3C7', icon: '#D97706' },
+  red:     { bg: '#FEE2E2', icon: '#DC2626' },
+  indigo:  { bg: '#E0E7FF', icon: '#4338CA' },
+  cyan:    { bg: '#CFFAFE', icon: '#0891B2' },
+  rose:    { bg: '#FFE4E6', icon: '#E11D48' },
+} as const;
+type IconColor = keyof typeof ICON_CFG;
+
+const LEGACY_COLOR_MAP: Record<string, IconColor> = {
   'bg-blue-500':    'blue',
   'bg-violet-500':  'violet',
   'bg-purple-500':  'violet',
@@ -58,25 +84,12 @@ const LEGACY_COLOR_MAP: Record<string, string> = {
   'bg-rose-500':    'rose',
   'bg-pink-500':    'rose',
   'bg-muted':       'blue',
-  'bg-primary':     'blue',
+  'bg-primary':     'emerald',
 };
 
-// ── Color palette for KPI cards ──────────────────────────────────────────────
-const KPI_COLORS = {
-  blue:    { accent: 'kpi-blue',    bg: 'bg-blue-50   dark:bg-blue-950/30',    icon: 'text-blue-600   dark:text-blue-400'    },
-  violet:  { accent: 'kpi-violet',  bg: 'bg-violet-50 dark:bg-violet-950/30',  icon: 'text-violet-600 dark:text-violet-400'  },
-  emerald: { accent: 'kpi-emerald', bg: 'bg-emerald-50 dark:bg-emerald-950/30',icon: 'text-emerald-600 dark:text-emerald-400'},
-  amber:   { accent: 'kpi-amber',   bg: 'bg-amber-50  dark:bg-amber-950/30',   icon: 'text-amber-600  dark:text-amber-400'   },
-  red:     { accent: 'kpi-red',     bg: 'bg-red-50    dark:bg-red-950/30',     icon: 'text-red-600    dark:text-red-400'     },
-  indigo:  { accent: 'kpi-indigo',  bg: 'bg-indigo-50 dark:bg-indigo-950/30',  icon: 'text-indigo-600 dark:text-indigo-400'  },
-  cyan:    { accent: 'kpi-cyan',    bg: 'bg-cyan-50   dark:bg-cyan-950/30',    icon: 'text-cyan-600   dark:text-cyan-400'    },
-  rose:    { accent: 'kpi-rose',    bg: 'bg-rose-50   dark:bg-rose-950/30',    icon: 'text-rose-600   dark:text-rose-400'    },
-} as const;
-
-type KpiColor = keyof typeof KPI_COLORS;
-
+// ── Premium StatCard ───────────────────────────────────────────────────────────
 function StatCard({
-  title, value, description, icon: Icon, trend, loading, color = 'blue', href,
+  title, value, description, icon: Icon, trend, loading, color = 'blue', href, onClick,
 }: {
   title: string;
   value: string | number;
@@ -84,42 +97,85 @@ function StatCard({
   icon: React.ElementType;
   trend?: 'up' | 'down';
   loading?: boolean;
-  /** @deprecated use color token instead */
-  color?: KpiColor | string;
+  color?: IconColor | string;
   href?: string;
+  onClick?: () => void;
 }) {
-  // Resolve legacy "bg-*-500" class strings to new token keys
-  const resolvedColor = LEGACY_COLOR_MAP[color] ?? color;
-  const cfg = KPI_COLORS[resolvedColor as KpiColor] ?? KPI_COLORS.blue;
+  const resolvedColor = (LEGACY_COLOR_MAP[color] ?? color) as IconColor;
+  const cfg = ICON_CFG[resolvedColor] ?? ICON_CFG.blue;
+  const Wrapper = href ? Link : onClick ? 'button' : 'div';
+  const wrapperProps = href ? { href } : onClick ? { onClick } : {};
 
   return (
-    <Card className={`${cfg.accent} card-lift cursor-default`}>
-      <CardHeader className="flex flex-row items-center justify-between pb-2 pt-4 px-4">
-        <CardTitle className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+    <Wrapper
+      {...(wrapperProps as any)}
+      className={cn(
+        'group block rounded-[22px] bg-white border p-6 transition-all duration-200',
+        'border-[#EEF1F0] shadow-[0_10px_30px_rgba(16,24,40,0.06)]',
+        (href || onClick) && 'cursor-pointer hover:-translate-y-0.5 hover:shadow-[0_16px_40px_rgba(16,24,40,0.10)]',
+      )}
+    >
+      {/* Top row */}
+      <div className="flex items-start justify-between mb-5">
+        <p className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: C.muted }}>
           {title}
-        </CardTitle>
-        <div className={`rounded-lg p-2 ${cfg.bg} shrink-0`}>
-          <Icon className={`h-4 w-4 ${cfg.icon}`} />
+        </p>
+        <div
+          className="h-10 w-10 rounded-2xl flex items-center justify-center shrink-0"
+          style={{ background: cfg.bg }}
+        >
+          <Icon className="h-5 w-5" style={{ color: cfg.icon }} />
         </div>
-      </CardHeader>
-      <CardContent className="px-4 pb-4">
-        {loading ? <Skeleton className="h-10 w-28" /> : (
-          <div className="text-3xl font-black tracking-tight animate-count-up">{value}</div>
-        )}
-        {description && (
-          <p className="mt-1.5 flex items-center gap-1 text-xs text-muted-foreground">
-            {trend === 'up'   && <TrendingUp   className="h-3 w-3 text-emerald-500 shrink-0" />}
-            {trend === 'down' && <TrendingDown className="h-3 w-3 text-red-500 shrink-0" />}
-            {description}
+      </div>
+
+      {/* Value */}
+      {loading
+        ? <Skeleton className="h-11 w-28 mb-3" />
+        : (
+          <p
+            className="text-[40px] font-black leading-none tracking-tight mb-3 animate-count-up"
+            style={{ color: C.text }}
+          >
+            {value}
           </p>
-        )}
-      </CardContent>
-    </Card>
+        )
+      }
+
+      {/* Description */}
+      {description && (
+        <p className="flex items-center gap-1.5 text-[13px]" style={{ color: C.muted }}>
+          {trend === 'up'   && <TrendingUp  className="h-3.5 w-3.5 text-emerald-500 shrink-0" />}
+          {trend === 'down' && <TrendingDown className="h-3.5 w-3.5 text-red-500 shrink-0" />}
+          {description}
+        </p>
+      )}
+    </Wrapper>
   );
 }
 
-// ─── Onboarding Checklist ─────────────────────────────────────────────────
+// ── Section header ─────────────────────────────────────────────────────────────
+function SectionHeader({ title, action }: { title: string; action?: React.ReactNode }) {
+  return (
+    <div className="flex items-center justify-between mb-4">
+      <h2 className="text-[15px] font-bold" style={{ color: C.text }}>{title}</h2>
+      {action}
+    </div>
+  );
+}
 
+// ── Premium card wrapper ───────────────────────────────────────────────────────
+function PCard({ className, children }: { className?: string; children: React.ReactNode }) {
+  return (
+    <div
+      className={cn('rounded-[22px] bg-white border p-6', className)}
+      style={{ borderColor: C.border, boxShadow: C.shadow }}
+    >
+      {children}
+    </div>
+  );
+}
+
+// ── Onboarding Checklist ───────────────────────────────────────────────────────
 function OnboardingChecklist({ classList, usersData, subjectsCount }: {
   classList: any[];
   usersData: any;
@@ -135,34 +191,10 @@ function OnboardingChecklist({ classList, usersData, subjectsCount }: {
   const teacherCount = usersData?.data?.filter((u: any) => ['teacher', 'class_teacher'].includes(u.role)).length ?? 0;
 
   const steps = [
-    {
-      id: 'classes',
-      label: 'Sinflar yarating',
-      description: 'Maktabingiz uchun kamida 1 ta sinf yarating',
-      href: '/dashboard/classes',
-      done: classList.length > 0,
-    },
-    {
-      id: 'teachers',
-      label: "O'qituvchilar qo'shing",
-      description: "Kamida 1 ta o'qituvchi hisobini yarating",
-      href: '/dashboard/users',
-      done: teacherCount > 0,
-    },
-    {
-      id: 'subjects',
-      label: 'Fanlar kiriting',
-      description: 'Dars jadvaliga fan qo\'shing',
-      href: '/dashboard/subjects',
-      done: subjectsCount > 0,
-    },
-    {
-      id: 'schedule',
-      label: 'Dars jadvali tuzing',
-      description: 'Haftalik dars jadvalini tuzib chiqing',
-      href: '/dashboard/schedule',
-      done: false,
-    },
+    { id: 'classes',  label: 'Sinflar yarating',        description: 'Kamida 1 ta sinf yarating',      href: '/dashboard/classes',  done: classList.length > 0 },
+    { id: 'teachers', label: "O'qituvchilar qo'shing",  description: "Kamida 1 ta o'qituvchi qo'shing", href: '/dashboard/users',    done: teacherCount > 0 },
+    { id: 'subjects', label: 'Fanlar kiriting',          description: 'Dars jadvaliga fan qo\'shing',     href: '/dashboard/subjects', done: subjectsCount > 0 },
+    { id: 'schedule', label: 'Dars jadvali tuzing',      description: 'Haftalik jadval tuzing',           href: '/dashboard/schedule', done: false },
   ];
 
   const allDone = steps.every(s => s.done);
@@ -171,308 +203,194 @@ function OnboardingChecklist({ classList, usersData, subjectsCount }: {
   const doneCount = steps.filter(s => s.done).length;
 
   return (
-    <Card className="border-primary/30 bg-gradient-to-br from-primary/5 to-background">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Rocket className="h-5 w-5 text-primary" />
-            <CardTitle className="text-base">Maktabni sozlash</CardTitle>
-            <Badge variant="secondary" className="text-xs">{doneCount}/{steps.length}</Badge>
+    <PCard className="border-l-4" style={{ borderLeftColor: C.primary } as any}>
+      <div className="flex items-start justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <div className="h-9 w-9 rounded-xl flex items-center justify-center" style={{ background: C.primaryLight }}>
+            <Rocket className="h-4.5 w-4.5" style={{ color: C.primary }} />
           </div>
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => {
-            localStorage.setItem('onboarding_dismissed', '1');
-            setDismissed(true);
-          }}>
-            <X className="h-3.5 w-3.5" />
-          </Button>
+          <div>
+            <p className="font-bold text-sm" style={{ color: C.text }}>Maktabni sozlash</p>
+            <p className="text-xs" style={{ color: C.muted }}>{doneCount}/{steps.length} qadam bajarildi</p>
+          </div>
         </div>
-        <CardDescription className="text-xs">
-          Quyidagi qadamlarni bajaring va tizimni to'liq ishga tushiring.{' '}
-          <a href="/dashboard/onboarding" className="text-primary underline underline-offset-2">Sozlash ustasi →</a>
-        </CardDescription>
-        {/* Progress bar */}
-        <div className="h-1.5 w-full rounded-full bg-muted mt-2">
-          <div
-            className="h-1.5 rounded-full bg-primary transition-all"
-            style={{ width: `${(doneCount / steps.length) * 100}%` }}
-          />
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="grid gap-2 sm:grid-cols-2">
-          {steps.map((step, idx) => (
-            <button
-              key={step.id}
-              onClick={() => !step.done && router.push(step.href)}
-              className={`flex items-start gap-3 rounded-lg border p-3 text-left transition-colors ${
-                step.done
-                  ? 'border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/20 cursor-default'
-                  : 'border-border hover:border-primary/50 hover:bg-accent cursor-pointer'
-              }`}
-            >
-              <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
-                step.done ? 'bg-green-500 text-white' : 'bg-muted text-muted-foreground'
-              }`}>
-                {step.done ? <CheckCircle2 className="h-4 w-4" /> : idx + 1}
-              </div>
-              <div className="min-w-0">
-                <p className={`text-sm font-medium ${step.done ? 'line-through text-muted-foreground' : ''}`}>
-                  {step.label}
-                </p>
-                <p className="text-xs text-muted-foreground truncate">{step.description}</p>
-              </div>
-            </button>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-// ─── Super Admin Dashboard ─────────────────────────────────────────────────
-
-function SuperAdminDashboard() {
-  const { data: stats, isLoading } = useQuery({
-    queryKey: ['super-admin', 'stats'],
-    queryFn: superAdminApi.getStats,
-  });
-
-  const { data: schools, isLoading: schoolsLoading } = useQuery({
-    queryKey: ['super-admin', 'schools'],
-    queryFn: () => superAdminApi.getSchools({ limit: 5 }),
-  });
-
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Platform boshqaruvi</h1>
-          <p className="text-muted-foreground text-sm mt-0.5">EduPlatform — Super Admin paneli</p>
-        </div>
-        <Button asChild>
-          <Link href="/dashboard/schools">
-            <Building2 className="mr-2 h-4 w-4" />
-            Maktablar
-          </Link>
-        </Button>
+        <button
+          onClick={() => { localStorage.setItem('onboarding_dismissed', '1'); setDismissed(true); }}
+          className="h-7 w-7 rounded-full flex items-center justify-center hover:bg-slate-100 transition-colors"
+        >
+          <X className="h-3.5 w-3.5" style={{ color: C.muted }} />
+        </button>
       </div>
 
-      {/* Platform KPIs */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <StatCard
-          title="Jami maktablar"
-          value={isLoading ? '...' : (stats?.schoolCount ?? 0)}
-          icon={School}
-          description="Aktiv maktablar"
-          color="blue"
-          loading={isLoading}
-        />
-        <StatCard
-          title="Jami foydalanuvchilar"
-          value={isLoading ? '...' : (stats?.userCount ?? 0)}
-          icon={Users}
-          description="Barcha maktablar bo'yicha"
-          color="violet"
-          loading={isLoading}
-        />
-        <StatCard
-          title="Aktiv subscriptionlar"
-          value={isLoading ? '...' : (stats?.activeSubscriptions ?? 0)}
-          icon={CheckCircle2}
-          description="To'lov qilayotgan maktablar"
-          color="emerald"
-          loading={isLoading}
+      {/* Progress */}
+      <div className="h-1.5 w-full rounded-full bg-slate-100 mb-5">
+        <div
+          className="h-1.5 rounded-full transition-all"
+          style={{ width: `${(doneCount / steps.length) * 100}%`, background: C.primary }}
         />
       </div>
 
-      {/* Recent schools + Quick links */}
-      <div className="grid gap-4 md:grid-cols-2">
-        {/* Recent schools */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <div>
-              <CardTitle className="text-base">So'nggi maktablar</CardTitle>
-              <CardDescription>Platformdagi barcha maktablar</CardDescription>
-            </div>
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/dashboard/schools">Barchasi →</Link>
-            </Button>
-          </CardHeader>
-          <CardContent>
-            {schoolsLoading ? (
-              <div className="space-y-2">
-                {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-12" />)}
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {(schools?.data ?? []).map((s: any) => (
-                  <div key={s.id} className="flex items-center justify-between rounded-lg border p-3">
-                    <div>
-                      <p className="font-medium text-sm">{s.name}</p>
-                      <p className="text-xs text-muted-foreground">{s.slug}</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Badge variant={s.isActive ? 'success' : 'destructive'}>
-                        {s.isActive ? 'Aktiv' : 'Bloklangan'}
-                      </Badge>
-                      <Badge variant="secondary" className="text-xs">
-                        {s._count?.users ?? 0} user
-                      </Badge>
-                    </div>
-                  </div>
-                ))}
-                {(!schools?.data || schools.data.length === 0) && (
-                  <p className="py-4 text-center text-sm text-muted-foreground">
-                    Maktablar yo'q
-                  </p>
-                )}
-              </div>
+      <div className="grid gap-2 sm:grid-cols-2">
+        {steps.map((step, idx) => (
+          <button
+            key={step.id}
+            onClick={() => !step.done && router.push(step.href)}
+            className={cn(
+              'flex items-start gap-3 rounded-[14px] border p-3.5 text-left transition-colors',
+              step.done
+                ? 'bg-[#DDF5EA] border-[#A7F0C4] cursor-default'
+                : 'border-[#EEF1F0] hover:border-[#A7F0C4] hover:bg-[#F0FDF8] cursor-pointer',
             )}
-          </CardContent>
-        </Card>
-
-        {/* Quick actions */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Tezkor harakatlar</CardTitle>
-            <CardDescription>Platforma boshqaruv bo'limlari</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 gap-3">
-              {[
-                { label: 'Yangi maktab', href: '/dashboard/schools/new', icon: Building2, color: 'text-blue-500' },
-                { label: 'Foydalanuvchilar', href: '/dashboard/users', icon: Users, color: 'text-violet-500' },
-                { label: 'Modullar', href: '/dashboard/schools', icon: LayoutGrid, color: 'text-orange-500' },
-                { label: 'Sozlamalar', href: '/dashboard/settings', icon: Globe, color: 'text-green-500' },
-              ].map(({ label, href, icon: Icon, color }) => (
-                <Link
-                  key={href}
-                  href={href}
-                  className="flex flex-col items-center gap-2 rounded-xl border p-4 text-center text-sm font-medium hover:bg-accent transition-colors"
-                >
-                  <Icon className={`h-6 w-6 ${color}`} />
-                  {label}
-                </Link>
-              ))}
+          >
+            <div
+              className="h-7 w-7 shrink-0 rounded-full flex items-center justify-center text-xs font-bold"
+              style={step.done ? { background: C.primary, color: '#fff' } : { background: '#EEF1F0', color: C.muted }}
+            >
+              {step.done ? <CheckCircle2 className="h-4 w-4" /> : idx + 1}
             </div>
-          </CardContent>
-        </Card>
+            <div className="min-w-0">
+              <p className={cn('text-sm font-medium', step.done && 'line-through opacity-60')} style={{ color: C.text }}>
+                {step.label}
+              </p>
+              <p className="text-xs mt-0.5 truncate" style={{ color: C.muted }}>{step.description}</p>
+            </div>
+          </button>
+        ))}
       </div>
-    </div>
+    </PCard>
   );
 }
 
-// ─── Today's Schedule Widget ───────────────────────────────────────────────
-const DAY_UZ: Record<string, string> = {
-  monday: 'Dushanba', tuesday: 'Seshanba', wednesday: 'Chorshanba',
-  thursday: 'Payshanba', friday: 'Juma', saturday: 'Shanba', sunday: 'Yakshanba',
-};
-
+// ── Today Schedule Widget ──────────────────────────────────────────────────────
 function TodayScheduleWidget() {
   const { data: todaySlots, isLoading } = useQuery({
     queryKey: ['schedule', 'today'],
     queryFn: scheduleApi.getToday,
-    staleTime: 10 * 60_000, // Bugungi jadval kun davomida o'zgarmaydi
+    staleTime: 10 * 60_000,
   });
   const slots: any[] = Array.isArray(todaySlots) ? todaySlots : [];
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
+    <PCard className="h-full">
+      <div className="flex items-center justify-between mb-5">
         <div>
-          <CardTitle className="text-base">Bugungi darslar</CardTitle>
-          <CardDescription>{new Date().toLocaleDateString('uz-UZ', { weekday: 'long', day: 'numeric', month: 'long' })}</CardDescription>
+          <p className="font-bold text-[15px]" style={{ color: C.text }}>Bugungi darslar</p>
+          <p className="text-xs mt-0.5" style={{ color: C.muted }}>
+            {new Date().toLocaleDateString('uz-UZ', { weekday: 'long', day: 'numeric', month: 'long' })}
+          </p>
         </div>
-        <Button variant="ghost" size="sm" asChild>
-          <Link href="/dashboard/schedule">Jadval <ChevronRight className="ml-1 h-3 w-3" /></Link>
-        </Button>
-      </CardHeader>
-      <CardContent>
-        {isLoading ? (
-          <div className="space-y-2">{[...Array(3)].map((_, i) => <Skeleton key={i} className="h-12" />)}</div>
-        ) : slots.length === 0 ? (
-          <p className="py-4 text-center text-sm text-muted-foreground">Bugun dars yo'q</p>
-        ) : (
-          <div className="space-y-2">
-            {slots.slice(0, 6).map((slot: any) => (
-              <div key={slot.id} className="flex items-center justify-between rounded-lg border p-2.5 text-sm">
-                <div className="flex items-center gap-2">
-                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
-                    {slot.timeSlot}
-                  </span>
-                  <div>
-                    <p className="font-medium">{slot.subject?.name}</p>
-                    <p className="text-xs text-muted-foreground">{slot.class?.name}{slot.roomNumber ? ` — ${slot.roomNumber}-xona` : ''}</p>
-                  </div>
-                </div>
-                <span className="text-xs text-muted-foreground">{slot.startTime}–{slot.endTime}</span>
+        <Link
+          href="/dashboard/schedule"
+          className="flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-full transition-colors"
+          style={{ color: C.primary, background: C.primaryLight }}
+        >
+          Jadval <ChevronRight className="h-3 w-3" />
+        </Link>
+      </div>
+
+      {isLoading ? (
+        <div className="space-y-2">{[...Array(4)].map((_, i) => <Skeleton key={i} className="h-14 rounded-2xl" />)}</div>
+      ) : slots.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-10 gap-2">
+          <Calendar className="h-8 w-8 opacity-20" />
+          <p className="text-sm" style={{ color: C.muted }}>Bugun dars yo'q</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {slots.slice(0, 6).map((slot: any) => (
+            <div
+              key={slot.id}
+              className="flex items-center gap-3 rounded-[14px] border p-3 transition-colors hover:bg-slate-50"
+              style={{ borderColor: C.border }}
+            >
+              <div
+                className="h-8 w-8 shrink-0 rounded-xl flex items-center justify-center text-xs font-bold"
+                style={{ background: C.primaryLight, color: C.primary }}
+              >
+                {slot.timeSlot}
               </div>
-            ))}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold truncate" style={{ color: C.text }}>{slot.subject?.name}</p>
+                <p className="text-xs truncate" style={{ color: C.muted }}>
+                  {slot.class?.name}{slot.roomNumber ? ` · ${slot.roomNumber}-xona` : ''}
+                </p>
+              </div>
+              <span className="text-xs shrink-0" style={{ color: C.muted }}>
+                {slot.startTime}–{slot.endTime}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </PCard>
   );
 }
 
-// ─── Attendance Summary Widget ─────────────────────────────────────────────
+// ── Attendance Summary Widget ──────────────────────────────────────────────────
 function AttendanceSummaryWidget() {
   const { data, isLoading } = useQuery({
     queryKey: ['attendance', 'today-summary'],
     queryFn: attendanceApi.getTodaySummary,
-    refetchInterval: 60_000, // refresh every minute
+    refetchInterval: 60_000,
   });
 
   const pct = data?.presentPct ?? 0;
-  const color = pct >= 80 ? 'text-green-600' : pct >= 60 ? 'text-yellow-600' : 'text-red-600';
-  const barColor = pct >= 80 ? 'bg-green-500' : pct >= 60 ? 'bg-yellow-500' : 'bg-red-500';
+  const pctColor = pct >= 80 ? '#0F7B53' : pct >= 60 ? '#D97706' : '#DC2626';
+  const barBg    = pct >= 80 ? C.primaryLight : pct >= 60 ? '#FEF3C7' : '#FEE2E2';
+  const barFill  = pctColor;
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
+    <PCard className="h-full">
+      <div className="flex items-center justify-between mb-5">
         <div>
-          <CardTitle className="text-base">Bugungi davomat</CardTitle>
-          <CardDescription>Maktab bo'yicha</CardDescription>
+          <p className="font-bold text-[15px]" style={{ color: C.text }}>Bugungi davomat</p>
+          <p className="text-xs mt-0.5" style={{ color: C.muted }}>Maktab bo'yicha</p>
         </div>
-        <div className="rounded-lg bg-green-500/10 p-2">
-          <ClipboardCheck className="h-4 w-4 text-green-600" />
+        <div className="h-10 w-10 rounded-2xl flex items-center justify-center" style={{ background: C.primaryLight }}>
+          <ClipboardCheck className="h-5 w-5" style={{ color: C.primary }} />
         </div>
-      </CardHeader>
-      <CardContent>
-        {isLoading ? (
-          <Skeleton className="h-16" />
-        ) : (
-          <>
-            <div className={`text-3xl font-bold ${color}`}>{pct}%</div>
-            <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-muted">
-              <div className={`h-full rounded-full transition-all ${barColor}`} style={{ width: `${pct}%` }} />
-            </div>
-            <div className="mt-2 grid grid-cols-3 gap-2 text-xs text-center">
-              <div className="rounded-md bg-green-50 p-1.5">
-                <div className="font-bold text-green-700">{data?.present ?? 0}</div>
-                <div className="text-muted-foreground">Keldi</div>
+      </div>
+
+      {isLoading ? (
+        <Skeleton className="h-32 rounded-2xl" />
+      ) : (
+        <>
+          {/* Big pct */}
+          <p className="text-[52px] font-black leading-none tracking-tight mb-1" style={{ color: pctColor }}>
+            {pct}%
+          </p>
+          <p className="text-sm mb-4" style={{ color: C.muted }}>
+            Jami: {data?.marked ?? 0} / {data?.totalStudents ?? 0} o'quvchi
+          </p>
+
+          {/* Progress bar */}
+          <div className="h-2 w-full rounded-full mb-5" style={{ background: barBg }}>
+            <div
+              className="h-full rounded-full transition-all"
+              style={{ width: `${pct}%`, background: barFill }}
+            />
+          </div>
+
+          {/* 3 chips */}
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              { label: 'Keldi',    value: data?.present ?? 0, bg: '#DDF5EA', color: '#0F7B53' },
+              { label: 'Kelmadi', value: data?.absent  ?? 0, bg: '#FEE2E2', color: '#DC2626' },
+              { label: 'Kechikdi',value: data?.late    ?? 0, bg: '#FEF3C7', color: '#D97706' },
+            ].map(s => (
+              <div key={s.label} className="rounded-[14px] p-3 text-center" style={{ background: s.bg }}>
+                <p className="text-lg font-black" style={{ color: s.color }}>{s.value}</p>
+                <p className="text-xs font-medium mt-0.5" style={{ color: s.color }}>{s.label}</p>
               </div>
-              <div className="rounded-md bg-red-50 p-1.5">
-                <div className="font-bold text-red-700">{data?.absent ?? 0}</div>
-                <div className="text-muted-foreground">Kelmadi</div>
-              </div>
-              <div className="rounded-md bg-yellow-50 p-1.5">
-                <div className="font-bold text-yellow-700">{data?.late ?? 0}</div>
-                <div className="text-muted-foreground">Kechikdi</div>
-              </div>
-            </div>
-            <p className="mt-2 text-xs text-muted-foreground text-right">
-              Jami: {data?.marked ?? 0} / {data?.totalStudents ?? 0} o'quvchi
-            </p>
-          </>
-        )}
-      </CardContent>
-    </Card>
+            ))}
+          </div>
+        </>
+      )}
+    </PCard>
   );
 }
 
-// ─── Upcoming Exams Widget ─────────────────────────────────────────────────
+// ── Upcoming Exams Widget ──────────────────────────────────────────────────────
 const FREQ_UZ: Record<string, string> = {
   weekly: 'Haftalik', monthly: 'Oylik', quarterly: 'Choraklik',
   midterm: 'Yarim yillik', final: 'Yakuniy', custom: 'Maxsus',
@@ -486,49 +404,69 @@ function UpcomingExamsWidget() {
   const exams: any[] = Array.isArray(data) ? data : [];
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
+    <PCard className="h-full">
+      <div className="flex items-center justify-between mb-5">
         <div>
-          <CardTitle className="text-base">Yaqin imtihonlar</CardTitle>
-          <CardDescription>Keyingi 7 kun ichida</CardDescription>
+          <p className="font-bold text-[15px]" style={{ color: C.text }}>Yaqin imtihonlar</p>
+          <p className="text-xs mt-0.5" style={{ color: C.muted }}>Keyingi 7 kun</p>
         </div>
-        <Button variant="ghost" size="sm" asChild>
-          <Link href="/dashboard/exams">Barchasi <ChevronRight className="ml-1 h-3 w-3" /></Link>
-        </Button>
-      </CardHeader>
-      <CardContent>
-        {isLoading ? (
-          <div className="space-y-2">{[...Array(3)].map((_, i) => <Skeleton key={i} className="h-12" />)}</div>
-        ) : exams.length === 0 ? (
-          <p className="py-4 text-center text-sm text-muted-foreground">Yaqin imtihonlar yo'q</p>
-        ) : (
-          <div className="space-y-2">
-            {exams.map((exam: any) => {
-              const d = new Date(exam.scheduledAt);
-              const isToday = d.toDateString() === new Date().toDateString();
-              const isTomorrow = d.toDateString() === new Date(Date.now() + 86400000).toDateString();
-              const label = isToday ? 'Bugun' : isTomorrow ? 'Ertaga' : d.toLocaleDateString('uz-UZ', { day: 'numeric', month: 'short' });
-              return (
-                <div key={exam.id} className="flex items-center justify-between rounded-lg border p-2.5 text-sm">
-                  <div>
-                    <p className="font-medium">{exam.subject?.name}</p>
-                    <p className="text-xs text-muted-foreground">{exam.class?.name} — {FREQ_UZ[exam.frequency] ?? exam.frequency}</p>
-                  </div>
-                  <Badge variant={isToday ? 'destructive' : isTomorrow ? 'warning' : 'secondary'}>
-                    {label}
-                  </Badge>
+        <Link
+          href="/dashboard/exams"
+          className="text-xs font-semibold"
+          style={{ color: C.primary }}
+        >
+          Barchasi →
+        </Link>
+      </div>
+
+      {isLoading ? (
+        <div className="space-y-2">{[...Array(4)].map((_, i) => <Skeleton key={i} className="h-14 rounded-2xl" />)}</div>
+      ) : exams.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-10 gap-2">
+          <GraduationCap className="h-8 w-8 opacity-20" />
+          <p className="text-sm text-center" style={{ color: C.muted }}>Yaqin imtihonlar yo'q</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {exams.map((exam: any) => {
+            const d = new Date(exam.scheduledAt);
+            const isToday    = d.toDateString() === new Date().toDateString();
+            const isTomorrow = d.toDateString() === new Date(Date.now() + 86400000).toDateString();
+            const label = isToday ? 'Bugun' : isTomorrow ? 'Ertaga' : d.toLocaleDateString('uz-UZ', { day: 'numeric', month: 'short' });
+            const chipStyle = isToday
+              ? { background: '#FEE2E2', color: '#DC2626' }
+              : isTomorrow
+              ? { background: '#FEF3C7', color: '#D97706' }
+              : { background: '#EEF1F0', color: C.muted };
+
+            return (
+              <div
+                key={exam.id}
+                className="flex items-center justify-between rounded-[14px] border p-3"
+                style={{ borderColor: C.border }}
+              >
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold truncate" style={{ color: C.text }}>{exam.subject?.name}</p>
+                  <p className="text-xs mt-0.5 truncate" style={{ color: C.muted }}>
+                    {exam.class?.name} · {FREQ_UZ[exam.frequency] ?? exam.frequency}
+                  </p>
                 </div>
-              );
-            })}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+                <span
+                  className="shrink-0 ml-3 text-xs font-semibold px-2.5 py-1 rounded-full"
+                  style={chipStyle}
+                >
+                  {label}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </PCard>
   );
 }
 
-// ─── Class Teacher My Class Section ────────────────────────────────────────
-
+// ── Class Teacher My Class ─────────────────────────────────────────────────────
 function ClassTeacherMyClassSection() {
   const router = useRouter();
 
@@ -544,121 +482,100 @@ function ClassTeacherMyClassSection() {
   });
 
   if (isLoading) {
-    return (
-      <div className="grid gap-4 sm:grid-cols-3">
-        {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)}
-      </div>
-    );
+    return <div className="grid gap-4 sm:grid-cols-3">{[...Array(3)].map((_, i) => <Skeleton key={i} className="h-24 rounded-[22px]" />)}</div>;
   }
 
   if (!myClass) {
     return (
-      <Card className="border-dashed">
-        <CardContent className="p-4 text-sm text-muted-foreground text-center">
+      <PCard>
+        <p className="text-sm text-center" style={{ color: C.muted }}>
           Sizga hali sinf biriktirilmagan. Admin orqali sinf biriktiring.
-        </CardContent>
-      </Card>
+        </p>
+      </PCard>
     );
   }
 
   const studentCount = myClass._count?.students ?? 0;
-  const classAvg = gpaData?.classAvg ?? 0;
+  const classAvg     = gpaData?.classAvg ?? 0;
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="font-semibold text-base">Mening sinfim — {myClass.name}</h2>
-        <Button variant="ghost" size="sm" onClick={() => router.push(`/dashboard/my-class`)}>
-          Batafsil <ChevronRight className="ml-1 h-3.5 w-3.5" />
-        </Button>
+        <h2 className="font-bold text-[15px]" style={{ color: C.text }}>Mening sinfim — {myClass.name}</h2>
+        <button
+          onClick={() => router.push('/dashboard/my-class')}
+          className="text-xs font-semibold flex items-center gap-1"
+          style={{ color: C.primary }}
+        >
+          Batafsil <ChevronRight className="h-3 w-3" />
+        </button>
       </div>
+
       <div className="grid gap-4 sm:grid-cols-3">
-        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => router.push('/dashboard/attendance')}>
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-green-500/10">
-              <ClipboardCheck className="h-5 w-5 text-green-600" />
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">O'quvchilar</p>
-              <p className="text-2xl font-bold">{studentCount}</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => router.push('/dashboard/grades')}>
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-blue-500/10">
-              <BookOpen className="h-5 w-5 text-blue-600" />
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">O'rtacha GPA</p>
-              <p className="text-2xl font-bold">{classAvg.toFixed(1)}%</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => router.push('/dashboard/homework')}>
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-violet-500/10">
-              <BookMarked className="h-5 w-5 text-violet-600" />
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Sinf kodi</p>
-              <p className="text-2xl font-bold">{myClass.gradeLevel || '—'}</p>
-              <p className="text-xs text-muted-foreground">{myClass.academicYear}</p>
-            </div>
-          </CardContent>
-        </Card>
+        {[
+          { label: "O'quvchilar", value: studentCount,           icon: ClipboardCheck, color: 'emerald', href: '/dashboard/attendance' },
+          { label: "O'rtacha GPA",value: `${classAvg.toFixed(1)}%`,icon: BookOpen,    color: 'blue',    href: '/dashboard/grades'     },
+          { label: "Sinf kodi",   value: myClass.gradeLevel||'—', icon: BookMarked,   color: 'violet',  href: '/dashboard/homework'   },
+        ].map(item => (
+          <StatCard
+            key={item.label}
+            title={item.label}
+            value={item.value}
+            icon={item.icon}
+            color={item.color}
+            onClick={() => router.push(item.href)}
+          />
+        ))}
       </div>
-      {/* Top/Bottom students by GPA */}
+
       {gpaData && gpaData.students.length > 0 && (
         <div className="grid gap-4 sm:grid-cols-2">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-xs text-muted-foreground uppercase tracking-wide">Eng yuqori GPA</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-1.5">
-              {gpaData.students.slice(0, 3).map((s, i) => (
+          <PCard className="p-5">
+            <p className="text-[11px] font-semibold uppercase tracking-widest mb-4" style={{ color: C.muted }}>Eng yuqori GPA</p>
+            <div className="space-y-2">
+              {gpaData.students.slice(0, 3).map((s: any, i: number) => (
                 <div key={s.studentId} className="flex items-center justify-between text-sm">
                   <span className="flex items-center gap-2">
-                    <span className={`w-5 h-5 rounded-full text-xs flex items-center justify-center font-bold ${i === 0 ? 'bg-yellow-400 text-white' : 'bg-muted text-muted-foreground'}`}>{i + 1}</span>
-                    {s.name}
+                    <span
+                      className="w-6 h-6 rounded-full text-xs flex items-center justify-center font-bold"
+                      style={i === 0 ? { background: '#FBBF24', color: '#fff' } : { background: C.border, color: C.muted }}
+                    >{i + 1}</span>
+                    <span style={{ color: C.text }}>{s.name}</span>
                   </span>
-                  <span className="font-bold text-green-600">{s.gpa.toFixed(1)}%</span>
+                  <span className="font-bold" style={{ color: C.primary }}>{s.gpa.toFixed(1)}%</span>
                 </div>
               ))}
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-xs text-muted-foreground uppercase tracking-wide">Diqqat talab qiluvchi</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-1.5">
-              {gpaData.students.slice(-3).reverse().filter(s => s.gpa < 70).map((s, i) => (
+            </div>
+          </PCard>
+          <PCard className="p-5">
+            <p className="text-[11px] font-semibold uppercase tracking-widest mb-4" style={{ color: C.muted }}>Diqqat talab</p>
+            <div className="space-y-2">
+              {gpaData.students.slice(-3).reverse().filter((s: any) => s.gpa < 70).map((s: any) => (
                 <div key={s.studentId} className="flex items-center justify-between text-sm">
-                  <span>{s.name}</span>
+                  <span style={{ color: C.text }}>{s.name}</span>
                   <span className="font-bold text-red-500">{s.gpa.toFixed(1)}%</span>
                 </div>
               ))}
-              {gpaData.students.slice(-3).filter(s => s.gpa < 70).length === 0 && (
-                <p className="text-xs text-muted-foreground text-center py-2">Barcha o'quvchilar yaxshi! 🎉</p>
+              {gpaData.students.filter((s: any) => s.gpa < 70).length === 0 && (
+                <p className="text-sm text-center py-2" style={{ color: C.muted }}>Barcha o'quvchilar yaxshi!</p>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </PCard>
         </div>
       )}
     </div>
   );
 }
 
-// ─── Teacher KPI Section ───────────────────────────────────────────────────
-
+// ── Teacher KPI Section ────────────────────────────────────────────────────────
 function TeacherKPISection() {
   const { user } = useAuthStore();
-  const router = useRouter();
+  const router   = useRouter();
 
   const { data: todaySlots, isLoading: schedLoading } = useQuery({
     queryKey: ['schedule', 'today'],
     queryFn: scheduleApi.getToday,
-    staleTime: 10 * 60_000, // TodayScheduleWidget bilan bir xil key — cache share qiladi
+    staleTime: 10 * 60_000,
   });
 
   const { data: homeworks = [] } = useQuery({
@@ -670,238 +587,129 @@ function TeacherKPISection() {
   const myLessonsToday = (Array.isArray(todaySlots) ? todaySlots : [])
     .filter((s: any) => s.teacherId === user?.id).length;
 
-  const hwList = homeworks as any[];
+  const hwList       = homeworks as any[];
   const pendingGrade = hwList.reduce((acc: number, hw: any) => {
     const subs = hw.submissions ?? [];
     return acc + subs.filter((s: any) => s.score === null || s.score === undefined).length;
   }, 0);
 
   const isClassTeacher = user?.role === 'class_teacher';
+  const colors: IconColor[] = ['blue', 'emerald', 'amber', 'violet'];
 
   const teacherKpis = [
-    ...(isClassTeacher ? [{
-      title: 'Mening sinfim',
-      value: '→',
-      icon: School,
-      description: 'Sinf ro\'yxati, davomat va baholar',
-      href: '/dashboard/my-class',
-    }] : []),
-    {
-      title: 'Bugun darslarim',
-      value: schedLoading ? '...' : myLessonsToday,
-      icon: Calendar,
-      description: 'Bugungi dars jadvalidagi soatlar',
-      href: '/dashboard/schedule',
-    },
-    {
-      title: 'Baholanmagan vazifalar',
-      value: pendingGrade,
-      icon: BookMarked,
-      description: 'Baholashni kutayotgan topshiriqlar',
-      href: '/dashboard/homework',
-    },
-    {
-      title: 'Jami uy vazifalari',
-      value: hwList.length,
-      icon: ClipboardCheck,
-      description: 'Berilgan uy vazifalari',
-      href: '/dashboard/homework',
-    },
+    ...(isClassTeacher ? [{ title: 'Mening sinfim', value: '→', icon: School,        description: "Sinf ro'yxati, davomat",    href: '/dashboard/my-class'  }] : []),
+    { title: 'Bugun darslarim',       value: schedLoading ? '...' : myLessonsToday, icon: Calendar,       description: 'Bugungi dars soatlari', href: '/dashboard/schedule'  },
+    { title: 'Baholanmagan',          value: pendingGrade,                           icon: ClipboardCheck, description: 'Kutayotgan topshiriqlar',href: '/dashboard/homework'  },
+    { title: 'Jami uy vazifalari',    value: hwList.length,                          icon: BookMarked,     description: 'Berilgan vazifalar',     href: '/dashboard/homework'  },
   ];
 
   return (
-    <div className={`grid gap-5 ${isClassTeacher ? 'sm:grid-cols-4' : 'sm:grid-cols-3'}`}>
-      {teacherKpis.map(({ title, value, icon: Icon, description, href }, i) => {
-        const colors: KpiColor[] = ['blue', 'emerald', 'amber', 'violet'];
-        return (
-          <Card
-            key={title}
-            className={`${KPI_COLORS[colors[i % colors.length]].accent} cursor-pointer card-lift`}
-            onClick={() => router.push(href)}
-          >
-            <CardHeader className="flex flex-row items-center justify-between pb-2 pt-4 px-4">
-              <CardTitle className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{title}</CardTitle>
-              <div className={`rounded-lg p-2 ${KPI_COLORS[colors[i % colors.length]].bg}`}>
-                <Icon className={`h-4 w-4 ${KPI_COLORS[colors[i % colors.length]].icon}`} />
-              </div>
-            </CardHeader>
-            <CardContent className="px-4 pb-4">
-              <div className="text-2xl font-bold tracking-tight">{value}</div>
-              <p className="mt-1.5 text-xs text-muted-foreground">{description}</p>
-            </CardContent>
-          </Card>
-        );
-      })}
+    <div className={cn('grid gap-4', isClassTeacher ? 'sm:grid-cols-4' : 'sm:grid-cols-3')}>
+      {teacherKpis.map(({ title, value, icon, description, href }, i) => (
+        <StatCard
+          key={title}
+          title={title}
+          value={value}
+          icon={icon}
+          color={colors[i % colors.length]}
+          description={description}
+          onClick={() => router.push(href)}
+        />
+      ))}
     </div>
   );
 }
 
-// ─── Vice Principal Section ────────────────────────────────────────────────
-
+// ── Vice Principal Section ─────────────────────────────────────────────────────
 function VicePrincipalSection() {
-  const router = useRouter();
-  const queryClient = useQueryClient();
-  const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10);
-  const today = new Date().toISOString().slice(0, 10);
+  const router       = useRouter();
+  const queryClient  = useQueryClient();
+  const weekAgo      = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10);
+  const today        = new Date().toISOString().slice(0, 10);
 
-  const { data: leaveData } = useQuery({
-    queryKey: ['leave-requests', 'pending'],
-    queryFn: () => leaveRequestsApi.getAll({ status: 'pending' }),
-  });
-  const { data: disciplineData } = useQuery({
-    queryKey: ['discipline', 'week'],
-    queryFn: () => disciplineApi.getAll({ from: weekAgo, to: today, limit: 50 }),
-  });
+  const { data: leaveData }     = useQuery({ queryKey: ['leave-requests', 'pending'], queryFn: () => leaveRequestsApi.getAll({ status: 'pending' }) });
+  const { data: disciplineData }= useQuery({ queryKey: ['discipline', 'week'],        queryFn: () => disciplineApi.getAll({ from: weekAgo, to: today, limit: 50 }) });
 
-  const pendingLeaves: any[] = leaveData?.data ?? (Array.isArray(leaveData) ? leaveData : []);
-  const disciplineList: any[] = disciplineData?.data ?? [];
-  const unresolvedDiscipline = disciplineList.filter((d: any) => !d.resolved);
+  const pendingLeaves: any[]     = leaveData?.data ?? (Array.isArray(leaveData) ? leaveData : []);
+  const disciplineList: any[]    = disciplineData?.data ?? [];
+  const unresolvedDiscipline     = disciplineList.filter((d: any) => !d.resolved);
 
   const reviewMutation = useMutation({
-    mutationFn: ({ id, action }: { id: string; action: 'approve' | 'reject' }) =>
-      leaveRequestsApi.review(id, { action }),
+    mutationFn: ({ id, action }: { id: string; action: 'approve' | 'reject' }) => leaveRequestsApi.review(id, { action }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['leave-requests'] }),
   });
 
   const items = [
-    {
-      title: "Ta'til so'rovlari",
-      value: pendingLeaves.length,
-      desc: 'Kutilayotgan so\'rovlar',
-      icon: CalendarOff,
-      color: pendingLeaves.length > 0 ? 'bg-orange-500' : 'bg-muted',
-      href: '/dashboard/leave-requests',
-      alert: pendingLeaves.length > 0,
-    },
-    {
-      title: "Intizom hodisalari",
-      value: unresolvedDiscipline.length,
-      desc: 'Hal qilinmagan (7 kun)',
-      icon: ShieldAlert,
-      color: unresolvedDiscipline.length > 3 ? 'bg-red-500' : unresolvedDiscipline.length > 0 ? 'bg-yellow-500' : 'bg-muted',
-      href: '/dashboard/discipline',
-      alert: unresolvedDiscipline.length > 0,
-    },
-    {
-      title: "Ota-ona uchrashuvlari",
-      value: '→',
-      desc: 'Uchrashuvlar jadvalini ko\'rish',
-      icon: CalendarCheck,
-      color: 'bg-blue-500',
-      href: '/dashboard/meetings',
-      alert: false,
-    },
-    {
-      title: 'Ish yuklamasi',
-      value: '→',
-      desc: "O'qituvchilar yuklamasi",
-      icon: Activity,
-      color: 'bg-violet-500',
-      href: '/dashboard/reports/workload',
-      alert: false,
-    },
+    { title: "Ta'til so'rovlari",   value: pendingLeaves.length,       desc: "Kutilayotgan so'rovlar",    icon: CalendarOff,  color: 'amber' as IconColor, href: '/dashboard/leave-requests', alert: pendingLeaves.length > 0 },
+    { title: "Intizom hodisalari",  value: unresolvedDiscipline.length, desc: 'Hal qilinmagan (7 kun)',  icon: ShieldAlert,  color: 'red'   as IconColor, href: '/dashboard/discipline',     alert: unresolvedDiscipline.length > 0 },
+    { title: "Ota-ona uchrashuvlari",value: '→',                        desc: "Uchrashuvlar jadvali",    icon: CalendarCheck,color: 'blue'  as IconColor, href: '/dashboard/meetings',       alert: false },
+    { title: 'Ish yuklamasi',       value: '→',                        desc: "O'qituvchilar yuklamasi",  icon: Activity,     color: 'violet'as IconColor, href: '/dashboard/reports/workload',alert: false },
   ];
 
   return (
     <div className="space-y-4">
-      <h2 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">O'rinbosar ko'rsatkichlari</h2>
+      <p className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: C.muted }}>O'rinbosar ko'rsatkichlari</p>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {items.map(({ title, value, desc, icon: Icon, color, href, alert }) => (
-          <Card
-            key={title}
-            className={`cursor-pointer hover:shadow-md transition-shadow ${alert ? 'border-orange-300 dark:border-orange-800' : ''}`}
-            onClick={() => router.push(href)}
-          >
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
-              <div className={`rounded-lg p-2 ${color}`}>
-                <Icon className="h-4 w-4 text-white" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className={`text-2xl font-bold ${alert ? 'text-orange-600' : ''}`}>{value}</div>
-              <p className="mt-1 text-xs text-muted-foreground">{desc}</p>
-            </CardContent>
-          </Card>
+        {items.map(({ title, value, desc, icon, color, href }) => (
+          <StatCard key={title} title={title} value={value} icon={icon} color={color} description={desc} onClick={() => router.push(href)} />
         ))}
       </div>
 
-      {/* Quick leave approval widget */}
       {pendingLeaves.length > 0 && (
-        <Card className="border-orange-200 dark:border-orange-900">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <CalendarOff className="h-4 w-4 text-orange-500" />
-                Tezkor tasdiqlash — Ta&apos;til so&apos;rovlari
-              </CardTitle>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-xs h-7"
-                onClick={() => router.push('/dashboard/leave-requests')}
-              >
-                Barchasini ko&apos;rish →
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-2">
+        <PCard>
+          <div className="flex items-center justify-between mb-4">
+            <p className="font-bold text-sm flex items-center gap-2" style={{ color: C.text }}>
+              <CalendarOff className="h-4 w-4 text-amber-500" />
+              Tezkor tasdiqlash — Ta&apos;til so&apos;rovlari
+            </p>
+            <button onClick={() => router.push('/dashboard/leave-requests')} className="text-xs font-semibold" style={{ color: C.primary }}>
+              Barchasini ko&apos;rish →
+            </button>
+          </div>
+          <div className="space-y-2">
             {pendingLeaves.slice(0, 5).map((leave: any) => {
               const name = `${leave.user?.firstName ?? ''} ${leave.user?.lastName ?? ''}`.trim() || 'Noma\'lum';
               const from = leave.startDate ? new Date(leave.startDate).toLocaleDateString('uz-UZ', { day: '2-digit', month: 'short' }) : '—';
               const to   = leave.endDate   ? new Date(leave.endDate).toLocaleDateString('uz-UZ', { day: '2-digit', month: 'short' }) : '—';
-              const isPending = reviewMutation.isPending;
               return (
-                <div
-                  key={leave.id}
-                  className="flex items-center gap-3 rounded-lg border bg-card px-3 py-2"
-                >
+                <div key={leave.id} className="flex items-center gap-3 rounded-[14px] border p-3" style={{ borderColor: C.border }}>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{name}</p>
-                    <p className="text-xs text-muted-foreground">{from} – {to} · {leave.reason?.slice(0, 30) ?? '—'}</p>
+                    <p className="text-sm font-medium truncate" style={{ color: C.text }}>{name}</p>
+                    <p className="text-xs truncate" style={{ color: C.muted }}>{from} – {to} · {leave.reason?.slice(0, 30) ?? '—'}</p>
                   </div>
                   <div className="flex gap-1.5 shrink-0">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-7 px-2 text-xs text-green-600 border-green-300 hover:bg-green-50"
-                      disabled={isPending}
+                    <button
+                      className="h-7 px-3 rounded-full text-xs font-semibold transition-colors"
+                      style={{ background: C.primaryLight, color: C.primary }}
+                      disabled={reviewMutation.isPending}
                       onClick={() => reviewMutation.mutate({ id: leave.id, action: 'approve' })}
-                    >
-                      ✓ Tasdiqlash
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-7 px-2 text-xs text-red-500 border-red-300 hover:bg-red-50"
-                      disabled={isPending}
+                    >✓ Tasdiqlash</button>
+                    <button
+                      className="h-7 px-3 rounded-full text-xs font-semibold transition-colors"
+                      style={{ background: '#FEE2E2', color: '#DC2626' }}
+                      disabled={reviewMutation.isPending}
                       onClick={() => reviewMutation.mutate({ id: leave.id, action: 'reject' })}
-                    >
-                      ✕ Rad
-                    </Button>
+                    >✕ Rad</button>
                   </div>
                 </div>
               );
             })}
             {pendingLeaves.length > 5 && (
-              <p className="text-xs text-muted-foreground text-center pt-1">
-                +{pendingLeaves.length - 5} ta boshqa so&apos;rov
-              </p>
+              <p className="text-xs text-center pt-1" style={{ color: C.muted }}>+{pendingLeaves.length - 5} ta boshqa so&apos;rov</p>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </PCard>
       )}
     </div>
   );
 }
 
-// ─── Admin Charts Section ──────────────────────────────────────────────────
-
+// ── Admin Charts Section ───────────────────────────────────────────────────────
 const MONTH_LABELS = ['Yan', 'Fev', 'Mar', 'Apr', 'May', 'Iyn', 'Iyl', 'Avg', 'Sen', 'Okt', 'Noy', 'Dek'];
 
 function AdminChartsSection() {
-  const now = new Date();
-  const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1).toISOString().slice(0, 10);
+  const now         = new Date();
+  const sixMonthsAgo= new Date(now.getFullYear(), now.getMonth() - 5, 1).toISOString().slice(0, 10);
 
   const { data: paymentHistory, isLoading: payLoading } = useQuery({
     queryKey: ['payments', 'history', 'trend'],
@@ -916,11 +724,10 @@ function AdminChartsSection() {
     }),
   });
 
-  // Build monthly revenue data from history
   const revenueData = (() => {
     const months: Record<string, number> = {};
     for (let i = 5; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const d   = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
       months[key] = 0;
     }
@@ -935,17 +742,15 @@ function AdminChartsSection() {
     });
   })();
 
-  // Build 7-day attendance trend
   const attendanceTrend = (() => {
     const records: any[] = Array.isArray(attendanceReport) ? attendanceReport : (attendanceReport?.data ?? []);
-    const byDate: Record<string, { present: number; absent: number; total: number }> = {};
+    const byDate: Record<string, { present: number; total: number }> = {};
     records.forEach((r: any) => {
       const d = r.date?.slice(0, 10) ?? '';
       if (!d) return;
-      if (!byDate[d]) byDate[d] = { present: 0, absent: 0, total: 0 };
+      if (!byDate[d]) byDate[d] = { present: 0, total: 0 };
       byDate[d].total++;
       if (r.status === 'present') byDate[d].present++;
-      else if (r.status === 'absent') byDate[d].absent++;
     });
     return Object.entries(byDate)
       .sort(([a], [b]) => a.localeCompare(b))
@@ -958,85 +763,107 @@ function AdminChartsSection() {
 
   return (
     <div className="grid gap-4 md:grid-cols-2">
-      {/* Revenue trend */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base flex items-center gap-2">
-            <BarChart2 className="h-4 w-4 text-blue-500" />
-            Oylik daromad (so&apos;m)
-          </CardTitle>
-          <CardDescription>So&apos;nggi 6 oy bo&apos;yicha tushum</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {payLoading ? <Skeleton className="h-44" /> : (
-            <ResponsiveContainer width="100%" height={176}>
-              <BarChart data={revenueData} margin={{ top: 4, right: 8, left: -16, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                <XAxis dataKey="month" tick={{ fontSize: 11 }} />
-                <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => v >= 1000000 ? `${(v / 1000000).toFixed(1)}M` : v >= 1000 ? `${(v / 1000).toFixed(0)}K` : v} />
-                <Tooltip formatter={(v: number) => [formatCurrency(v), 'Tushum']} />
-                <Bar dataKey="amount" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          )}
-        </CardContent>
-      </Card>
+      {/* Revenue bar chart */}
+      <PCard>
+        <div className="flex items-start justify-between mb-5">
+          <div>
+            <p className="font-bold text-[15px]" style={{ color: C.text }}>Oylik daromad</p>
+            <p className="text-xs mt-0.5" style={{ color: C.muted }}>So'nggi 6 oy (so'm)</p>
+          </div>
+          <div className="h-9 w-9 rounded-xl flex items-center justify-center" style={{ background: '#DBEAFE' }}>
+            <BarChart2 className="h-4.5 w-4.5 text-blue-600" />
+          </div>
+        </div>
+        {payLoading ? <Skeleton className="h-52" /> : (
+          <ResponsiveContainer width="100%" height={208}>
+            <BarChart data={revenueData} margin={{ top: 4, right: 4, left: -12, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#EEF1F0" />
+              <XAxis dataKey="month" tick={{ fontSize: 12, fill: C.muted }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 11, fill: C.muted }} axisLine={false} tickLine={false}
+                tickFormatter={(v) => v >= 1000000 ? `${(v/1000000).toFixed(1)}M` : v >= 1000 ? `${(v/1000).toFixed(0)}K` : String(v)} />
+              <Tooltip
+                formatter={(v: number) => [formatCurrency(v), 'Tushum']}
+                contentStyle={{ borderRadius: 12, border: 'none', boxShadow: C.shadow, fontSize: 12 }}
+              />
+              <Bar dataKey="amount" fill={C.primary} radius={[8, 8, 0, 0]} maxBarSize={40} />
+            </BarChart>
+          </ResponsiveContainer>
+        )}
+      </PCard>
 
       {/* Attendance trend */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base flex items-center gap-2">
-            <TrendingUp className="h-4 w-4 text-green-500" />
-            Davomat trendi (%)
-          </CardTitle>
-          <CardDescription>So&apos;nggi 7 kun davomati</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {attLoading ? <Skeleton className="h-44" /> : attendanceTrend.length === 0 ? (
-            <div className="flex h-44 items-center justify-center text-sm text-muted-foreground">
-              Ma&apos;lumot yo&apos;q
-            </div>
-          ) : (
-            <ResponsiveContainer width="100%" height={176}>
-              <LineChart data={attendanceTrend} margin={{ top: 4, right: 8, left: -16, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                <XAxis dataKey="day" tick={{ fontSize: 11 }} />
-                <YAxis domain={[0, 100]} tick={{ fontSize: 10 }} tickFormatter={(v) => `${v}%`} />
-                <Tooltip formatter={(v: number) => [`${v}%`, 'Davomat']} />
-                <Line type="monotone" dataKey="pct" stroke="#22c55e" strokeWidth={2} dot={{ r: 3 }} />
-              </LineChart>
-            </ResponsiveContainer>
-          )}
-        </CardContent>
-      </Card>
+      <PCard>
+        <div className="flex items-start justify-between mb-5">
+          <div>
+            <p className="font-bold text-[15px]" style={{ color: C.text }}>Davomat trendi</p>
+            <p className="text-xs mt-0.5" style={{ color: C.muted }}>So'nggi 7 kun (%)</p>
+          </div>
+          <div className="h-9 w-9 rounded-xl flex items-center justify-center" style={{ background: C.primaryLight }}>
+            <TrendingUp className="h-4.5 w-4.5" style={{ color: C.primary }} />
+          </div>
+        </div>
+        {attLoading ? <Skeleton className="h-52" /> : attendanceTrend.length === 0 ? (
+          <div className="flex h-52 items-center justify-center text-sm" style={{ color: C.muted }}>Ma'lumot yo'q</div>
+        ) : (
+          <ResponsiveContainer width="100%" height={208}>
+            <LineChart data={attendanceTrend} margin={{ top: 4, right: 4, left: -12, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#EEF1F0" />
+              <XAxis dataKey="day" tick={{ fontSize: 12, fill: C.muted }} axisLine={false} tickLine={false} />
+              <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: C.muted }} axisLine={false} tickLine={false}
+                tickFormatter={(v) => `${v}%`} />
+              <Tooltip
+                formatter={(v: number) => [`${v}%`, 'Davomat']}
+                contentStyle={{ borderRadius: 12, border: 'none', boxShadow: C.shadow, fontSize: 12 }}
+              />
+              <Line type="monotone" dataKey="pct" stroke={C.primary} strokeWidth={2.5}
+                dot={{ r: 4, fill: C.primary, strokeWidth: 0 }}
+                activeDot={{ r: 6, fill: C.primary }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        )}
+      </PCard>
     </div>
   );
 }
 
-// ─── Accountant Dashboard ──────────────────────────────────────────────────
+// ── Quick action grid ──────────────────────────────────────────────────────────
+function QuickActions({ items }: { items: { label: string; href: string; icon: React.ElementType; iconColor: string }[] }) {
+  return (
+    <div className="grid grid-cols-2 gap-2">
+      {items.map(({ label, href, icon: Icon, iconColor }) => (
+        <Link
+          key={href + label}
+          href={href}
+          className="flex items-center gap-2.5 rounded-[14px] border p-3.5 transition-colors hover:bg-slate-50"
+          style={{ borderColor: C.border }}
+        >
+          <Icon className="h-4 w-4 shrink-0" style={{ color: iconColor }} />
+          <span className="text-xs font-semibold" style={{ color: C.text }}>{label}</span>
+        </Link>
+      ))}
+    </div>
+  );
+}
 
-const PIE_COLORS = ['#22c55e', '#ef4444', '#f59e0b'];
+// ── Accountant Dashboard ───────────────────────────────────────────────────────
+const PIE_COLORS = [C.primary, '#EF4444', '#F59E0B'];
 
 function AccountantDashboard() {
   const { user } = useAuthStore();
   const now = new Date();
   const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1).toISOString().slice(0, 10);
 
-  const { data: paymentReport, isLoading: reportLoading } = useQuery({
-    queryKey: ['payments', 'report'],
-    queryFn: paymentsApi.getReport,
-  });
-
+  const { data: paymentReport, isLoading: reportLoading } = useQuery({ queryKey: ['payments', 'report'], queryFn: paymentsApi.getReport });
   const { data: paymentHistory, isLoading: histLoading } = useQuery({
     queryKey: ['payments', 'history', 'trend'],
     queryFn: () => paymentsApi.getHistory({ from: sixMonthsAgo, limit: 500 }),
   });
 
-  // Monthly breakdown for BarChart
   const monthlyData = (() => {
     const months: Record<string, { paid: number; pending: number }> = {};
     for (let i = 5; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const d   = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
       months[key] = { paid: 0, pending: 0 };
     }
@@ -1053,148 +880,193 @@ function AccountantDashboard() {
     });
   })();
 
-  // Pie chart data
   const pieData = [
     { name: "To'langan", value: paymentReport?.monthly?.paid ?? 0 },
-    { name: 'Kechikkan', value: paymentReport?.overdue ?? 0 },
+    { name: 'Kechikkan',  value: paymentReport?.overdue ?? 0 },
     { name: 'Kutilmoqda', value: paymentReport?.monthly?.pending ?? 0 },
   ].filter(d => d.value > 0);
 
   const totalRevenue = paymentReport?.monthly?.paid ?? 0;
-  const overdueAmt = paymentReport?.overdue ?? 0;
+  const overdueAmt   = paymentReport?.overdue ?? 0;
   const debtors: any[] = paymentReport?.debtors ?? [];
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-end justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Moliya boshqaruvi</h1>
-          <p className="text-muted-foreground">Hisobchi — {user?.firstName}</p>
+          <h1 className="text-[32px] font-black tracking-tight leading-none" style={{ color: C.text }}>
+            Moliya boshqaruvi
+          </h1>
+          <p className="text-sm mt-1.5" style={{ color: C.muted }}>Hisobchi — {user?.firstName}</p>
         </div>
-        <Button asChild>
-          <a href="/dashboard/payments"><CreditCard className="mr-2 h-4 w-4" />To&apos;lovlar</a>
-        </Button>
+        <Button asChild><a href="/dashboard/payments"><CreditCard className="mr-2 h-4 w-4" />To&apos;lovlar</a></Button>
       </div>
 
-      {/* KPI cards */}
       <div className="grid gap-4 sm:grid-cols-3">
-        <StatCard
-          title="Bu oy tushumi"
-          value={formatCurrency(totalRevenue)}
-          icon={DollarSign}
-          trend="up"
-          description="Oylik tushum"
-          loading={reportLoading}
-          color="bg-green-500"
-        />
-        <StatCard
-          title="Kechikkan to'lovlar"
-          value={formatCurrency(overdueAmt)}
-          icon={AlertCircle}
-          trend="down"
-          description="Qarzdorlik miqdori"
-          loading={reportLoading}
-          color="bg-red-500"
-        />
-        <StatCard
-          title="Qarzdorlar soni"
-          value={debtors.length}
-          icon={Users}
-          description="Aktiv qarzdorlar"
-          loading={reportLoading}
-          color="bg-orange-500"
-        />
+        <StatCard title="Bu oy tushumi"       value={formatCurrency(totalRevenue)} icon={DollarSign}  trend="up"   description="Oylik tushum"       loading={reportLoading} color="emerald" />
+        <StatCard title="Kechikkan to'lovlar" value={formatCurrency(overdueAmt)}   icon={AlertCircle} trend="down" description="Qarzdorlik miqdori" loading={reportLoading} color="red"     />
+        <StatCard title="Qarzdorlar soni"     value={debtors.length}               icon={Users}       description="Aktiv qarzdorlar"   loading={reportLoading} color="amber"   />
       </div>
 
-      {/* Charts row */}
       <div className="grid gap-4 md:grid-cols-2">
-        {/* Monthly BarChart */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Oylik tushum dinamikasi</CardTitle>
-            <CardDescription>So&apos;nggi 6 oy (so&apos;m)</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {histLoading ? <Skeleton className="h-52" /> : (
-              <ResponsiveContainer width="100%" height={208}>
-                <BarChart data={monthlyData} margin={{ top: 4, right: 8, left: -16, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis dataKey="month" tick={{ fontSize: 11 }} />
-                  <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => v >= 1000000 ? `${(v / 1000000).toFixed(1)}M` : `${(v / 1000).toFixed(0)}K`} />
-                  <Tooltip formatter={(v: number, name: string) => [formatCurrency(v), name === 'paid' ? "To'langan" : 'Kutilmoqda']} />
-                  <Bar dataKey="paid" fill="#22c55e" radius={[4, 4, 0, 0]} name="paid" stackId="a" />
-                  <Bar dataKey="pending" fill="#f59e0b" radius={[4, 4, 0, 0]} name="pending" stackId="a" />
-                </BarChart>
-              </ResponsiveContainer>
-            )}
-          </CardContent>
-        </Card>
+        <PCard>
+          <p className="font-bold text-[15px] mb-1" style={{ color: C.text }}>Oylik tushum dinamikasi</p>
+          <p className="text-xs mb-5" style={{ color: C.muted }}>So'nggi 6 oy (so'm)</p>
+          {histLoading ? <Skeleton className="h-52" /> : (
+            <ResponsiveContainer width="100%" height={208}>
+              <BarChart data={monthlyData} margin={{ top: 4, right: 4, left: -12, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#EEF1F0" />
+                <XAxis dataKey="month" tick={{ fontSize: 12, fill: C.muted }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 11, fill: C.muted }} axisLine={false} tickLine={false}
+                  tickFormatter={(v) => v >= 1000000 ? `${(v/1000000).toFixed(1)}M` : `${(v/1000).toFixed(0)}K`} />
+                <Tooltip formatter={(v: number, name: string) => [formatCurrency(v), name === 'paid' ? "To'langan" : 'Kutilmoqda']}
+                  contentStyle={{ borderRadius: 12, border: 'none', boxShadow: C.shadow, fontSize: 12 }} />
+                <Bar dataKey="paid"    fill={C.primary} radius={[6, 6, 0, 0]} stackId="a" maxBarSize={36} />
+                <Bar dataKey="pending" fill="#F59E0B"   radius={[6, 6, 0, 0]} stackId="a" maxBarSize={36} />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </PCard>
 
-        {/* Pie chart */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">To&apos;lov holati (bu oy)</CardTitle>
-            <CardDescription>To&apos;langan / Kutilmoqda / Kechikkan</CardDescription>
-          </CardHeader>
-          <CardContent className="flex items-center justify-center">
+        <PCard>
+          <p className="font-bold text-[15px] mb-1" style={{ color: C.text }}>To'lov holati</p>
+          <p className="text-xs mb-5" style={{ color: C.muted }}>Bu oy — To'langan / Kutilmoqda / Kechikkan</p>
+          <div className="flex items-center justify-center">
             {reportLoading ? <Skeleton className="h-52 w-52 rounded-full" /> : pieData.length === 0 ? (
-              <p className="py-8 text-sm text-muted-foreground">Ma&apos;lumot yo&apos;q</p>
+              <p className="py-8 text-sm" style={{ color: C.muted }}>Ma'lumot yo'q</p>
             ) : (
               <ResponsiveContainer width="100%" height={208}>
                 <PieChart>
                   <Pie data={pieData} cx="50%" cy="50%" innerRadius={55} outerRadius={85} dataKey="value" paddingAngle={3}>
                     {pieData.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
                   </Pie>
-                  <Tooltip formatter={(v: number) => formatCurrency(v)} />
+                  <Tooltip formatter={(v: number) => formatCurrency(v)}
+                    contentStyle={{ borderRadius: 12, border: 'none', boxShadow: C.shadow, fontSize: 12 }} />
                   <Legend />
                 </PieChart>
               </ResponsiveContainer>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </PCard>
       </div>
 
-      {/* Top debtors */}
       {debtors.length > 0 && (
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
+        <PCard>
+          <div className="flex items-center justify-between mb-5">
             <div>
-              <CardTitle className="text-base">Qarzdorlar ro&apos;yxati</CardTitle>
-              <CardDescription>Eng katta qarzdorliklar</CardDescription>
+              <p className="font-bold text-[15px]" style={{ color: C.text }}>Qarzdorlar ro'yxati</p>
+              <p className="text-xs mt-0.5" style={{ color: C.muted }}>Eng katta qarzdorliklar</p>
             </div>
-            <Button variant="ghost" size="sm" asChild>
-              <a href="/dashboard/payments">Barchasi <ChevronRight className="ml-1 h-3 w-3" /></a>
-            </Button>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {debtors.slice(0, 8).map((d: any, i: number) => (
-                <div key={d.id ?? i} className="flex items-center justify-between rounded-lg border p-3 text-sm">
-                  <div className="flex items-center gap-3">
-                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-muted text-xs font-bold">{i + 1}</span>
-                    <div>
-                      <p className="font-medium">{d.student?.firstName} {d.student?.lastName}</p>
-                      <p className="text-xs text-muted-foreground">{d.student?.class?.name ?? ''}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold text-destructive">{formatCurrency(d.amount)}</span>
-                    <Badge variant={d.status === 'overdue' ? 'destructive' : 'warning'}>
-                      {d.status === 'overdue' ? 'Kechikkan' : 'Kutilmoqda'}
-                    </Badge>
+            <a href="/dashboard/payments" className="text-xs font-semibold" style={{ color: C.primary }}>Barchasi →</a>
+          </div>
+          <div className="space-y-2">
+            {debtors.slice(0, 8).map((d: any, i: number) => (
+              <div key={d.id ?? i} className="flex items-center justify-between rounded-[14px] border p-3.5" style={{ borderColor: C.border }}>
+                <div className="flex items-center gap-3">
+                  <span
+                    className="h-7 w-7 rounded-full flex items-center justify-center text-xs font-bold"
+                    style={{ background: C.border, color: C.muted }}
+                  >{i + 1}</span>
+                  <div>
+                    <p className="text-sm font-medium" style={{ color: C.text }}>{d.student?.firstName} {d.student?.lastName}</p>
+                    <p className="text-xs" style={{ color: C.muted }}>{d.student?.class?.name ?? ''}</p>
                   </div>
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-red-500 text-sm">{formatCurrency(d.amount)}</span>
+                  <Badge variant={d.status === 'overdue' ? 'destructive' : 'warning'}>
+                    {d.status === 'overdue' ? 'Kechikkan' : 'Kutilmoqda'}
+                  </Badge>
+                </div>
+              </div>
+            ))}
+          </div>
+        </PCard>
       )}
     </div>
   );
 }
 
-// ─── Librarian Dashboard ───────────────────────────────────────────────────
+// ── Super Admin Dashboard ──────────────────────────────────────────────────────
+function SuperAdminDashboard() {
+  const { data: stats, isLoading }          = useQuery({ queryKey: ['super-admin', 'stats'],   queryFn: superAdminApi.getStats });
+  const { data: schools, isLoading: schoolsLoading } = useQuery({ queryKey: ['super-admin', 'schools'], queryFn: () => superAdminApi.getSchools({ limit: 5 }) });
 
+  return (
+    <div className="space-y-6">
+      <div className="flex items-end justify-between">
+        <div>
+          <h1 className="text-[32px] font-black tracking-tight leading-none" style={{ color: C.text }}>Platform boshqaruvi</h1>
+          <p className="text-sm mt-1.5" style={{ color: C.muted }}>EduPlatform — Super Admin paneli</p>
+        </div>
+        <Button asChild><Link href="/dashboard/schools"><Building2 className="mr-2 h-4 w-4" />Maktablar</Link></Button>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-3">
+        <StatCard title="Jami maktablar"       value={isLoading ? '...' : (stats?.schoolCount ?? 0)}          icon={School}       description="Aktiv maktablar"              color="blue"    loading={isLoading} />
+        <StatCard title="Jami foydalanuvchilar" value={isLoading ? '...' : (stats?.userCount ?? 0)}            icon={Users}        description="Barcha maktablar bo'yicha"    color="violet"  loading={isLoading} />
+        <StatCard title="Aktiv subscriptionlar" value={isLoading ? '...' : (stats?.activeSubscriptions ?? 0)} icon={CheckCircle2} description="To'lov qilayotgan maktablar" color="emerald" loading={isLoading} />
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <PCard>
+          <div className="flex items-center justify-between mb-5">
+            <div>
+              <p className="font-bold text-[15px]" style={{ color: C.text }}>So'nggi maktablar</p>
+              <p className="text-xs mt-0.5" style={{ color: C.muted }}>Platformdagi barcha maktablar</p>
+            </div>
+            <Link href="/dashboard/schools" className="text-xs font-semibold" style={{ color: C.primary }}>Barchasi →</Link>
+          </div>
+          {schoolsLoading ? (
+            <div className="space-y-2">{[...Array(3)].map((_, i) => <Skeleton key={i} className="h-12 rounded-2xl" />)}</div>
+          ) : (
+            <div className="space-y-2">
+              {(schools?.data ?? []).map((s: any) => (
+                <div key={s.id} className="flex items-center justify-between rounded-[14px] border p-3.5" style={{ borderColor: C.border }}>
+                  <div>
+                    <p className="font-medium text-sm" style={{ color: C.text }}>{s.name}</p>
+                    <p className="text-xs" style={{ color: C.muted }}>{s.slug}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant={s.isActive ? 'success' : 'destructive'}>{s.isActive ? 'Aktiv' : 'Bloklangan'}</Badge>
+                    <Badge variant="secondary">{s._count?.users ?? 0} user</Badge>
+                  </div>
+                </div>
+              ))}
+              {(!schools?.data || schools.data.length === 0) && (
+                <p className="py-6 text-center text-sm" style={{ color: C.muted }}>Maktablar yo'q</p>
+              )}
+            </div>
+          )}
+        </PCard>
+
+        <PCard>
+          <p className="font-bold text-[15px] mb-5" style={{ color: C.text }}>Tezkor harakatlar</p>
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              { label: 'Yangi maktab',     href: '/dashboard/schools/new', icon: Building2,  iconColor: '#2563EB' },
+              { label: 'Foydalanuvchilar', href: '/dashboard/users',       icon: Users,       iconColor: '#7C3AED' },
+              { label: 'Modullar',         href: '/dashboard/schools',     icon: LayoutGrid,  iconColor: '#D97706' },
+              { label: 'Sozlamalar',       href: '/dashboard/settings',    icon: Globe,       iconColor: C.primary },
+            ].map(({ label, href, icon: Icon, iconColor }) => (
+              <Link key={href} href={href}
+                className="flex flex-col items-center gap-2.5 rounded-[16px] border p-4 text-center transition-colors hover:bg-slate-50"
+                style={{ borderColor: C.border }}
+              >
+                <div className="h-10 w-10 rounded-xl flex items-center justify-center" style={{ background: C.bg }}>
+                  <Icon className="h-5 w-5" style={{ color: iconColor }} />
+                </div>
+                <span className="text-xs font-semibold" style={{ color: C.text }}>{label}</span>
+              </Link>
+            ))}
+          </div>
+        </PCard>
+      </div>
+    </div>
+  );
+}
+
+// ── Librarian Dashboard ────────────────────────────────────────────────────────
 function LibrarianDashboard() {
   const { user } = useAuthStore();
 
@@ -1216,134 +1088,66 @@ function LibrarianDashboard() {
       try {
         const { data } = await (await import('@/lib/api/client')).apiClient.get('/library/loans', { params: { status: 'overdue', limit: 10 } });
         return data?.data ?? [];
-      } catch {
-        return [];
-      }
+      } catch { return []; }
     },
   });
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-end justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Kutubxona boshqaruvi</h1>
-          <p className="text-muted-foreground">Kutubxonachi — {user?.firstName}</p>
+          <h1 className="text-[32px] font-black tracking-tight leading-none" style={{ color: C.text }}>Kutubxona boshqaruvi</h1>
+          <p className="text-sm mt-1.5" style={{ color: C.muted }}>Kutubxonachi — {user?.firstName}</p>
         </div>
-        <Button asChild>
-          <a href="/dashboard/library"><Library className="mr-2 h-4 w-4" />Kutubxona</a>
-        </Button>
+        <Button asChild><a href="/dashboard/library"><Library className="mr-2 h-4 w-4" />Kutubxona</a></Button>
       </div>
 
-      {/* KPI cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          title="Jami kitoblar"
-          value={isLoading ? '...' : (libStats?.totalBooks ?? 0)}
-          icon={BookOpen}
-          description="Katalogdagi kitoblar"
-          loading={isLoading}
-          color="bg-blue-500"
-        />
-        <StatCard
-          title="Mavjud kitoblar"
-          value={isLoading ? '...' : (libStats?.availableBooks ?? 0)}
-          icon={BookCopy}
-          description="Berilishi mumkin"
-          loading={isLoading}
-          color="bg-green-500"
-        />
-        <StatCard
-          title="Faol ijaralar"
-          value={isLoading ? '...' : (libStats?.activeLoans ?? 0)}
-          icon={ClipboardCheck}
-          description="Berilgan kitoblar"
-          loading={isLoading}
-          color="bg-violet-500"
-        />
-        <StatCard
-          title="Muddati o'tgan"
-          value={isLoading ? '...' : (libStats?.overdueLoans ?? 0)}
-          icon={Hourglass}
-          description="Qaytarilmagan kitoblar"
-          loading={isLoading}
-          color="bg-red-500"
-        />
+        <StatCard title="Jami kitoblar"    value={isLoading ? '...' : (libStats?.totalBooks ?? 0)}    icon={BookOpen}      description="Katalogdagi kitoblar" loading={isLoading} color="blue"    />
+        <StatCard title="Mavjud kitoblar"  value={isLoading ? '...' : (libStats?.availableBooks ?? 0)}icon={BookCopy}      description="Berilishi mumkin"    loading={isLoading} color="emerald" />
+        <StatCard title="Faol ijaralar"    value={isLoading ? '...' : (libStats?.activeLoans ?? 0)}   icon={ClipboardCheck}description="Berilgan kitoblar"   loading={isLoading} color="violet"  />
+        <StatCard title="Muddati o'tgan"  value={isLoading ? '...' : (libStats?.overdueLoans ?? 0)}  icon={Hourglass}     description="Qaytarilmagan"       loading={isLoading} color="red"     />
       </div>
 
-      {/* Overdue loans */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+      <PCard>
+        <div className="flex items-center justify-between mb-5">
           <div>
-            <CardTitle className="text-base flex items-center gap-2">
-              <Hourglass className="h-4 w-4 text-red-500" />
-              Muddati o&apos;tgan kitoblar
-            </CardTitle>
-            <CardDescription>Qaytarilmagan va kechikkan ijaralar</CardDescription>
+            <p className="font-bold text-[15px]" style={{ color: C.text }}>Muddati o'tgan kitoblar</p>
+            <p className="text-xs mt-0.5" style={{ color: C.muted }}>Qaytarilmagan va kechikkan ijaralar</p>
           </div>
-          <Button variant="ghost" size="sm" asChild>
-            <a href="/dashboard/library">Barchasi <ChevronRight className="ml-1 h-3 w-3" /></a>
-          </Button>
-        </CardHeader>
-        <CardContent>
-          {overdueLoading ? (
-            <div className="space-y-2">{[...Array(4)].map((_, i) => <Skeleton key={i} className="h-12" />)}</div>
-          ) : (overdueLoans as any[]).length === 0 ? (
-            <div className="flex flex-col items-center gap-2 py-8 text-muted-foreground">
-              <CheckCircle2 className="h-8 w-8 text-green-500" />
-              <p className="text-sm">Hamma kitoblar o&apos;z vaqtida qaytarilgan!</p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {(overdueLoans as any[]).map((loan: any, i: number) => (
-                <div key={loan.id ?? i} className="flex items-center justify-between rounded-lg border border-red-200 p-3 text-sm">
-                  <div>
-                    <p className="font-medium">{loan.book?.title ?? 'Noma\'lum kitob'}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {loan.user?.firstName} {loan.user?.lastName}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <Badge variant="destructive">
-                      {loan.dueDate ? `${Math.ceil((Date.now() - new Date(loan.dueDate).getTime()) / 86400000)} kun` : 'Kechikkan'}
-                    </Badge>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {loan.dueDate ? new Date(loan.dueDate).toLocaleDateString('uz-UZ') : ''}
-                    </p>
-                  </div>
+          <a href="/dashboard/library" className="text-xs font-semibold" style={{ color: C.primary }}>Barchasi →</a>
+        </div>
+        {overdueLoading ? (
+          <div className="space-y-2">{[...Array(4)].map((_, i) => <Skeleton key={i} className="h-14 rounded-2xl" />)}</div>
+        ) : (overdueLoans as any[]).length === 0 ? (
+          <div className="flex flex-col items-center gap-2 py-8">
+            <CheckCircle2 className="h-8 w-8 text-emerald-500" />
+            <p className="text-sm" style={{ color: C.muted }}>Hamma kitoblar o'z vaqtida qaytarilgan!</p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {(overdueLoans as any[]).map((loan: any, i: number) => (
+              <div key={loan.id ?? i} className="flex items-center justify-between rounded-[14px] border border-red-100 p-3.5">
+                <div>
+                  <p className="font-medium text-sm" style={{ color: C.text }}>{loan.book?.title ?? 'Noma\'lum kitob'}</p>
+                  <p className="text-xs" style={{ color: C.muted }}>{loan.user?.firstName} {loan.user?.lastName}</p>
                 </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Quick actions */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Tezkor harakatlar</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {[
-              { label: 'Kitob qo\'sh', href: '/dashboard/library', icon: BookOpen, color: 'text-blue-500' },
-              { label: 'Ijara bering', href: '/dashboard/library', icon: BookCopy, color: 'text-green-500' },
-              { label: 'Qaytarish', href: '/dashboard/library', icon: ClipboardCheck, color: 'text-violet-500' },
-              { label: 'Hisobot', href: '/dashboard/reports', icon: BarChart2, color: 'text-orange-500' },
-            ].map(({ label, href, icon: Icon, color }) => (
-              <a key={href + label} href={href} className="flex flex-col items-center gap-2 rounded-xl border p-4 text-center text-sm font-medium hover:bg-accent transition-colors">
-                <Icon className={`h-6 w-6 ${color}`} />
-                {label}
-              </a>
+                <div className="text-right">
+                  <Badge variant="destructive">
+                    {loan.dueDate ? `${Math.ceil((Date.now() - new Date(loan.dueDate).getTime()) / 86400000)} kun` : 'Kechikkan'}
+                  </Badge>
+                  <p className="text-xs mt-0.5" style={{ color: C.muted }}>{loan.dueDate ? new Date(loan.dueDate).toLocaleDateString('uz-UZ') : ''}</p>
+                </div>
+              </div>
             ))}
           </div>
-        </CardContent>
-      </Card>
+        )}
+      </PCard>
     </div>
   );
 }
 
-// ─── School Admin / Teacher Dashboard ─────────────────────────────────────
-
+// ── School Dashboard (main) ────────────────────────────────────────────────────
 function SchoolDashboard() {
   const { user } = useAuthStore();
 
@@ -1371,277 +1175,189 @@ function SchoolDashboard() {
     enabled: user?.role === 'school_admin',
   });
 
-  const classList = Array.isArray(classesData) ? classesData : [];
+  const classList     = Array.isArray(classesData) ? classesData : [];
   const subjectsCount = Array.isArray(subjectsData) ? subjectsData.length : 0;
+
+  const dayLabel = new Date().toLocaleDateString('uz-UZ', { weekday: 'long', day: 'numeric', month: 'long' });
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-4xl font-black tracking-tight leading-tight">
-          Xush kelibsiz,{' '}
-          <span className="text-gradient">{user?.firstName}!</span>
-        </h1>
-        <p className="text-muted-foreground text-sm mt-2">
-          {getRoleLabel(user?.role ?? '')} — EduPlatform &middot;{' '}
-          {new Date().toLocaleDateString('uz-UZ', { weekday: 'long', day: 'numeric', month: 'long' })}
-        </p>
+      {/* ── Welcome header ── */}
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-[40px] font-black tracking-tight leading-none" style={{ color: C.text }}>
+            Xush kelibsiz,{' '}
+            <span style={{ color: C.primary }}>{user?.firstName}!</span>
+          </h1>
+          <p className="text-sm mt-2" style={{ color: C.muted }}>
+            {getRoleLabel(user?.role ?? '')} — EduPlatform &middot; {dayLabel}
+          </p>
+        </div>
       </div>
 
-      {/* Onboarding checklist for new school admins */}
+      {/* ── Onboarding ── */}
       {user?.role === 'school_admin' && (
-        <OnboardingChecklist
-          classList={classList}
-          usersData={usersData}
-          subjectsCount={subjectsCount}
-        />
+        <OnboardingChecklist classList={classList} usersData={usersData} subjectsCount={subjectsCount} />
       )}
 
-      {/* Vice principal specific KPIs */}
+      {/* ── Vice principal ── */}
       {user?.role === 'vice_principal' && <VicePrincipalSection />}
 
-      {/* Admin/VP charts */}
-      {['school_admin', 'vice_principal'].includes(user?.role ?? '') && (
-        <AdminChartsSection />
-      )}
+      {/* ── Charts (admin / VP) ── */}
+      {['school_admin', 'vice_principal'].includes(user?.role ?? '') && <AdminChartsSection />}
 
-      {/* Class teacher: my class overview */}
-      {user?.role === 'class_teacher' && (
-        <ClassTeacherMyClassSection />
-      )}
+      {/* ── Class teacher: my class ── */}
+      {user?.role === 'class_teacher' && <ClassTeacherMyClassSection />}
 
-      {/* Teacher-specific KPIs */}
-      {['teacher', 'class_teacher'].includes(user?.role ?? '') && (
-        <TeacherKPISection />
-      )}
+      {/* ── Teacher KPIs ── */}
+      {['teacher', 'class_teacher'].includes(user?.role ?? '') && <TeacherKPISection />}
 
+      {/* ── Stat cards row ── */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {['school_admin', 'vice_principal'].includes(user?.role ?? '') && (
-          <StatCard
-            title="Foydalanuvchilar"
-            value={usersData?.meta.total ?? 0}
-            icon={Users}
-            description="Aktiv foydalanuvchilar"
-            color="violet"
-            loading={usersLoading}
-          />
+          <StatCard title="Foydalanuvchilar" value={usersData?.meta.total ?? 0}      icon={Users}      description="Aktiv foydalanuvchilar" color="violet"  loading={usersLoading}   href="/dashboard/users" />
         )}
         {!['student', 'parent'].includes(user?.role ?? '') && (
-          <StatCard
-            title="Sinflar"
-            value={classList.length}
-            icon={School}
-            description="Aktiv sinflar"
-            color="blue"
-            loading={classesLoading}
-          />
+          <StatCard title="Sinflar"           value={classList.length}               icon={School}     description="Aktiv sinflar"         color="blue"    loading={classesLoading} href="/dashboard/classes" />
         )}
         {['school_admin', 'accountant'].includes(user?.role ?? '') && (
           <>
-            <StatCard
-              title="Bu oy tushumi"
-              value={formatCurrency(paymentReport?.monthly?.paid ?? 0)}
-              icon={CreditCard}
-              trend="up"
-              description="Oylik tushum"
-              color="emerald"
-              loading={paymentsLoading}
-            />
-            <StatCard
-              title="Qarzdorlar"
-              value={formatCurrency(paymentReport?.overdue ?? 0)}
-              icon={AlertCircle}
-              trend="down"
-              description="Kechikkan to'lovlar"
-              color="red"
-              loading={paymentsLoading}
-            />
+            <StatCard title="Bu oy tushumi" value={formatCurrency(paymentReport?.monthly?.paid ?? 0)} icon={CreditCard}   trend="up"   description="Oylik tushum"       color="emerald" loading={paymentsLoading} href="/dashboard/payments" />
+            <StatCard title="Qarzdorlar"    value={formatCurrency(paymentReport?.overdue ?? 0)}       icon={AlertCircle} trend="down" description="Kechikkan to'lovlar" color="red"     loading={paymentsLoading} href="/dashboard/payments" />
           </>
         )}
       </div>
 
+      {/* ── Bottom grid ── */}
       <div className="grid gap-4 md:grid-cols-2">
-        {/* Bugungi davomat xulosasi */}
         {['school_admin', 'vice_principal', 'class_teacher', 'teacher'].includes(user?.role ?? '') && (
           <AttendanceSummaryWidget />
         )}
-
-        {/* Yaqin imtihonlar */}
         {['school_admin', 'vice_principal', 'teacher', 'class_teacher'].includes(user?.role ?? '') && (
           <UpcomingExamsWidget />
         )}
-
-        {/* Bugungi darslar — teacher/class_teacher/vice_principal uchun */}
         {['teacher', 'class_teacher', 'vice_principal', 'school_admin'].includes(user?.role ?? '') && (
           <TodayScheduleWidget />
         )}
 
-        {/* Qarzdorlar — accountant/school_admin uchun */}
+        {/* Debtors list */}
         {['school_admin', 'accountant'].includes(user?.role ?? '') && (paymentReport?.debtors?.length ?? 0) > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Qarzdorlar ro'yxati</CardTitle>
-              <CardDescription>Kechikkan va kutilayotgan to'lovlar</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-2">
+          <PCard>
+            <p className="font-bold text-[15px] mb-1" style={{ color: C.text }}>Qarzdorlar</p>
+            <p className="text-xs mb-5" style={{ color: C.muted }}>Kechikkan va kutilayotgan to'lovlar</p>
+            <div className="space-y-2">
               {paymentReport.debtors.slice(0, 5).map((d: any) => (
                 <div key={d.id} className="flex items-center justify-between text-sm">
-                  <span>{d.student.firstName} {d.student.lastName}</span>
+                  <span style={{ color: C.text }}>{d.student.firstName} {d.student.lastName}</span>
                   <div className="flex items-center gap-2">
-                    <span className="font-medium">{formatCurrency(d.amount)}</span>
+                    <span className="font-medium" style={{ color: C.text }}>{formatCurrency(d.amount)}</span>
                     <Badge variant={d.status === 'overdue' ? 'destructive' : 'warning'}>
                       {d.status === 'overdue' ? 'Kechikkan' : 'Kutilmoqda'}
                     </Badge>
                   </div>
                 </div>
               ))}
-            </CardContent>
-          </Card>
+            </div>
+          </PCard>
         )}
 
-        {/* Sinflar ro'yxati */}
+        {/* Classes list */}
         {classList.length > 0 && (
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
+          <PCard>
+            <div className="flex items-center justify-between mb-5">
               <div>
-                <CardTitle className="text-base">Sinflar</CardTitle>
-                <CardDescription>{classList.length} ta sinf ro'yxatda</CardDescription>
+                <p className="font-bold text-[15px]" style={{ color: C.text }}>Sinflar</p>
+                <p className="text-xs mt-0.5" style={{ color: C.muted }}>{classList.length} ta sinf ro'yxatda</p>
               </div>
-              <Button variant="ghost" size="sm" asChild>
-                <Link href="/dashboard/classes">Barchasi <ChevronRight className="ml-1 h-3 w-3" /></Link>
-              </Button>
-            </CardHeader>
-            <CardContent className="space-y-2">
+              <Link href="/dashboard/classes" className="text-xs font-semibold" style={{ color: C.primary }}>Barchasi →</Link>
+            </div>
+            <div className="space-y-2">
               {classList.slice(0, 5).map((c: any) => (
-                <div key={c.id} className="flex items-center justify-between rounded-lg border p-2.5 text-sm">
-                  <span className="font-medium">{c.name}</span>
+                <div key={c.id} className="flex items-center justify-between rounded-[14px] border p-3" style={{ borderColor: C.border }}>
+                  <span className="font-medium text-sm" style={{ color: C.text }}>{c.name}</span>
                   <div className="flex items-center gap-2">
                     <Badge variant="secondary">{c._count?.students ?? 0} o'quvchi</Badge>
-                    <span className="text-muted-foreground text-xs">{c.academicYear}</span>
+                    <span className="text-xs" style={{ color: C.muted }}>{c.academicYear}</span>
                   </div>
                 </div>
               ))}
-            </CardContent>
-          </Card>
+            </div>
+          </PCard>
         )}
 
-        {/* Tezkor harakatlar — role bo'yicha */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Tezkor harakatlar</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 gap-2">
-              {user?.role === 'school_admin' && [
-                { label: 'Foydalanuvchi qo\'sh', href: '/dashboard/users', icon: Users, color: 'text-violet-500' },
-                { label: 'Davomat', href: '/dashboard/attendance', icon: ClipboardCheck, color: 'text-green-500' },
-                { label: "To'lovlar", href: '/dashboard/payments', icon: CreditCard, color: 'text-blue-500' },
-                { label: 'Hisobotlar', href: '/dashboard/reports', icon: BookOpen, color: 'text-orange-500' },
-              ].map(({ label, href, icon: Icon, color }) => (
-                <Link key={href} href={href} className="flex flex-col items-center gap-2 rounded-xl border p-3 text-center text-xs font-medium hover:bg-accent transition-colors">
-                  <Icon className={`h-5 w-5 ${color}`} />
-                  {label}
-                </Link>
-              ))}
-              {['teacher', 'class_teacher'].includes(user?.role ?? '') && [
-                { label: 'Davomat belgi', href: '/dashboard/attendance', icon: ClipboardCheck, color: 'text-green-500' },
-                { label: 'Baho qo\'sh', href: '/dashboard/grades', icon: BookOpen, color: 'text-blue-500' },
-                { label: 'Uy vazifasi', href: '/dashboard/homework', icon: Calendar, color: 'text-violet-500' },
-                { label: 'Imtihon', href: '/dashboard/exams', icon: GraduationCap, color: 'text-orange-500' },
-              ].map(({ label, href, icon: Icon, color }) => (
-                <Link key={href} href={href} className="flex flex-col items-center gap-2 rounded-xl border p-3 text-center text-xs font-medium hover:bg-accent transition-colors">
-                  <Icon className={`h-5 w-5 ${color}`} />
-                  {label}
-                </Link>
-              ))}
-              {user?.role === 'accountant' && [
-                { label: "To'lov qabul", href: '/dashboard/payments', icon: CreditCard, color: 'text-green-500' },
-                { label: 'Maosh', href: '/dashboard/payroll', icon: BookOpen, color: 'text-blue-500' },
-                { label: 'Hisobot', href: '/dashboard/reports', icon: Calendar, color: 'text-violet-500' },
-                { label: 'Sozlamalar', href: '/dashboard/settings', icon: GraduationCap, color: 'text-orange-500' },
-              ].map(({ label, href, icon: Icon, color }) => (
-                <Link key={href} href={href} className="flex flex-col items-center gap-2 rounded-xl border p-3 text-center text-xs font-medium hover:bg-accent transition-colors">
-                  <Icon className={`h-5 w-5 ${color}`} />
-                  {label}
-                </Link>
-              ))}
-              {user?.role === 'vice_principal' && [
-                { label: 'Davomat', href: '/dashboard/attendance', icon: ClipboardCheck, color: 'text-green-500' },
-                { label: 'Baholar', href: '/dashboard/grades', icon: BookOpen, color: 'text-blue-500' },
-                { label: 'Dars jadvali', href: '/dashboard/schedule', icon: Calendar, color: 'text-violet-500' },
-                { label: 'Hisobot', href: '/dashboard/reports', icon: GraduationCap, color: 'text-orange-500' },
-              ].map(({ label, href, icon: Icon, color }) => (
-                <Link key={href} href={href} className="flex flex-col items-center gap-2 rounded-xl border p-3 text-center text-xs font-medium hover:bg-accent transition-colors">
-                  <Icon className={`h-5 w-5 ${color}`} />
-                  {label}
-                </Link>
-              ))}
-              {user?.role === 'librarian' && [
-                { label: 'Kitoblar', href: '/dashboard/library', icon: BookOpen, color: 'text-blue-500' },
-                { label: 'Xabarlar', href: '/dashboard/messages', icon: Calendar, color: 'text-violet-500' },
-                { label: 'Sozlamalar', href: '/dashboard/settings', icon: GraduationCap, color: 'text-orange-500' },
-              ].map(({ label, href, icon: Icon, color }) => (
-                <Link key={href} href={href} className="flex flex-col items-center gap-2 rounded-xl border p-3 text-center text-xs font-medium hover:bg-accent transition-colors">
-                  <Icon className={`h-5 w-5 ${color}`} />
-                  {label}
-                </Link>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+        {/* Quick actions */}
+        <PCard>
+          <p className="font-bold text-[15px] mb-5" style={{ color: C.text }}>Tezkor harakatlar</p>
+          {user?.role === 'school_admin' && (
+            <QuickActions items={[
+              { label: 'Foydalanuvchi qo\'sh', href: '/dashboard/users',      icon: Users,         iconColor: '#7C3AED' },
+              { label: 'Davomat',              href: '/dashboard/attendance', icon: ClipboardCheck, iconColor: C.primary },
+              { label: "To'lovlar",            href: '/dashboard/payments',   icon: CreditCard,     iconColor: '#2563EB' },
+              { label: 'Hisobotlar',           href: '/dashboard/reports',    icon: BookOpen,       iconColor: '#D97706' },
+            ]} />
+          )}
+          {['teacher', 'class_teacher'].includes(user?.role ?? '') && (
+            <QuickActions items={[
+              { label: 'Davomat belgi', href: '/dashboard/attendance', icon: ClipboardCheck, iconColor: C.primary },
+              { label: 'Baho qo\'sh',   href: '/dashboard/grades',     icon: BookOpen,       iconColor: '#2563EB' },
+              { label: 'Uy vazifasi',   href: '/dashboard/homework',   icon: Calendar,       iconColor: '#7C3AED' },
+              { label: 'Imtihon',       href: '/dashboard/exams',      icon: GraduationCap,  iconColor: '#D97706' },
+            ]} />
+          )}
+          {user?.role === 'accountant' && (
+            <QuickActions items={[
+              { label: "To'lov qabul", href: '/dashboard/payments',  icon: CreditCard,     iconColor: C.primary },
+              { label: 'Maosh',        href: '/dashboard/payroll',   icon: BookOpen,       iconColor: '#2563EB' },
+              { label: 'Hisobot',      href: '/dashboard/reports',   icon: Calendar,       iconColor: '#7C3AED' },
+              { label: 'Sozlamalar',   href: '/dashboard/settings',  icon: GraduationCap,  iconColor: '#D97706' },
+            ]} />
+          )}
+          {user?.role === 'vice_principal' && (
+            <QuickActions items={[
+              { label: 'Davomat',      href: '/dashboard/attendance', icon: ClipboardCheck, iconColor: C.primary },
+              { label: 'Baholar',      href: '/dashboard/grades',     icon: BookOpen,       iconColor: '#2563EB' },
+              { label: 'Dars jadvali', href: '/dashboard/schedule',   icon: Calendar,       iconColor: '#7C3AED' },
+              { label: 'Hisobot',      href: '/dashboard/reports',    icon: GraduationCap,  iconColor: '#D97706' },
+            ]} />
+          )}
+          {user?.role === 'librarian' && (
+            <QuickActions items={[
+              { label: 'Kitoblar',   href: '/dashboard/library',   icon: BookOpen,      iconColor: '#2563EB' },
+              { label: 'Xabarlar',  href: '/dashboard/messages',  icon: Calendar,      iconColor: '#7C3AED' },
+              { label: 'Sozlamalar',href: '/dashboard/settings',  icon: GraduationCap, iconColor: '#D97706' },
+            ]} />
+          )}
+        </PCard>
       </div>
     </div>
   );
 }
 
-// ─── Parent Dashboard ──────────────────────────────────────────────────────
-
+// ── Parent Dashboard ───────────────────────────────────────────────────────────
 function ParentDashboard() {
-  const { user } = useAuthStore();
+  const { user }    = useAuthStore();
   const [selectedChildId, setSelectedChildId] = useState<string>('');
 
-  const { data: children = [], isLoading: childrenLoading } = useQuery({
-    queryKey: ['parent', 'children'],
-    queryFn: parentApi.getChildren,
-  });
+  const { data: children = [], isLoading: childrenLoading } = useQuery({ queryKey: ['parent', 'children'], queryFn: parentApi.getChildren });
   const childList: any[] = Array.isArray(children) ? children : [];
   const activeChild = selectedChildId || childList[0]?.id;
 
-  const { data: attendance } = useQuery({
-    queryKey: ['parent', 'attendance', activeChild],
-    queryFn: () => parentApi.getChildAttendance(activeChild),
-    enabled: !!activeChild,
-  });
+  const { data: attendance }    = useQuery({ queryKey: ['parent', 'attendance', activeChild], queryFn: () => parentApi.getChildAttendance(activeChild),  enabled: !!activeChild });
+  const { data: gradesData }    = useQuery({ queryKey: ['parent', 'grades',     activeChild], queryFn: () => parentApi.getChildGrades(activeChild),     enabled: !!activeChild });
+  const { data: payments }      = useQuery({ queryKey: ['parent', 'payments',   activeChild], queryFn: () => parentApi.getChildPayments(activeChild),   enabled: !!activeChild });
+  const { data: upcomingExams = [] } = useQuery({ queryKey: ['parent', 'exams', activeChild], queryFn: () => examsApi.getUpcoming(14), enabled: !!activeChild });
 
-  const { data: gradesData } = useQuery({
-    queryKey: ['parent', 'grades', activeChild],
-    queryFn: () => parentApi.getChildGrades(activeChild),
-    enabled: !!activeChild,
-  });
+  const grades: any[]       = gradesData?.grades ?? [];
+  const attendanceStats     = attendance ?? {};
+  const paymentList: any[]  = Array.isArray(payments) ? payments : [];
+  const pending             = paymentList.filter((p: any) => p.status === 'pending' || p.status === 'overdue');
 
-  const { data: payments } = useQuery({
-    queryKey: ['parent', 'payments', activeChild],
-    queryFn: () => parentApi.getChildPayments(activeChild),
-    enabled: !!activeChild,
-  });
-
-  const { data: upcomingExams = [] } = useQuery({
-    queryKey: ['parent', 'exams', activeChild],
-    queryFn: () => examsApi.getUpcoming(14),
-    enabled: !!activeChild,
-  });
-
-  const grades: any[] = gradesData?.grades ?? [];
-  const attendanceStats = attendance ?? {};
-  const paymentList: any[] = Array.isArray(payments) ? payments : [];
-  const pending = paymentList.filter((p: any) => p.status === 'pending' || p.status === 'overdue');
-
-  // Build GPA trend from last 10 grades sorted by date
   const gpaTrend = [...grades]
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
     .slice(-10)
     .map((g: any) => ({
       date: new Date(g.date).toLocaleDateString('uz-UZ', { day: 'numeric', month: 'short' }),
-      pct: g.maxScore > 0 ? Math.round((g.score / g.maxScore) * 100) : 0,
+      pct:  g.maxScore > 0 ? Math.round((g.score / g.maxScore) * 100) : 0,
     }));
 
   const nextExams: any[] = (Array.isArray(upcomingExams) ? upcomingExams : []).slice(0, 3);
@@ -1649,20 +1365,17 @@ function ParentDashboard() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-4xl font-black tracking-tight leading-tight">Xush kelibsiz, {user?.firstName}!</h1>
-        <p className="text-muted-foreground">Farzandlaringizning o'qish holati</p>
+        <h1 className="text-[40px] font-black tracking-tight leading-none" style={{ color: C.text }}>
+          Xush kelibsiz, <span style={{ color: C.primary }}>{user?.firstName}!</span>
+        </h1>
+        <p className="text-sm mt-2" style={{ color: C.muted }}>Farzandlaringizning o'qish holati</p>
       </div>
 
-      {/* Child selector */}
       {childList.length > 1 && (
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           {childList.map((child: any) => (
-            <Button
-              key={child.id}
-              variant={activeChild === child.id ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setSelectedChildId(child.id)}
-            >
+            <Button key={child.id} variant={activeChild === child.id ? 'default' : 'outline'} size="sm"
+              onClick={() => setSelectedChildId(child.id)}>
               {child.firstName} {child.lastName}
             </Button>
           ))}
@@ -1670,213 +1383,142 @@ function ParentDashboard() {
       )}
 
       {childrenLoading ? (
-        <div className="grid gap-4 sm:grid-cols-3"><Skeleton className="h-28" /><Skeleton className="h-28" /><Skeleton className="h-28" /></div>
+        <div className="grid gap-4 sm:grid-cols-3">{[...Array(3)].map((_, i) => <Skeleton key={i} className="h-32 rounded-[22px]" />)}</div>
       ) : childList.length === 0 ? (
-        <Card><CardContent className="py-12 text-center text-muted-foreground">
-          <GraduationCap className="mx-auto mb-3 h-10 w-10 opacity-40" />
-          <p>Farzandlar bog'lanmagan</p>
-        </CardContent></Card>
+        <PCard className="py-12 text-center">
+          <GraduationCap className="mx-auto mb-3 h-10 w-10 opacity-20" />
+          <p style={{ color: C.muted }}>Farzandlar bog'lanmagan</p>
+        </PCard>
       ) : (
         <>
           <div className="grid gap-4 sm:grid-cols-3">
-            <Card>
-              <CardContent className="p-4 flex items-center gap-4">
-                <div className="p-3 rounded-xl bg-green-500/10"><ClipboardCheck className="h-5 w-5 text-green-500" /></div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Davomat</p>
-                  <p className="text-2xl font-bold">{attendanceStats.present ?? 0}</p>
-                  <p className="text-xs text-muted-foreground">Kelgan kunlar</p>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4 flex items-center gap-4">
-                <div className="p-3 rounded-xl bg-blue-500/10"><BookOpen className="h-5 w-5 text-blue-500" /></div>
-                <div>
-                  <p className="text-xs text-muted-foreground">O'rtacha baho</p>
-                  <p className="text-2xl font-bold">{gradesData?.gpa ?? 0}%</p>
-                  <p className="text-xs text-muted-foreground">Joriy daraja</p>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4 flex items-center gap-4">
-                <div className={`p-3 rounded-xl ${pending.length > 0 ? 'bg-red-500/10' : 'bg-green-500/10'}`}>
-                  <CreditCard className={`h-5 w-5 ${pending.length > 0 ? 'text-red-500' : 'text-green-500'}`} />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">To'lovlar</p>
-                  <p className="text-2xl font-bold">{pending.length}</p>
-                  <p className="text-xs text-muted-foreground">{pending.length > 0 ? 'Kutilayotgan' : 'Hammasi to\'langan'}</p>
-                </div>
-              </CardContent>
-            </Card>
+            <StatCard title="Davomat"        value={attendanceStats.present ?? 0}      icon={ClipboardCheck} description="Kelgan kunlar"     color="emerald" />
+            <StatCard title="O'rtacha baho"  value={`${gradesData?.gpa ?? 0}%`}        icon={BookOpen}       description="Joriy daraja"      color="blue"    />
+            <StatCard title="To'lovlar"      value={pending.length}                    icon={CreditCard}     description={pending.length > 0 ? 'Kutilayotgan' : "Hammasi to'langan"} color={pending.length > 0 ? 'red' : 'emerald'} />
           </div>
 
-          {/* GPA trend chart */}
           {gpaTrend.length >= 3 && (
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4 text-blue-500" />
-                  Baho trendi
-                </CardTitle>
-                <CardDescription>So&apos;nggi {gpaTrend.length} ta bahoning dinamikasi</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={160}>
-                  <LineChart data={gpaTrend} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                    <XAxis dataKey="date" tick={{ fontSize: 10 }} />
-                    <YAxis domain={[0, 100]} tick={{ fontSize: 10 }} tickFormatter={(v) => `${v}%`} />
-                    <Tooltip formatter={(v: number) => [`${v}%`, 'Ball %']} />
-                    <Line type="monotone" dataKey="pct" stroke="#3b82f6" strokeWidth={2} dot={{ r: 3 }} />
-                  </LineChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
+            <PCard>
+              <p className="font-bold text-[15px] mb-1" style={{ color: C.text }}>Baho trendi</p>
+              <p className="text-xs mb-5" style={{ color: C.muted }}>So'nggi {gpaTrend.length} ta bahoning dinamikasi</p>
+              <ResponsiveContainer width="100%" height={160}>
+                <LineChart data={gpaTrend} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#EEF1F0" />
+                  <XAxis dataKey="date" tick={{ fontSize: 11, fill: C.muted }} axisLine={false} tickLine={false} />
+                  <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: C.muted }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}%`} />
+                  <Tooltip formatter={(v: number) => [`${v}%`, 'Ball %']}
+                    contentStyle={{ borderRadius: 12, border: 'none', boxShadow: C.shadow, fontSize: 12 }} />
+                  <Line type="monotone" dataKey="pct" stroke="#2563EB" strokeWidth={2.5}
+                    dot={{ r: 4, fill: '#2563EB', strokeWidth: 0 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </PCard>
           )}
 
-          {/* Recent grades */}
-          {grades.length > 0 && (
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle className="text-base">So&apos;nggi baholar</CardTitle>
-                <Button variant="ghost" size="sm" asChild>
-                  <Link href="/dashboard/grades">Barchasi <ChevronRight className="ml-1 h-4 w-4" /></Link>
-                </Button>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {grades.slice(0, 5).map((g: any) => (
-                  <div key={g.id} className="flex items-center justify-between text-sm rounded-lg border p-2.5">
-                    <div>
-                      <span className="font-medium">{g.subject?.name}</span>
-                      <span className="mx-2 text-muted-foreground text-xs">{new Date(g.date).toLocaleDateString('uz-UZ')}</span>
-                    </div>
-                    <Badge variant={(g.score / g.maxScore) >= 0.8 ? 'success' : (g.score / g.maxScore) >= 0.6 ? 'secondary' : 'destructive'}>
-                      {g.score}/{g.maxScore}
-                    </Badge>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Upcoming exams for child */}
-          {nextExams.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <GraduationCap className="h-4 w-4 text-orange-500" />
-                  Yaqin imtihonlar
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {nextExams.map((exam: any) => {
-                  const d = new Date(exam.scheduledAt);
-                  const isToday = d.toDateString() === new Date().toDateString();
-                  const daysLeft = Math.ceil((d.getTime() - Date.now()) / 86400000);
-                  return (
-                    <div key={exam.id} className="flex items-center justify-between rounded-lg border p-2.5 text-sm">
+          <div className="grid gap-4 md:grid-cols-2">
+            {grades.length > 0 && (
+              <PCard>
+                <div className="flex items-center justify-between mb-5">
+                  <p className="font-bold text-[15px]" style={{ color: C.text }}>So'nggi baholar</p>
+                  <Link href="/dashboard/grades" className="text-xs font-semibold" style={{ color: C.primary }}>Barchasi →</Link>
+                </div>
+                <div className="space-y-2">
+                  {grades.slice(0, 5).map((g: any) => (
+                    <div key={g.id} className="flex items-center justify-between rounded-[14px] border p-3" style={{ borderColor: C.border }}>
                       <div>
-                        <p className="font-medium">{exam.subject?.name}</p>
-                        <p className="text-xs text-muted-foreground">{exam.class?.name}</p>
+                        <p className="font-medium text-sm" style={{ color: C.text }}>{g.subject?.name}</p>
+                        <p className="text-xs" style={{ color: C.muted }}>{new Date(g.date).toLocaleDateString('uz-UZ')}</p>
                       </div>
-                      <Badge variant={isToday ? 'destructive' : daysLeft <= 2 ? 'warning' : 'secondary'}>
-                        {isToday ? 'Bugun' : daysLeft === 1 ? 'Ertaga' : `${daysLeft} kun`}
+                      <Badge variant={(g.score / g.maxScore) >= 0.8 ? 'success' : (g.score / g.maxScore) >= 0.6 ? 'secondary' : 'destructive'}>
+                        {g.score}/{g.maxScore}
                       </Badge>
                     </div>
-                  );
-                })}
-              </CardContent>
-            </Card>
-          )}
+                  ))}
+                </div>
+              </PCard>
+            )}
 
-          {/* Pending payments */}
-          {pending.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base text-destructive flex items-center gap-2">
-                  <AlertCircle className="h-4 w-4" /> Kutilayotgan to'lovlar
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {pending.map((p: any) => (
-                  <div key={p.id} className="flex items-center justify-between text-sm rounded-lg border border-destructive/20 p-2.5">
-                    <span>{p.description ?? "O'qish to'lovi"}</span>
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">{formatCurrency(p.amount)}</span>
-                      <Badge variant="destructive">{p.status === 'overdue' ? 'Kechikkan' : 'Kutilmoqda'}</Badge>
+            {nextExams.length > 0 && (
+              <PCard>
+                <p className="font-bold text-[15px] mb-5" style={{ color: C.text }}>Yaqin imtihonlar</p>
+                <div className="space-y-2">
+                  {nextExams.map((exam: any) => {
+                    const d        = new Date(exam.scheduledAt);
+                    const isToday  = d.toDateString() === new Date().toDateString();
+                    const daysLeft = Math.ceil((d.getTime() - Date.now()) / 86400000);
+                    return (
+                      <div key={exam.id} className="flex items-center justify-between rounded-[14px] border p-3" style={{ borderColor: C.border }}>
+                        <div>
+                          <p className="font-medium text-sm" style={{ color: C.text }}>{exam.subject?.name}</p>
+                          <p className="text-xs" style={{ color: C.muted }}>{exam.class?.name}</p>
+                        </div>
+                        <Badge variant={isToday ? 'destructive' : daysLeft <= 2 ? 'warning' : 'secondary'}>
+                          {isToday ? 'Bugun' : daysLeft === 1 ? 'Ertaga' : `${daysLeft} kun`}
+                        </Badge>
+                      </div>
+                    );
+                  })}
+                </div>
+              </PCard>
+            )}
+
+            {pending.length > 0 && (
+              <PCard>
+                <p className="font-bold text-[15px] mb-5 text-red-600">Kutilayotgan to'lovlar</p>
+                <div className="space-y-2">
+                  {pending.map((p: any) => (
+                    <div key={p.id} className="flex items-center justify-between rounded-[14px] border border-red-100 p-3">
+                      <span className="text-sm" style={{ color: C.text }}>{p.description ?? "O'qish to'lovi"}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-sm" style={{ color: C.text }}>{formatCurrency(p.amount)}</span>
+                        <Badge variant="destructive">{p.status === 'overdue' ? 'Kechikkan' : 'Kutilmoqda'}</Badge>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          )}
+                  ))}
+                </div>
+              </PCard>
+            )}
+          </div>
         </>
       )}
     </div>
   );
 }
 
-// ─── Director Dashboard ────────────────────────────────────────────────────
+// ── Director Dashboard ─────────────────────────────────────────────────────────
 function DirectorDashboard() {
-  const router = useRouter();
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-  const [annTitle, setAnnTitle] = useState('');
-  const [annBody, setAnnBody] = useState('');
-  const [annTarget, setAnnTarget] = useState('all_staff');
+  const router       = useRouter();
+  const queryClient  = useQueryClient();
+  const { toast }    = useToast();
+  const [annTitle,   setAnnTitle]  = useState('');
+  const [annBody,    setAnnBody]   = useState('');
+  const [annTarget,  setAnnTarget] = useState('all_staff');
 
-  const { data: attendanceSummary, isLoading: attLoading } = useQuery({
-    queryKey: ['attendance', 'today-summary'],
-    queryFn: attendanceApi.getTodaySummary,
-  });
+  const { data: attendanceSummary, isLoading: attLoading } = useQuery({ queryKey: ['attendance', 'today-summary'],    queryFn: attendanceApi.getTodaySummary });
+  const { data: classesData }  = useQuery({ queryKey: ['classes'],              queryFn: classesApi.getAll });
+  const { data: usersData }    = useQuery({ queryKey: ['users', 'all'],          queryFn: () => usersApi.getAll({ limit: 200 }) });
+  const { data: pendingLeaves }= useQuery({ queryKey: ['leave-requests', 'pending'], queryFn: () => leaveRequestsApi.getAll({ status: 'pending' }) });
+  const { data: financeData }  = useQuery({ queryKey: ['finance', 'dashboard'], queryFn: financeApi.getDashboard });
+  const { data: pendingDiscipline } = useQuery({ queryKey: ['discipline', 'unresolved'], queryFn: () => disciplineApi.getAll().catch(() => ({ data: [] })) });
 
-  const { data: classesData } = useQuery({
-    queryKey: ['classes'],
-    queryFn: classesApi.getAll,
-  });
-
-  const { data: usersData } = useQuery({
-    queryKey: ['users', 'all'],
-    queryFn: () => usersApi.getAll({ limit: 200 }),
-  });
-
-  const { data: pendingLeaves } = useQuery({
-    queryKey: ['leave-requests', 'pending'],
-    queryFn: () => leaveRequestsApi.getAll({ status: 'pending' }),
-  });
-
-  const { data: financeData } = useQuery({
-    queryKey: ['finance', 'dashboard'],
-    queryFn: financeApi.getDashboard,
-  });
-
-  const { data: pendingDiscipline } = useQuery({
-    queryKey: ['discipline', 'unresolved'],
-    queryFn: () => disciplineApi.getAll().catch(() => ({ data: [] })),
-  });
-
-  const classList: any[] = Array.isArray(classesData) ? classesData : (classesData as any)?.data ?? [];
-  const allUsers: any[] = (usersData as any)?.data ?? [];
-  const teacherCount = allUsers.filter((u: any) => ['teacher', 'class_teacher'].includes(u.role)).length;
-  const studentCount = allUsers.filter((u: any) => u.role === 'student').length;
-  const pendingLeaveList: any[] = (pendingLeaves as any)?.data ?? pendingLeaves ?? [];
+  const classList: any[]         = Array.isArray(classesData) ? classesData : (classesData as any)?.data ?? [];
+  const allUsers: any[]          = (usersData as any)?.data ?? [];
+  const teacherCount             = allUsers.filter((u: any) => ['teacher', 'class_teacher'].includes(u.role)).length;
+  const studentCount             = allUsers.filter((u: any) => u.role === 'student').length;
+  const pendingLeaveList: any[]  = (pendingLeaves as any)?.data ?? pendingLeaves ?? [];
   const pendingDisciplineList: any[] = (pendingDiscipline as any)?.data ?? [];
 
+  const presentPct    = (attendanceSummary as any)?.presentPct ?? 0;
+  const totalStudents = (attendanceSummary as any)?.totalStudents ?? 0;
+
   const reviewMutation = useMutation({
-    mutationFn: ({ id, action }: { id: string; action: 'approve' | 'reject' }) =>
-      leaveRequestsApi.review(id, { action }),
+    mutationFn: ({ id, action }: { id: string; action: 'approve' | 'reject' }) => leaveRequestsApi.review(id, { action }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['leave-requests'] }),
   });
 
   const broadcastMutation = useMutation({
     mutationFn: notificationsApi.broadcast,
-    onSuccess: (res: any) => {
-      setAnnTitle('');
-      setAnnBody('');
-    },
+    onSuccess: () => { setAnnTitle(''); setAnnBody(''); },
   });
 
   const handleBroadcast = () => {
@@ -1884,124 +1526,91 @@ function DirectorDashboard() {
     broadcastMutation.mutate({ targetGroup: annTarget, title: annTitle, body: annBody });
   };
 
-  const presentPct = (attendanceSummary as any)?.presentPct ?? 0;
-  const totalStudents = (attendanceSummary as any)?.totalStudents ?? 0;
+  const dayLabel = new Date().toLocaleDateString('uz-UZ', { weekday: 'long', day: 'numeric', month: 'long' });
 
   return (
-    <div className="space-y-6 p-6">
-      {/* Header */}
+    <div className="space-y-6">
       <div>
-        <h1 className="text-4xl font-black tracking-tight leading-tight">Direktor paneli</h1>
-        <p className="text-sm text-muted-foreground">Maktab umumiy holati va boshqaruv</p>
+        <h1 className="text-[40px] font-black tracking-tight leading-none" style={{ color: C.text }}>
+          Direktor paneli
+        </h1>
+        <p className="text-sm mt-2" style={{ color: C.muted }}>
+          Maktab umumiy holati &middot; {dayLabel}
+        </p>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          title="Bugungi davomat"
-          value={`${presentPct}%`}
-          description={`${totalStudents} ta o'quvchidan`}
-          icon={ClipboardCheck}
-          trend={presentPct >= 90 ? 'up' : 'down'}
-          loading={attLoading}
-          color="bg-green-500"
-        />
-        <StatCard
-          title="Sinflar soni"
-          value={classList.length}
-          description="Faol sinflar"
-          icon={School}
-          color="bg-blue-500"
-        />
-        <StatCard
-          title="O'qituvchilar"
-          value={teacherCount}
-          description="Faol xodimlar"
-          icon={Users}
-          color="bg-purple-500"
-        />
-        <StatCard
-          title="Oylik tushum"
-          value={formatCurrency((financeData as any)?.thisMonthRevenue ?? 0)}
-          description="Joriy oy"
-          icon={TrendingUp}
-          color="bg-orange-500"
-        />
+      {/* KPI row */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard title="Bugungi davomat" value={`${presentPct}%`}   description={`${totalStudents} ta o'quvchidan`} icon={ClipboardCheck} trend={presentPct >= 90 ? 'up' : 'down'} loading={attLoading} color="emerald" />
+        <StatCard title="Sinflar soni"    value={classList.length}    description="Faol sinflar"                      icon={School}         color="blue"    />
+        <StatCard title="O'qituvchilar"  value={teacherCount}        description="Faol xodimlar"                    icon={Users}          color="violet"  />
+        <StatCard title="Oylik tushum"    value={formatCurrency((financeData as any)?.thisMonthRevenue ?? 0)} description="Joriy oy" icon={TrendingUp} color="amber" />
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Ta'til so'rovlari tasdiqlash */}
-        <Card>
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base flex items-center gap-2">
-                <CalendarOff className="h-4 w-4 text-orange-500" />
-                Ta'til so'rovlari
-              </CardTitle>
-              <Badge variant={pendingLeaveList.length > 0 ? 'destructive' : 'secondary'}>
-                {pendingLeaveList.length} ta kutilmoqda
-              </Badge>
+      <div className="grid gap-4 lg:grid-cols-2">
+        {/* Leave approval */}
+        <PCard>
+          <div className="flex items-center justify-between mb-5">
+            <div>
+              <p className="font-bold text-[15px]" style={{ color: C.text }}>Ta'til so'rovlari</p>
+              <p className="text-xs mt-0.5" style={{ color: C.muted }}>{pendingLeaveList.length} ta kutilmoqda</p>
             </div>
-          </CardHeader>
-          <CardContent className="space-y-2 max-h-64 overflow-y-auto">
+            <Badge variant={pendingLeaveList.length > 0 ? 'destructive' : 'secondary'}>
+              {pendingLeaveList.length} ta
+            </Badge>
+          </div>
+          <div className="space-y-2 max-h-64 overflow-y-auto">
             {pendingLeaveList.length === 0 ? (
-              <p className="text-center text-sm text-muted-foreground py-6">Kutilayotgan so'rovlar yo'q ✓</p>
+              <div className="flex flex-col items-center py-8 gap-2">
+                <CheckCircle2 className="h-7 w-7 text-emerald-500" />
+                <p className="text-sm" style={{ color: C.muted }}>Kutilayotgan so'rovlar yo'q</p>
+              </div>
             ) : (
               pendingLeaveList.slice(0, 8).map((req: any) => (
-                <div key={req.id} className="flex items-center justify-between rounded-lg border p-3 gap-2">
+                <div key={req.id} className="flex items-center justify-between rounded-[14px] border p-3" style={{ borderColor: C.border }}>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium truncate">
+                    <p className="text-sm font-medium truncate" style={{ color: C.text }}>
                       {req.requester?.firstName} {req.requester?.lastName}
                     </p>
-                    <p className="text-xs text-muted-foreground">
-                      {new Date(req.startDate).toLocaleDateString('uz-UZ')} –{' '}
-                      {new Date(req.endDate).toLocaleDateString('uz-UZ')}
+                    <p className="text-xs truncate" style={{ color: C.muted }}>
+                      {new Date(req.startDate).toLocaleDateString('uz-UZ')} – {new Date(req.endDate).toLocaleDateString('uz-UZ')}
+                      {req.reason ? ` · ${req.reason.slice(0, 25)}` : ''}
                     </p>
-                    <p className="text-xs text-muted-foreground truncate">{req.reason}</p>
                   </div>
-                  <div className="flex gap-1 shrink-0">
-                    <Button
-                      size="sm" variant="outline"
-                      className="h-7 px-2 text-xs text-green-600 border-green-200 hover:bg-green-50"
+                  <div className="flex gap-1.5 shrink-0 ml-3">
+                    <button
+                      className="h-7 px-3 rounded-full text-xs font-semibold"
+                      style={{ background: C.primaryLight, color: C.primary }}
                       onClick={() => reviewMutation.mutate({ id: req.id, action: 'approve' })}
                       disabled={reviewMutation.isPending}
-                    >
-                      ✓ Tasdiqlash
-                    </Button>
-                    <Button
-                      size="sm" variant="outline"
-                      className="h-7 px-2 text-xs text-red-600 border-red-200 hover:bg-red-50"
+                    >✓</button>
+                    <button
+                      className="h-7 px-3 rounded-full text-xs font-semibold"
+                      style={{ background: '#FEE2E2', color: '#DC2626' }}
                       onClick={() => reviewMutation.mutate({ id: req.id, action: 'reject' })}
                       disabled={reviewMutation.isPending}
-                    >
-                      ✗ Rad
-                    </Button>
+                    >✕</button>
                   </div>
                 </div>
               ))
             )}
-            {pendingLeaveList.length > 8 && (
-              <Button variant="ghost" size="sm" className="w-full text-xs" onClick={() => router.push('/dashboard/leave-requests')}>
-                Barchasini ko'rish ({pendingLeaveList.length}) →
-              </Button>
-            )}
-          </CardContent>
-        </Card>
+          </div>
+        </PCard>
 
-        {/* E'lon yuborish widget */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Bell className="h-4 w-4 text-blue-500" />
-              E'lon va xabar yuborish
-            </CardTitle>
-            <CardDescription className="text-xs">Maktab xodimlari yoki ota-onalarga toplu xabar</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
+        {/* Broadcast */}
+        <PCard>
+          <div className="flex items-center gap-2 mb-5">
+            <div className="h-9 w-9 rounded-xl flex items-center justify-center" style={{ background: '#DBEAFE' }}>
+              <Bell className="h-4.5 w-4.5 text-blue-600" />
+            </div>
+            <div>
+              <p className="font-bold text-[15px]" style={{ color: C.text }}>E'lon yuborish</p>
+              <p className="text-xs" style={{ color: C.muted }}>Toplu xabar yuborish</p>
+            </div>
+          </div>
+          <div className="space-y-3">
             <Select value={annTarget} onValueChange={setAnnTarget}>
-              <SelectTrigger className="h-8 text-sm">
-                <SelectValue />
-              </SelectTrigger>
+              <SelectTrigger className="h-10 text-sm rounded-[14px]"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all_staff">Barcha xodimlar</SelectItem>
                 <SelectItem value="all_teachers">Barcha o'qituvchilar</SelectItem>
@@ -2014,7 +1623,8 @@ function DirectorDashboard() {
               </SelectContent>
             </Select>
             <input
-              className="w-full rounded-md border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              className="w-full rounded-[14px] border px-4 py-2.5 text-sm outline-none transition-colors focus:ring-2"
+              style={{ borderColor: C.border }}
               placeholder="E'lon sarlavhasi..."
               value={annTitle}
               onChange={e => setAnnTitle(e.target.value)}
@@ -2023,7 +1633,7 @@ function DirectorDashboard() {
               placeholder="E'lon matni..."
               value={annBody}
               onChange={e => setAnnBody(e.target.value)}
-              className="resize-none text-sm"
+              className="resize-none text-sm rounded-[14px]"
               rows={3}
             />
             <Button
@@ -2031,104 +1641,86 @@ function DirectorDashboard() {
               onClick={handleBroadcast}
               disabled={!annTitle.trim() || !annBody.trim() || broadcastMutation.isPending}
             >
-              {broadcastMutation.isPending ? 'Yuborilmoqda...' : (
-                broadcastMutation.isSuccess ? `✓ Yuborildi` : '📢 E\'lon yuborish'
-              )}
+              {broadcastMutation.isPending ? 'Yuborilmoqda...' : broadcastMutation.isSuccess ? '✓ Yuborildi' : "📢 E'lon yuborish"}
             </Button>
-          </CardContent>
-        </Card>
+          </div>
+        </PCard>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Intizom holati */}
+      <div className="grid gap-4 lg:grid-cols-2">
         {pendingDisciplineList.length > 0 && (
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2">
-                <ShieldAlert className="h-4 w-4 text-red-500" />
-                Hal qilinmagan intizom holatlari
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2 max-h-48 overflow-y-auto">
+          <PCard>
+            <div className="flex items-center gap-2 mb-5">
+              <ShieldAlert className="h-4.5 w-4.5 text-red-500" />
+              <p className="font-bold text-[15px]" style={{ color: C.text }}>Hal qilinmagan intizom holatlari</p>
+            </div>
+            <div className="space-y-2 max-h-48 overflow-y-auto">
               {pendingDisciplineList.slice(0, 5).map((d: any) => (
-                <div key={d.id} className="flex items-center gap-3 rounded-lg border p-2.5">
+                <div key={d.id} className="flex items-center gap-3 rounded-[14px] border p-3" style={{ borderColor: C.border }}>
                   <div className="h-2 w-2 rounded-full bg-red-500 shrink-0" />
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium truncate">
+                    <p className="text-sm font-medium truncate" style={{ color: C.text }}>
                       {d.student?.firstName} {d.student?.lastName}
                     </p>
-                    <p className="text-xs text-muted-foreground truncate">{d.description}</p>
+                    <p className="text-xs truncate" style={{ color: C.muted }}>{d.description}</p>
                   </div>
                 </div>
               ))}
-              <Button variant="ghost" size="sm" className="w-full text-xs" onClick={() => router.push('/dashboard/discipline')}>
+              <button
+                onClick={() => router.push('/dashboard/discipline')}
+                className="w-full text-xs font-semibold py-2 rounded-[14px] transition-colors hover:bg-slate-50"
+                style={{ color: C.primary }}
+              >
                 Barchasini ko'rish →
-              </Button>
-            </CardContent>
-          </Card>
+              </button>
+            </div>
+          </PCard>
         )}
 
-        {/* Tezkor havolalar */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Tezkor havolalar</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 gap-2">
-              {[
-                { label: 'Davomat hisoboti', href: '/dashboard/attendance', icon: ClipboardCheck, color: 'text-green-600' },
-                { label: 'Baholar', href: '/dashboard/grades', icon: BarChart2, color: 'text-blue-600' },
-                { label: 'Moliya xulosasi', href: '/dashboard/finance', icon: TrendingUp, color: 'text-orange-600' },
-                { label: 'Dars jadvali', href: '/dashboard/schedule', icon: Calendar, color: 'text-purple-600' },
-                { label: 'Xodimlar', href: '/dashboard/users', icon: Users, color: 'text-gray-600' },
-                { label: 'Hisobotlar', href: '/dashboard/reports', icon: BarChart2, color: 'text-indigo-600' },
-              ].map(item => (
-                <button
-                  key={item.href}
-                  onClick={() => router.push(item.href)}
-                  className="flex items-center gap-2 rounded-lg border p-3 text-left hover:bg-accent transition-colors"
-                >
-                  <item.icon className={`h-4 w-4 shrink-0 ${item.color}`} />
-                  <span className="text-xs font-medium">{item.label}</span>
-                </button>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+        <PCard>
+          <p className="font-bold text-[15px] mb-5" style={{ color: C.text }}>Tezkor havolalar</p>
+          <QuickActions items={[
+            { label: 'Davomat hisoboti', href: '/dashboard/attendance', icon: ClipboardCheck, iconColor: C.primary  },
+            { label: 'Baholar',          href: '/dashboard/grades',     icon: BarChart2,      iconColor: '#2563EB'  },
+            { label: 'Moliya xulosasi',  href: '/dashboard/finance',    icon: TrendingUp,     iconColor: '#D97706'  },
+            { label: 'Dars jadvali',     href: '/dashboard/schedule',   icon: Calendar,       iconColor: '#7C3AED'  },
+            { label: 'Xodimlar',         href: '/dashboard/users',      icon: Users,          iconColor: C.muted    },
+            { label: 'Hisobotlar',       href: '/dashboard/reports',    icon: BarChart2,      iconColor: '#4338CA'  },
+          ]} />
+        </PCard>
       </div>
     </div>
   );
 }
 
-// ─── Student redirect ──────────────────────────────────────────────────────
+// ── Student redirect ───────────────────────────────────────────────────────────
 function StudentRedirect() {
   const router = useRouter();
   useEffect(() => { router.replace('/dashboard/student'); }, [router]);
-  return <div className="flex h-64 items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" /></div>;
+  return (
+    <div className="flex h-64 items-center justify-center">
+      <div className="h-8 w-8 animate-spin rounded-full border-4 border-t-transparent" style={{ borderColor: C.primary }} />
+    </div>
+  );
 }
 
-// ─── Root export ───────────────────────────────────────────────────────────
-
+// ── Root export ────────────────────────────────────────────────────────────────
 export default function DashboardPage() {
   const { user, _hasHydrated } = useAuthStore();
 
-  // Wait for Zustand store to rehydrate from localStorage before rendering.
-  // Without this guard, user===null on first render → falls through to
-  // SchoolDashboard which fires admin-only API calls, causing 403 toasts
-  // for parent/student/accountant/librarian roles.
   if (!_hasHydrated) {
     return (
       <div className="flex h-64 items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-t-transparent" style={{ borderColor: C.primary }} />
       </div>
     );
   }
 
   if (user?.role === 'super_admin') return <SuperAdminDashboard />;
-  if (user?.role === 'director') return <DirectorDashboard />;
-  if (user?.role === 'parent') return <ParentDashboard />;
-  if (user?.role === 'student') return <StudentRedirect />;
-  if (user?.role === 'accountant') return <AccountantDashboard />;
-  if (user?.role === 'librarian') return <LibrarianDashboard />;
+  if (user?.role === 'director')    return <DirectorDashboard />;
+  if (user?.role === 'parent')      return <ParentDashboard />;
+  if (user?.role === 'student')     return <StudentRedirect />;
+  if (user?.role === 'accountant')  return <AccountantDashboard />;
+  if (user?.role === 'librarian')   return <LibrarianDashboard />;
   return <SchoolDashboard />;
 }
