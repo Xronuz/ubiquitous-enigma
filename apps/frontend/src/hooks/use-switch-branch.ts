@@ -5,13 +5,15 @@
  *  1. POST /auth/switch-branch → yangi JWT tokenlar oladi
  *  2. useAuthStore.setAuth() chaqirib tokenlarni saqlaydi (activeBranchId yangilanadi)
  *  3. useBranchStore.setActiveBranch() UI meta-datani yangilaydi
- *  4. Branch-specific query keys invalidate qiladi (queryClient.clear() emas —
- *     auth/settings/fee-structures kabi global ma'lumotlar saqlanib qoladi)
+ *  4. Branch-specific barcha query'larni exact:false bilan invalidate qiladi —
+ *     bu ['classes'], ['classes', branchId], ['classes', 'my-class'] kabi
+ *     BARCHA nested sub-key'larni ham qamrab oladi.
+ *     auth / fee-structures / schools kabi global key'lar saqlanib qoladi.
  *
  * Ishlatish:
  *   const { switchBranch, isSwitching } = useSwitchBranch();
- *   await switchBranch('branch-id');      // yoki
- *   await switchBranch(null);              // school-wide view
+ *   await switchBranch('branch-id');   // aniq filialga o'tish
+ *   await switchBranch(null);          // school-wide view
  */
 'use client';
 
@@ -21,6 +23,51 @@ import { authApi } from '@/lib/api/auth';
 import { useAuthStore } from '@/store/auth.store';
 import { useBranchStore, type BranchMeta } from '@/store/branch.store';
 import { toast } from '@/components/ui/use-toast';
+
+/**
+ * Branch-ga bog'liq barcha query root key'lari.
+ * exact: false — ['attendance', 'today-summary', branchId] kabi
+ * barcha sub-key'larni ham bekor qiladi.
+ *
+ * Bu ro'yxatga KIRMAYDIGAN key'lar (global, branch-dan mustaqil):
+ *   'auth', 'schools', 'fee-structures', 'system-health',
+ *   'notifications', 'modules', 'settings'
+ */
+const BRANCH_QUERY_ROOTS = [
+  'classes',
+  'schedule',
+  'attendance',
+  'grades',
+  'payments',
+  'users',
+  'subjects',
+  'class-students',
+  'students-for-payment-create',
+  'reports',
+  'analytics',
+  'meetings',
+  'canteen',
+  'library',
+  'leave-requests',
+  'homework',
+  'exams',
+  'discipline',
+  'transport',
+  'rooms',
+  'clubs',
+  'coins',
+  'crm',
+  'announcements',
+  'parent',
+  'staff',
+  'students',
+  'resources',
+  'comms',
+  'education',
+  'finance',
+  'payroll',
+  'branches',
+] as const;
 
 export function useSwitchBranch() {
   const queryClient = useQueryClient();
@@ -34,37 +81,31 @@ export function useSwitchBranch() {
       try {
         setIsSwitching(true);
 
-        // Backend dan yangi tokenlar olish
+        // 1. Backend dan yangi tokenlar olish
         const tokens = await authApi.switchBranch(branchId);
 
-        // Auth store yangilash (activeBranchId ham yangilanadi)
+        // 2. Auth store yangilash (activeBranchId ham yangilanadi)
         if (user) {
-          setAuth(
-            { ...user, branchId },
-            tokens,
-          );
+          setAuth({ ...user, branchId }, tokens);
         }
 
-        // UI branch meta-datani yangilash
+        // 3. UI branch meta-datani yangilash
         setActiveBranch(branchId, branchMeta ?? null);
 
-        // Branch-specific data invalidate (global cache emas — auth/settings kabi
-        // branch-ga bog'liq bo'lmagan ma'lumotlar saqlanib qoladi)
-        const branchKeys = [
-          'classes', 'schedule', 'attendance', 'grades',
-          'payments', 'users', 'subjects', 'class-students',
-          'students-for-payment-create',
-          'reports', 'analytics',
-          'meetings', 'canteen', 'library', 'leave-requests',
-        ];
+        // 4. Branch-specific barcha query'larni bekor qilish.
+        //    exact: false — ['attendance', 'today-summary'], ['attendance', branchId]
+        //    kabi BARCHA nested key'larni ham qamrab oladi.
+        //    Bu hozirgi statik invalidatsiyaning asosiy kamchiligi edi.
         await Promise.all(
-          branchKeys.map(key => queryClient.invalidateQueries({ queryKey: [key] })),
+          BRANCH_QUERY_ROOTS.map(key =>
+            queryClient.invalidateQueries({ queryKey: [key], exact: false }),
+          ),
         );
 
         toast({
           title: branchId
-            ? `Filial almashtirildi: ${branchMeta?.name ?? branchId}`
-            : 'Barcha filiallar ko\'rinishi',
+            ? `✅ Filial almashtirildi: ${branchMeta?.name ?? branchId}`
+            : '🏫 Barcha filiallar ko\'rinishi',
           description: 'Ma\'lumotlar yangilanmoqda...',
         });
 

@@ -177,7 +177,7 @@ function GpaBar({ gpa }: { gpa: number }) {
 function BulkGradeDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { user: currentUser } = useAuthStore();
+  const { user: currentUser , activeBranchId } = useAuthStore();
   const isBulkTeacher = ['teacher', 'class_teacher'].includes(currentUser?.role ?? '');
 
   const [bulkClassId, setBulkClassId] = useState('');
@@ -188,25 +188,25 @@ function BulkGradeDialog({ open, onClose }: { open: boolean; onClose: () => void
   const [bulkScores, setBulkScores] = useState<Record<string, string>>({});
   const [bulkComments, setBulkComments] = useState<Record<string, string>>({});
 
-  const { data: classes = [] } = useQuery({ queryKey: ['classes'], queryFn: classesApi.getAll });
+  const { data: classes = [] } = useQuery({ queryKey: ['classes', activeBranchId], queryFn: classesApi.getAll });
   const classList: any[] = Array.isArray(classes) ? classes : [];
 
   // Teacher uchun faqat o'z fanlari; admin uchun sinfdagi barcha fanlar
   const { data: myBulkSubjects = [] } = useQuery({
-    queryKey: ['subjects', 'mine'],
+    queryKey: ['subjects', 'mine', activeBranchId],
     queryFn: () => subjectsApi.getMine(),
     enabled: isBulkTeacher,
     staleTime: 60_000,
   });
   const { data: allBulkSubjects = [] } = useQuery({
-    queryKey: ['subjects', bulkClassId],
+    queryKey: ['subjects', bulkClassId, activeBranchId],
     queryFn: () => subjectsApi.getAll(bulkClassId || undefined),
     enabled: !isBulkTeacher && !!bulkClassId,
   });
   const subjectList: any[] = (isBulkTeacher ? myBulkSubjects : allBulkSubjects) as any[];
 
   const { data: studentsData } = useQuery({
-    queryKey: ['class-students-bulk', bulkClassId],
+    queryKey: ['class-students-bulk', bulkClassId, activeBranchId],
     queryFn: () => classesApi.getStudents(bulkClassId),
     enabled: !!bulkClassId,
   });
@@ -391,7 +391,7 @@ function BulkGradeDialog({ open, onClose }: { open: boolean; onClose: () => void
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 export default function GradesPage() {
-  const { user } = useAuthStore();
+  const { user , activeBranchId } = useAuthStore();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -416,25 +416,25 @@ export default function GradesPage() {
   });
 
   // ── Queries ──────────────────────────────────────────────────────────────────
-  const { data: classes } = useQuery({ queryKey: ['classes'], queryFn: classesApi.getAll, enabled: !isStudent });
+  const { data: classes } = useQuery({ queryKey: ['classes', activeBranchId], queryFn: classesApi.getAll, enabled: !isStudent });
   const classList: any[] = Array.isArray(classes) ? classes : [];
 
   // Teacher/class_teacher: faqat o'z fanlari; admin: barcha fanlar
   const { data: mySubjects = [] } = useQuery({
-    queryKey: ['subjects', 'mine'],
+    queryKey: ['subjects', 'mine', activeBranchId],
     queryFn: () => subjectsApi.getMine(),
     enabled: isTeacher,
     staleTime: 60_000,
   });
   const { data: allSubjects = [] } = useQuery({
-    queryKey: ['subjects', form.classId || selectedClass],
+    queryKey: ['subjects', form.classId || selectedClass, activeBranchId],
     queryFn: () => subjectsApi.getAll(form.classId || selectedClass || undefined),
     enabled: !isTeacher && (open || !!selectedClass),
   });
   const subjectList: any[] = (isTeacher ? mySubjects : allSubjects) as any[];
 
   const { data: classStudents = [] } = useQuery({
-    queryKey: ['class-students-grades', form.classId],
+    queryKey: ['class-students-grades', form.classId, activeBranchId],
     queryFn: () => classesApi.getStudents(form.classId),
     enabled: open && !!form.classId,
   });
@@ -442,14 +442,14 @@ export default function GradesPage() {
 
   // My grades (student view)
   const { data: studentGrades, isLoading: studentLoading, isError: studentGradesError } = useQuery({
-    queryKey: ['grades', 'student', user?.id],
+    queryKey: ['grades', 'student', user?.id, activeBranchId],
     queryFn: () => gradesApi.getStudentGrades(user!.id),
     enabled: isStudent && !!user?.id,
   });
 
   // Class journal (teacher/admin view)
   const { data: classReport, isLoading: classLoading, isError: classReportError } = useQuery({
-    queryKey: ['grades', 'class', selectedClass, selectedSubject, page],
+    queryKey: ['grades', 'class', selectedClass, selectedSubject, page, activeBranchId],
     queryFn: () => gradesApi.getClassReport(selectedClass, selectedSubject || undefined, page, LIMIT),
     enabled: !isStudent && !!selectedClass,
   });

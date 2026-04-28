@@ -459,7 +459,7 @@ function LedClubCard({
 
 export default function ClubsPage() {
   const ask = useConfirm();
-  const { user } = useAuthStore();
+  const { user, activeBranchId } = useAuthStore();
   const { toast } = useToast();
   const qc = useQueryClient();
 
@@ -475,27 +475,27 @@ export default function ClubsPage() {
   const isTeacher = ['teacher', 'class_teacher'].includes(user?.role ?? '');
 
   const { data: clubs = [], isLoading } = useQuery({
-    queryKey: ['clubs', activeCat],
+    queryKey: ['clubs', activeCat, activeBranchId],
     queryFn: () => clubsApi.getAll(activeCat !== 'all' ? activeCat : undefined),
     staleTime: 5 * 60_000,
   });
 
   const { data: myClubs = [] } = useQuery({
-    queryKey: ['clubs', 'mine'],
+    queryKey: ['clubs', 'mine', activeBranchId],
     queryFn: clubsApi.getMine,
     enabled: isStudent,
     staleTime: 5 * 60_000,
   });
 
   const { data: myRequests = [] } = useQuery({
-    queryKey: ['clubs', 'my-requests'],
+    queryKey: ['clubs', 'my-requests', activeBranchId],
     queryFn: clubsApi.getMyRequests,
     enabled: isStudent,
     staleTime: 5 * 60_000,
   });
 
   const { data: ledClubs = [] } = useQuery({
-    queryKey: ['clubs', 'led'],
+    queryKey: ['clubs', 'led', activeBranchId],
     queryFn: clubsApi.getLed,
     enabled: isTeacher || isAdmin,
     staleTime: 5 * 60_000,

@@ -11,6 +11,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { classesApi } from '@/lib/api/classes';
+import { useAuthStore } from '@/store/auth.store';
 import { gradesApi } from '@/lib/api/grades';
 import { useToast } from '@/components/ui/use-toast';
 
@@ -37,16 +38,17 @@ function scoreColor(avg: number) {
 
 export default function QuarterlyGradesPage() {
   const { toast } = useToast();
+  const { activeBranchId } = useAuthStore();
   const [classId, setClassId] = useState('');
   const [quarter, setQuarter] = useState('1');
 
   const { data: classes, isLoading: classesLoading } = useQuery({
-    queryKey: ['classes'],
+    queryKey: ['classes', activeBranchId],
     queryFn: classesApi.getAll,
   });
 
   const { data: gradesData, isLoading: gradesLoading } = useQuery({
-    queryKey: ['grades', 'class', classId, 'quarterly'],
+    queryKey: ['grades', 'class', classId, 'quarterly', activeBranchId],
     queryFn: () => gradesApi.getClassReport(classId),
     enabled: !!classId,
     select: (res: any) => res?.data ?? (Array.isArray(res) ? res : []),

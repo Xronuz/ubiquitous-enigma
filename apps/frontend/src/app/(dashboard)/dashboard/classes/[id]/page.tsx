@@ -29,7 +29,7 @@ const NEW_STUDENT_EMPTY = { firstName: '', lastName: '', email: '', password: ''
 export default function ClassDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const { user } = useAuthStore();
+  const { user, activeBranchId } = useAuthStore();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const canManage = ['school_admin', 'vice_principal'].includes(user?.role ?? '');
@@ -47,19 +47,19 @@ export default function ClassDetailPage() {
 
   // Load class info
   const { data: cls, isLoading: clsLoading } = useQuery({
-    queryKey: ['class', id],
+    queryKey: ['class', id, activeBranchId],
     queryFn: () => classesApi.getOne(id),
   });
 
   // Load students in class
   const { data: students = [], isLoading: studentsLoading } = useQuery({
-    queryKey: ['class-students', id],
+    queryKey: ['class-students', id, activeBranchId],
     queryFn: () => classesApi.getStudents(id),
   });
 
   // Load all users (for existing student search)
   const { data: allUsersData } = useQuery({
-    queryKey: ['users-all'],
+    queryKey: ['users-all', activeBranchId],
     queryFn: () => usersApi.getAll({ page: 1, limit: 200 }),
     enabled: addOpen && tab === 'existing',
   });

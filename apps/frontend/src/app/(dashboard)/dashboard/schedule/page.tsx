@@ -366,9 +366,10 @@ function ListView({
 // ─── Student Schedule View ────────────────────────────────────────────────────
 function StudentScheduleView() {
   const [selectedClassId, setSelectedClassId] = useState<string>('');
+  const { activeBranchId } = useAuthStore();
 
   const { data: classes = [], isLoading: classesLoading } = useQuery({
-    queryKey: ['classes'],
+    queryKey: ['classes', activeBranchId],
     queryFn: classesApi.getAll,
     select: (data: any) => (Array.isArray(data) ? data : data?.data ?? []),
   });
@@ -377,7 +378,7 @@ function StudentScheduleView() {
   const classId = selectedClassId || (classes as any[])[0]?.id || '';
 
   const { data: weekData, isLoading: schedLoading } = useQuery({
-    queryKey: ['schedule', 'week', classId],
+    queryKey: ['schedule', 'week', classId, activeBranchId],
     queryFn: () => scheduleApi.getWeek(classId),
     enabled: !!classId,
     select: (data: any) => (Array.isArray(data) ? data : []),
@@ -503,7 +504,7 @@ function StudentScheduleView() {
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function SchedulePage() {
-  const { user } = useAuthStore();
+  const { user, activeBranchId } = useAuthStore();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -522,7 +523,7 @@ export default function SchedulePage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const { data: weekSchedule, isLoading } = useQuery<ScheduleSlot[]>({
-    queryKey: ['schedule', 'week'],
+    queryKey: ['schedule', 'week', activeBranchId],
     queryFn: () => scheduleApi.getWeek(),
   });
 
@@ -541,9 +542,9 @@ export default function SchedulePage() {
     staleTime: 0,
   });
 
-  const { data: classes = [] } = useQuery({ queryKey: ['classes'], queryFn: classesApi.getAll, enabled: open });
-  const { data: subjects = [] } = useQuery({ queryKey: ['subjects'], queryFn: () => subjectsApi.getAll(), enabled: open });
-  const { data: usersData } = useQuery({ queryKey: ['users', 1], queryFn: () => usersApi.getAll({ page: 1, limit: 100 }), enabled: open });
+  const { data: classes = [] } = useQuery({ queryKey: ['classes', activeBranchId], queryFn: classesApi.getAll, enabled: open });
+  const { data: subjects = [] } = useQuery({ queryKey: ['subjects', activeBranchId], queryFn: () => subjectsApi.getAll(), enabled: open });
+  const { data: usersData } = useQuery({ queryKey: ['users', 1, activeBranchId], queryFn: () => usersApi.getAll({ page: 1, limit: 100 }), enabled: open });
   const teachers: any[] = (usersData?.data ?? []).filter((u: any) => ['teacher', 'class_teacher'].includes(u.role));
 
   const createMutation = useMutation({

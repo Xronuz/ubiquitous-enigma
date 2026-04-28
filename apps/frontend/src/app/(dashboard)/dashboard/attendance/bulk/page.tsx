@@ -29,7 +29,7 @@ const ALLOWED = ['school_admin', 'vice_principal', 'teacher', 'class_teacher'];
 
 export default function BulkAttendancePage() {
   const router = useRouter();
-  const { user } = useAuthStore();
+  const { user, activeBranchId } = useAuthStore();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const today = new Date().toISOString().split('T')[0];
@@ -43,12 +43,12 @@ export default function BulkAttendancePage() {
   }, [user, router]);
 
   const { data: classes, isLoading: classesLoading } = useQuery({
-    queryKey: ['classes'],
+    queryKey: ['classes', activeBranchId],
     queryFn: classesApi.getAll,
   });
 
   const { data: students, isLoading: studentsLoading } = useQuery({
-    queryKey: ['class-students', classId],
+    queryKey: ['class-students', classId, activeBranchId],
     queryFn: () => classesApi.getStudents(classId),
     enabled: !!classId,
   });

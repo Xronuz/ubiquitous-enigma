@@ -31,7 +31,7 @@ const ACADEMIC_YEARS = [`${currentYear}-${currentYear + 1}`, `${currentYear - 1}
 const EMPTY = { name: '', gradeLevel: '', academicYear: ACADEMIC_YEARS[0], classTeacherId: '' };
 
 export default function ClassesPage() {
-  const { user } = useAuthStore();
+  const { user , activeBranchId } = useAuthStore();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const canManage = ['school_admin', 'vice_principal'].includes(user?.role ?? '');
@@ -42,12 +42,12 @@ export default function ClassesPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const { data: classes, isLoading } = useQuery({
-    queryKey: ['classes'],
+    queryKey: ['classes', activeBranchId],
     queryFn: classesApi.getAll,
   });
 
   const { data: usersData } = useQuery({
-    queryKey: ['users', 1],
+    queryKey: ['users', 1, activeBranchId],
     queryFn: () => usersApi.getAll({ page: 1, limit: 100 }),
     enabled: open,
   });

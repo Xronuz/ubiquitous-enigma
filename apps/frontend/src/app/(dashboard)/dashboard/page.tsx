@@ -263,8 +263,9 @@ function OnboardingChecklist({ classList, usersData, subjectsCount }: {
 
 // ── Today Schedule Widget ──────────────────────────────────────────────────────
 function TodayScheduleWidget() {
+  const { activeBranchId } = useAuthStore();
   const { data: todaySlots, isLoading } = useQuery({
-    queryKey: ['schedule', 'today'],
+    queryKey: ['schedule', 'today', activeBranchId],
     queryFn: scheduleApi.getToday,
     staleTime: 10 * 60_000,
   });
@@ -328,8 +329,9 @@ function TodayScheduleWidget() {
 
 // ── Attendance Summary Widget ──────────────────────────────────────────────────
 function AttendanceSummaryWidget() {
+  const { activeBranchId } = useAuthStore();
   const { data, isLoading } = useQuery({
-    queryKey: ['attendance', 'today-summary'],
+    queryKey: ['attendance', 'today-summary', activeBranchId],
     queryFn: attendanceApi.getTodaySummary,
     refetchInterval: 60_000,
   });
@@ -397,8 +399,9 @@ const FREQ_UZ: Record<string, string> = {
 };
 
 function UpcomingExamsWidget() {
+  const { activeBranchId } = useAuthStore();
   const { data, isLoading } = useQuery({
-    queryKey: ['exams', 'upcoming'],
+    queryKey: ['exams', 'upcoming', activeBranchId],
     queryFn: () => examsApi.getUpcoming(7),
   });
   const exams: any[] = Array.isArray(data) ? data : [];
@@ -471,12 +474,12 @@ function ClassTeacherMyClassSection() {
   const router = useRouter();
 
   const { data: myClass, isLoading } = useQuery({
-    queryKey: ['classes', 'my-class'],
+    queryKey: ['classes', 'my-class', activeBranchId],
     queryFn: () => classesApi.getMyClass(),
   });
 
   const { data: gpaData } = useQuery({
-    queryKey: ['grades', 'class-gpa', myClass?.id],
+    queryKey: ['grades', 'class-gpa', myClass?.id, activeBranchId],
     queryFn: () => gradesApi.getClassGpa(myClass!.id),
     enabled: !!myClass?.id,
   });
@@ -569,17 +572,17 @@ function ClassTeacherMyClassSection() {
 
 // ── Teacher KPI Section ────────────────────────────────────────────────────────
 function TeacherKPISection() {
-  const { user } = useAuthStore();
+  const { user, activeBranchId } = useAuthStore();
   const router   = useRouter();
 
   const { data: todaySlots, isLoading: schedLoading } = useQuery({
-    queryKey: ['schedule', 'today'],
+    queryKey: ['schedule', 'today', activeBranchId],
     queryFn: scheduleApi.getToday,
     staleTime: 10 * 60_000,
   });
 
   const { data: homeworks = [] } = useQuery({
-    queryKey: ['homework'],
+    queryKey: ['homework', activeBranchId],
     queryFn: () => homeworkApi.getAll(),
     staleTime: 5 * 60_000,
   });
@@ -624,11 +627,12 @@ function TeacherKPISection() {
 function VicePrincipalSection() {
   const router       = useRouter();
   const queryClient  = useQueryClient();
+  const { activeBranchId } = useAuthStore();
   const weekAgo      = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10);
   const today        = new Date().toISOString().slice(0, 10);
 
-  const { data: leaveData }     = useQuery({ queryKey: ['leave-requests', 'pending'], queryFn: () => leaveRequestsApi.getAll({ status: 'pending' }) });
-  const { data: disciplineData }= useQuery({ queryKey: ['discipline', 'week'],        queryFn: () => disciplineApi.getAll({ from: weekAgo, to: today, limit: 50 }) });
+  const { data: leaveData }     = useQuery({ queryKey: ['leave-requests', 'pending', activeBranchId], queryFn: () => leaveRequestsApi.getAll({ status: 'pending' }) });
+  const { data: disciplineData }= useQuery({ queryKey: ['discipline', 'week', activeBranchId],        queryFn: () => disciplineApi.getAll({ from: weekAgo, to: today, limit: 50 }) });
 
   const pendingLeaves: any[]     = leaveData?.data ?? (Array.isArray(leaveData) ? leaveData : []);
   const disciplineList: any[]    = disciplineData?.data ?? [];
@@ -708,16 +712,17 @@ function VicePrincipalSection() {
 const MONTH_LABELS = ['Yan', 'Fev', 'Mar', 'Apr', 'May', 'Iyn', 'Iyl', 'Avg', 'Sen', 'Okt', 'Noy', 'Dek'];
 
 function AdminChartsSection() {
+  const { activeBranchId } = useAuthStore();
   const now         = new Date();
   const sixMonthsAgo= new Date(now.getFullYear(), now.getMonth() - 5, 1).toISOString().slice(0, 10);
 
   const { data: paymentHistory, isLoading: payLoading } = useQuery({
-    queryKey: ['payments', 'history', 'trend'],
+    queryKey: ['payments', 'history', 'trend', activeBranchId],
     queryFn: () => paymentsApi.getHistory({ from: sixMonthsAgo, status: 'paid', limit: 500 }),
   });
 
   const { data: attendanceReport, isLoading: attLoading } = useQuery({
-    queryKey: ['attendance', 'report', 'trend'],
+    queryKey: ['attendance', 'report', 'trend', activeBranchId],
     queryFn: () => attendanceApi.getReport({
       startDate: new Date(Date.now() - 13 * 86400000).toISOString().slice(0, 10),
       endDate: now.toISOString().slice(0, 10),
@@ -850,13 +855,13 @@ function QuickActions({ items }: { items: { label: string; href: string; icon: R
 const PIE_COLORS = [C.primary, '#EF4444', '#F59E0B'];
 
 function AccountantDashboard() {
-  const { user } = useAuthStore();
+  const { user, activeBranchId } = useAuthStore();
   const now = new Date();
   const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1).toISOString().slice(0, 10);
 
-  const { data: paymentReport, isLoading: reportLoading } = useQuery({ queryKey: ['payments', 'report'], queryFn: paymentsApi.getReport });
+  const { data: paymentReport, isLoading: reportLoading } = useQuery({ queryKey: ['payments', 'report', activeBranchId], queryFn: paymentsApi.getReport });
   const { data: paymentHistory, isLoading: histLoading } = useQuery({
-    queryKey: ['payments', 'history', 'trend'],
+    queryKey: ['payments', 'history', 'trend', activeBranchId],
     queryFn: () => paymentsApi.getHistory({ from: sixMonthsAgo, limit: 500 }),
   });
 
@@ -1068,10 +1073,10 @@ function SuperAdminDashboard() {
 
 // ── Librarian Dashboard ────────────────────────────────────────────────────────
 function LibrarianDashboard() {
-  const { user } = useAuthStore();
+  const { user, activeBranchId } = useAuthStore();
 
   const { data: libStats, isLoading } = useQuery({
-    queryKey: ['library', 'stats'],
+    queryKey: ['library', 'stats', activeBranchId],
     queryFn: async () => {
       try {
         const { data } = await (await import('@/lib/api/client')).apiClient.get('/library/stats');
@@ -1083,7 +1088,7 @@ function LibrarianDashboard() {
   });
 
   const { data: overdueLoans = [], isLoading: overdueLoading } = useQuery({
-    queryKey: ['library', 'overdue'],
+    queryKey: ['library', 'overdue', activeBranchId],
     queryFn: async () => {
       try {
         const { data } = await (await import('@/lib/api/client')).apiClient.get('/library/loans', { params: { status: 'overdue', limit: 10 } });
@@ -1149,28 +1154,28 @@ function LibrarianDashboard() {
 
 // ── School Dashboard (main) ────────────────────────────────────────────────────
 function SchoolDashboard() {
-  const { user } = useAuthStore();
+  const { user, activeBranchId } = useAuthStore();
 
   const { data: usersData, isLoading: usersLoading } = useQuery({
-    queryKey: ['users', 'count'],
+    queryKey: ['users', 'count', activeBranchId],
     queryFn: () => usersApi.getAll({ limit: 100 }),
     enabled: ['school_admin', 'vice_principal'].includes(user?.role ?? ''),
   });
 
   const { data: classesData, isLoading: classesLoading } = useQuery({
-    queryKey: ['classes'],
+    queryKey: ['classes', activeBranchId],
     queryFn: classesApi.getAll,
     enabled: ['school_admin', 'vice_principal', 'teacher', 'class_teacher'].includes(user?.role ?? ''),
   });
 
   const { data: paymentReport, isLoading: paymentsLoading } = useQuery({
-    queryKey: ['payments', 'report'],
+    queryKey: ['payments', 'report', activeBranchId],
     queryFn: paymentsApi.getReport,
     enabled: ['school_admin', 'accountant'].includes(user?.role ?? ''),
   });
 
   const { data: subjectsData } = useQuery({
-    queryKey: ['subjects', 'count'],
+    queryKey: ['subjects', 'count', activeBranchId],
     queryFn: () => subjectsApi.getAll(),
     enabled: user?.role === 'school_admin',
   });
@@ -1338,14 +1343,14 @@ function ParentDashboard() {
   const { user }    = useAuthStore();
   const [selectedChildId, setSelectedChildId] = useState<string>('');
 
-  const { data: children = [], isLoading: childrenLoading } = useQuery({ queryKey: ['parent', 'children'], queryFn: parentApi.getChildren });
+  const { data: children = [], isLoading: childrenLoading } = useQuery({ queryKey: ['parent', 'children', activeBranchId], queryFn: parentApi.getChildren });
   const childList: any[] = Array.isArray(children) ? children : [];
   const activeChild = selectedChildId || childList[0]?.id;
 
-  const { data: attendance }    = useQuery({ queryKey: ['parent', 'attendance', activeChild], queryFn: () => parentApi.getChildAttendance(activeChild),  enabled: !!activeChild });
-  const { data: gradesData }    = useQuery({ queryKey: ['parent', 'grades',     activeChild], queryFn: () => parentApi.getChildGrades(activeChild),     enabled: !!activeChild });
-  const { data: payments }      = useQuery({ queryKey: ['parent', 'payments',   activeChild], queryFn: () => parentApi.getChildPayments(activeChild),   enabled: !!activeChild });
-  const { data: upcomingExams = [] } = useQuery({ queryKey: ['parent', 'exams', activeChild], queryFn: () => examsApi.getUpcoming(14), enabled: !!activeChild });
+  const { data: attendance }    = useQuery({ queryKey: ['parent', 'attendance', activeChild, activeBranchId], queryFn: () => parentApi.getChildAttendance(activeChild),  enabled: !!activeChild });
+  const { data: gradesData }    = useQuery({ queryKey: ['parent', 'grades',     activeChild, activeBranchId], queryFn: () => parentApi.getChildGrades(activeChild),     enabled: !!activeChild });
+  const { data: payments }      = useQuery({ queryKey: ['parent', 'payments',   activeChild, activeBranchId], queryFn: () => parentApi.getChildPayments(activeChild),   enabled: !!activeChild });
+  const { data: upcomingExams = [] } = useQuery({ queryKey: ['parent', 'exams',      activeChild, activeBranchId], queryFn: () => examsApi.getUpcoming(14), enabled: !!activeChild });
 
   const grades: any[]       = gradesData?.grades ?? [];
   const attendanceStats     = attendance ?? {};
@@ -1490,16 +1495,17 @@ function DirectorDashboard() {
   const router       = useRouter();
   const queryClient  = useQueryClient();
   const { toast }    = useToast();
+  const { activeBranchId } = useAuthStore();
   const [annTitle,   setAnnTitle]  = useState('');
   const [annBody,    setAnnBody]   = useState('');
   const [annTarget,  setAnnTarget] = useState('all_staff');
 
-  const { data: attendanceSummary, isLoading: attLoading } = useQuery({ queryKey: ['attendance', 'today-summary'],    queryFn: attendanceApi.getTodaySummary });
-  const { data: classesData }  = useQuery({ queryKey: ['classes'],              queryFn: classesApi.getAll });
-  const { data: usersData }    = useQuery({ queryKey: ['users', 'all'],          queryFn: () => usersApi.getAll({ limit: 200 }) });
-  const { data: pendingLeaves }= useQuery({ queryKey: ['leave-requests', 'pending'], queryFn: () => leaveRequestsApi.getAll({ status: 'pending' }) });
-  const { data: financeData }  = useQuery({ queryKey: ['finance', 'dashboard'], queryFn: financeApi.getDashboard });
-  const { data: pendingDiscipline } = useQuery({ queryKey: ['discipline', 'unresolved'], queryFn: () => disciplineApi.getAll().catch(() => ({ data: [] })) });
+  const { data: attendanceSummary, isLoading: attLoading } = useQuery({ queryKey: ['attendance', 'today-summary', activeBranchId],    queryFn: attendanceApi.getTodaySummary });
+  const { data: classesData }  = useQuery({ queryKey: ['classes', activeBranchId],              queryFn: classesApi.getAll });
+  const { data: usersData }    = useQuery({ queryKey: ['users', 'all', activeBranchId],          queryFn: () => usersApi.getAll({ limit: 200 }) });
+  const { data: pendingLeaves }= useQuery({ queryKey: ['leave-requests', 'pending', activeBranchId], queryFn: () => leaveRequestsApi.getAll({ status: 'pending' }) });
+  const { data: financeData }  = useQuery({ queryKey: ['finance', 'dashboard', activeBranchId], queryFn: financeApi.getDashboard });
+  const { data: pendingDiscipline } = useQuery({ queryKey: ['discipline', 'unresolved', activeBranchId], queryFn: () => disciplineApi.getAll().catch(() => ({ data: [] })) });
 
   const classList: any[]         = Array.isArray(classesData) ? classesData : (classesData as any)?.data ?? [];
   const allUsers: any[]          = (usersData as any)?.data ?? [];

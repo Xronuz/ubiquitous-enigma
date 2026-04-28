@@ -251,7 +251,7 @@ const CREATE_EMPTY = {
 
 export default function PaymentsPage() {
   const { toast } = useToast();
-  const { user } = useAuthStore();
+  const { user , activeBranchId } = useAuthStore();
   const queryClient = useQueryClient();
 
   const canCreate = ['school_admin', 'accountant'].includes(user?.role ?? '');
@@ -274,12 +274,12 @@ export default function PaymentsPage() {
   const [activeTab, setActiveTab] = useState('classes');
 
   const { data: report, isLoading: reportLoading } = useQuery({
-    queryKey: ['payments', 'report'],
+    queryKey: ['payments', 'report', activeBranchId],
     queryFn: paymentsApi.getReport,
   });
 
   const { data: history, isLoading: historyLoading } = useQuery({
-    queryKey: ['payments', 'history', filterClassId, filterStatus, filterFrom, filterTo],
+    queryKey: ['payments', 'history', filterClassId, filterStatus, filterFrom, filterTo, activeBranchId],
     queryFn: () => paymentsApi.getHistory({
       classId: filterClassId !== 'all' ? filterClassId : undefined,
       status: filterStatus !== 'all' ? filterStatus : undefined,
@@ -293,13 +293,13 @@ export default function PaymentsPage() {
 
   // Classes for filter + create
   const { data: classes = [] } = useQuery({
-    queryKey: ['classes'],
+    queryKey: ['classes', activeBranchId],
     queryFn: classesApi.getAll,
   });
 
   // Students list — stable key so re-selection doesn't cause an extra network trip
   const { data: studentsData } = useQuery({
-    queryKey: ['students-for-payment-create'],
+    queryKey: ['students-for-payment-create', activeBranchId],
     queryFn: () => usersApi.getAll({ page: 1, limit: 200 }),
     enabled: createOpen,
     staleTime: 60_000, // 1 min — list is unlikely to change while modal is open

@@ -66,7 +66,7 @@ function formatCurrency(amount: number): string {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function CanteenPage() {
-  const { user } = useAuthStore();
+  const { user, activeBranchId } = useAuthStore();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -97,7 +97,7 @@ export default function CanteenPage() {
   // ── Data ──────────────────────────────────────────────────────────────────
 
   const { data: weekMenu = [], isLoading } = useQuery({
-    queryKey: ['canteen', 'week', from, to],
+    queryKey: ['canteen', 'week', from, to, activeBranchId],
     queryFn: () => canteenApi.getWeekMenu({ from, to }),
   });
 

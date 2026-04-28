@@ -23,7 +23,7 @@ const EMPTY = { name: '', classIds: [] as string[], teacherId: '' };
 
 export default function SubjectsPage() {
   const ask = useConfirm();
-  const { user } = useAuthStore();
+  const { user, activeBranchId } = useAuthStore();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const canManage = ['school_admin', 'vice_principal'].includes(user?.role ?? '');
@@ -32,7 +32,7 @@ export default function SubjectsPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [creating, setCreating] = useState(false);
 
-  const { data: subjects = [], isLoading } = useQuery({ queryKey: ['subjects'], queryFn: () => subjectsApi.getAll() });
+  const { data: subjects = [], isLoading } = useQuery({ queryKey: ['subjects', activeBranchId], queryFn: () => subjectsApi.getAll() });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => subjectsApi.remove(id),
@@ -45,8 +45,8 @@ export default function SubjectsPage() {
       toast({ variant: 'destructive', title: 'Xato', description: Array.isArray(msg) ? msg.join(', ') : msg ?? "O'chirishda xatolik" });
     },
   });
-  const { data: classes = [] } = useQuery({ queryKey: ['classes'], queryFn: () => classesApi.getAll(), enabled: open });
-  const { data: usersData } = useQuery({ queryKey: ['users', 1], queryFn: () => usersApi.getAll({ page: 1, limit: 100 }), enabled: open });
+  const { data: classes = [] } = useQuery({ queryKey: ['classes', activeBranchId], queryFn: () => classesApi.getAll(), enabled: open });
+  const { data: usersData } = useQuery({ queryKey: ['users', 1, activeBranchId], queryFn: () => usersApi.getAll({ page: 1, limit: 100 }), enabled: open });
   const teachers = (usersData?.data ?? []).filter((u: any) => ['teacher', 'class_teacher'].includes(u.role));
 
   const toggleClass = (id: string) => {

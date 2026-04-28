@@ -41,7 +41,7 @@ type UserFormValues = z.infer<typeof userSchema>;
 // Guard: super_admin bu sahifani ko'rmasligi kerak
 function useSuperAdminGuard() {
   const router = useRouter();
-  const { user } = useAuthStore();
+  const { user, activeBranchId } = useAuthStore();
   useEffect(() => {
     if (user?.role === 'super_admin') router.replace('/dashboard/schools');
   }, [user, router]);
@@ -110,20 +110,20 @@ export default function UsersPage() {
   }, [search]);
 
   const { data, isLoading } = useQuery({
-    queryKey: ['users', page, debouncedSearch],
+    queryKey: ['users', page, debouncedSearch, activeBranchId],
     queryFn: () => usersApi.getAll({ page, limit: 20, search: debouncedSearch || undefined }),
   });
 
   // Load classes when modal opens
   const { data: classesData } = useQuery({
-    queryKey: ['classes'],
+    queryKey: ['classes', activeBranchId],
     queryFn: () => classesApi.getAll(),
     enabled: open,
   });
 
   // Load students list when parent role selected
   const { data: allStudentsData } = useQuery({
-    queryKey: ['users-students'],
+    queryKey: ['users-students', activeBranchId],
     queryFn: () => usersApi.getAll({ page: 1, limit: 200 }),
     enabled: open && watchedRole === 'parent',
   });

@@ -296,11 +296,12 @@ function CreateLeadDialog({
   onSuccess:     () => void;
 }) {
   const { toast }   = useToast();
+  const { activeBranchId } = useAuthStore();
   const [form, setForm] = useState(EMPTY_FORM);
   const [dupError, setDupError] = useState<any>(null);
 
   const { data: classesData } = useQuery({
-    queryKey: ['classes'],
+    queryKey: ['classes', activeBranchId],
     queryFn:  classesApi.getAll,
     enabled:  open,
     select:   (d: any) => (Array.isArray(d) ? d : d?.data ?? []),
@@ -446,13 +447,14 @@ function ConvertDialog({
   onSuccess:    () => void;
 }) {
   const { toast } = useToast();
+  const { activeBranchId } = useAuthStore();
   const [classId, setClassId] = useState('');
   const [email,   setEmail]   = useState('');
   const [result,  setResult]  = useState<any>(null);
   const [copied,  setCopied]  = useState(false);
 
   const { data: classesData } = useQuery({
-    queryKey: ['classes'],
+    queryKey: ['classes', activeBranchId],
     queryFn:  classesApi.getAll,
     enabled:  open,
     select:   (d: any) => (Array.isArray(d) ? d : d?.data ?? []),
@@ -761,7 +763,7 @@ function LeadDetailDialog({
 export default function CrmPage() {
   const { toast }       = useToast();
   const queryClient     = useQueryClient();
-  const { user }        = useAuthStore();
+  const { user, activeBranchId } = useAuthStore();
   const [search,        setSearch]        = useState('');
   const [activeSource,  setActiveSource]  = useState<string>('');
   const [showAnalytics, setShowAnalytics] = useState(false);
@@ -772,12 +774,12 @@ export default function CrmPage() {
 
   // ── Queries ─────────────────────────────────────────────────────────────
   const { data: listData, isLoading } = useQuery({
-    queryKey: ['leads', { search, source: activeSource }],
+    queryKey: ['leads', { search, source: activeSource, branchId: activeBranchId }],
     queryFn:  () => leadsApi.getAll({ search: search || undefined, source: activeSource || undefined, limit: 200 }),
   });
 
   const { data: analytics } = useQuery({
-    queryKey: ['leads-analytics'],
+    queryKey: ['leads-analytics', activeBranchId],
     queryFn:  () => leadsApi.getAnalytics(),
     enabled:  showAnalytics,
   });

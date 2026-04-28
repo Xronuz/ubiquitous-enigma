@@ -92,7 +92,7 @@ function HeatCell({ pct }: { pct: number | null }) {
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 export default function AttendancePage() {
-  const { user } = useAuthStore();
+  const { user , activeBranchId } = useAuthStore();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -106,11 +106,11 @@ export default function AttendancePage() {
   const [view, setView] = useState<'mark' | 'history'>('mark');
 
   // ── Queries ──────────────────────────────────────────────────────────────────
-  const { data: classes, isError: classesError } = useQuery<ClassInfo[]>({ queryKey: ['classes'], queryFn: classesApi.getAll });
+  const { data: classes, isError: classesError } = useQuery<ClassInfo[]>({ queryKey: ['classes', activeBranchId], queryFn: classesApi.getAll });
   const classList: ClassInfo[] = Array.isArray(classes) ? classes : [];
 
   const { data: classStudents } = useQuery<ClassStudent[]>({
-    queryKey: ['class-students', selectedClass],
+    queryKey: ['class-students', selectedClass, activeBranchId],
     queryFn: () => classesApi.getStudents(selectedClass),
     enabled: !!selectedClass,
   });
@@ -120,7 +120,7 @@ export default function AttendancePage() {
 
   // Today's report for current class
   const { data: reportData, isLoading: reportLoading, isError: reportError } = useQuery<AttendanceRecord[]>({
-    queryKey: ['attendance', 'report', selectedClass, selectedDate],
+    queryKey: ['attendance', 'report', selectedClass, selectedDate, activeBranchId],
     queryFn: () => attendanceApi.getReport({ classId: selectedClass || undefined, startDate: selectedDate, endDate: selectedDate }),
     enabled: !!selectedClass,
   });
@@ -128,7 +128,7 @@ export default function AttendancePage() {
 
   // Last 28 days history for heat-map
   const { data: historyData } = useQuery<AttendanceRecord[]>({
-    queryKey: ['attendance', 'history28', selectedClass],
+    queryKey: ['attendance', 'history28', selectedClass, activeBranchId],
     queryFn: () => attendanceApi.getReport({
       classId: selectedClass || undefined,
       startDate: format(subDays(new Date(), 27), 'yyyy-MM-dd'),

@@ -51,7 +51,7 @@ const LEAVE_TYPES = [
 const EMPTY_FORM = { reason: '', startDate: '', endDate: '', type: 'personal' as 'sick' | 'personal' | 'family' | 'other' };
 
 export default function LeaveRequestsPage() {
-  const { user } = useAuthStore();
+  const { user, activeBranchId } = useAuthStore();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -73,7 +73,7 @@ export default function LeaveRequestsPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const { data: requests = [], isLoading } = useQuery({
-    queryKey: ['leave-requests', filterStatus],
+    queryKey: ['leave-requests', filterStatus, activeBranchId],
     queryFn: () => leaveRequestsApi.getAll({ status: filterStatus || undefined }),
   });
 

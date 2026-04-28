@@ -21,7 +21,7 @@ const EMPTY_BOOK = { title: '', author: '', isbn: '', totalCopies: '1' };
 const EMPTY_LOAN = { bookId: '', studentId: '' };
 
 export default function LibraryPage() {
-  const { user } = useAuthStore();
+  const { user, activeBranchId } = useAuthStore();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -43,11 +43,11 @@ export default function LibraryPage() {
     return () => clearTimeout(t);
   }, [search]);
 
-  const { data: stats, isLoading: statsLoading } = useQuery<LibraryStats>({ queryKey: ['library', 'stats'], queryFn: libraryApi.getStats });
-  const { data: books = [], isLoading: booksLoading } = useQuery<LibraryBook[]>({ queryKey: ['library', 'books', debouncedSearch], queryFn: () => libraryApi.getBooks(debouncedSearch || undefined) });
-  const { data: loans = [], isLoading: loansLoading } = useQuery<LibraryLoan[]>({ queryKey: ['library', 'loans'], queryFn: () => libraryApi.getLoans(true), enabled: tab === 'loans' });
+  const { data: stats, isLoading: statsLoading } = useQuery<LibraryStats>({ queryKey: ['library', 'stats', activeBranchId], queryFn: libraryApi.getStats });
+  const { data: books = [], isLoading: booksLoading } = useQuery<LibraryBook[]>({ queryKey: ['library', 'books', debouncedSearch, activeBranchId], queryFn: () => libraryApi.getBooks(debouncedSearch || undefined) });
+  const { data: loans = [], isLoading: loansLoading } = useQuery<LibraryLoan[]>({ queryKey: ['library', 'loans', activeBranchId], queryFn: () => libraryApi.getLoans(true), enabled: tab === 'loans' });
 
-  const { data: studentsData } = useQuery({ queryKey: ['users', 1], queryFn: () => usersApi.getAll({ page: 1, limit: 100 }), enabled: loanOpen });
+  const { data: studentsData } = useQuery({ queryKey: ['users', 1, activeBranchId], queryFn: () => usersApi.getAll({ page: 1, limit: 100 }), enabled: loanOpen });
   const students: any[] = (studentsData?.data ?? []).filter((u: any) => u.role === 'student');
 
   const createBookMutation = useMutation({

@@ -46,7 +46,7 @@ const EMPTY_FORM = {
 const LIMIT = 15;
 
 export default function MeetingsPage() {
-  const { user } = useAuthStore();
+  const { user, activeBranchId } = useAuthStore();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
@@ -59,27 +59,27 @@ export default function MeetingsPage() {
 
   // ── Queries ─────────────────────────────────────────────────────────────────
   const { data: meetingsData, isLoading, error } = useQuery({
-    queryKey: ['meetings', page, filterStatus],
+    queryKey: ['meetings', page, filterStatus, activeBranchId],
     queryFn: () => meetingsApi.getAll({ status: filterStatus || undefined, page, limit: LIMIT }),
     retry: 1,
   });
 
   const { data: teachers = [] } = useQuery({
-    queryKey: ['users', 'teachers'],
+    queryKey: ['users', 'teachers', activeBranchId],
     queryFn: () => usersApi.getAll({ role: 'teacher', limit: 100 }),
     enabled: open,
     select: (d: any) => d?.data ?? [],
   });
 
   const { data: parents = [] } = useQuery({
-    queryKey: ['users', 'parents'],
+    queryKey: ['users', 'parents', activeBranchId],
     queryFn: () => usersApi.getAll({ role: 'parent', limit: 100 }),
     enabled: open,
     select: (d: any) => d?.data ?? [],
   });
 
   const { data: students = [] } = useQuery({
-    queryKey: ['users', 'students'],
+    queryKey: ['users', 'students', activeBranchId],
     queryFn: () => usersApi.getAll({ role: 'student', limit: 200 }),
     enabled: open,
     select: (d: any) => d?.data ?? [],
