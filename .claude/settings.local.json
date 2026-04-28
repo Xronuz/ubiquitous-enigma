@@ -226,7 +226,8 @@
       "Bash(pnpm run:*)",
       "Bash(ls /usr/local/bin/node*)",
       "Bash(ls /opt/homebrew/bin/node*)",
-      "Bash(pnpm dev:*)"
+      "Bash(pnpm dev:*)",
+      "Bash(git add *)"
     ]
   }
 }

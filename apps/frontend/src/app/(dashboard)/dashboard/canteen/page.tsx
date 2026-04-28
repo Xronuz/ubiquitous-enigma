@@ -157,7 +157,7 @@ export default function CanteenPage() {
       date: selectedDate,
       mealType: form.mealType,
       price: form.price ? Number(form.price) : undefined,
-      items: validItems.map(it => ({
+      itemsJson: validItems.map(it => ({
         name: it.name.trim(),
         description: it.description || undefined,
         calories: it.calories ? Number(it.calories) : undefined,

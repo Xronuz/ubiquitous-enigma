@@ -78,6 +78,13 @@ export default function MeetingsPage() {
     select: (d: any) => d?.data ?? [],
   });
 
+  const { data: students = [] } = useQuery({
+    queryKey: ['users', 'students'],
+    queryFn: () => usersApi.getAll({ role: 'student', limit: 200 }),
+    enabled: open,
+    select: (d: any) => d?.data ?? [],
+  });
+
   const meetings: any[] = meetingsData?.data ?? [];
   const meta = meetingsData?.meta;
 
@@ -117,13 +124,23 @@ export default function MeetingsPage() {
     const e: Record<string, string> = {};
     if (!form.teacherId) e.teacherId = "O'qituvchi tanlang";
     if (!form.parentId) e.parentId = 'Ota-ona tanlang';
+    if (!form.studentId) e.studentId = "O'quvchi tanlang";
     if (!form.scheduledAt) e.scheduledAt = 'Sana va vaqt kiriting';
     setErrors(e);
     return Object.keys(e).length === 0;
   };
 
   const sel = (k: string) => (v: string) => {
-    setForm(f => ({ ...f, [k]: v }));
+    setForm(f => {
+      const update: typeof f = { ...f, [k]: v };
+      // When parent changes, auto-populate studentId if the parent record carries it
+      if (k === 'parentId') {
+        const parent = (parents as any[]).find((p: any) => p.id === v);
+        const linkedStudentId: string | undefined = parent?.studentId ?? parent?.children?.[0]?.id;
+        update.studentId = linkedStudentId ?? '';
+      }
+      return update;
+    });
     setErrors(e => { const n = { ...e }; delete n[k]; return n; });
   };
 
@@ -301,6 +318,15 @@ export default function MeetingsPage() {
               {errors.parentId && <p className="text-xs text-destructive">{errors.parentId}</p>}
             </div>
 
+            <div className="space-y-1.5">
+              <Label>O&apos;quvchi <span className="text-destructive">*</span></Label>
+              <Select value={form.studentId} onValueChange={sel('studentId')}>
+                <SelectTrigger><SelectValue placeholder="O'quvchi tanlang..." /></SelectTrigger>
+                <SelectContent>{(students as any[]).map((s: any) => <SelectItem key={s.id} value={s.id}>{s.firstName} {s.lastName}</SelectItem>)}</SelectContent>
+              </Select>
+              {errors.studentId && <p className="text-xs text-destructive">{errors.studentId}</p>}
+            </div>
+
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label>Sana va vaqt <span className="text-destructive">*</span></Label>
@@ -332,7 +358,7 @@ export default function MeetingsPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>Bekor</Button>
-            <Button onClick={() => { if (validate()) createMutation.mutate({ ...form, duration: Number(form.duration) || 30, studentId: form.studentId || undefined as any }); }}
+            <Button onClick={() => { if (validate()) createMutation.mutate({ ...form, duration: Number(form.duration) || 30 }); }}
               disabled={createMutation.isPending}>
               {createMutation.isPending ? 'Saqlanmoqda...' : 'Rejalashtirish'}
             </Button>

@@ -9,10 +9,10 @@ export const subjectsApi = {
   getMine: () =>
     apiClient.get('/subjects/mine').then(r => r.data),
 
-  create: (payload: { name: string; classId?: string; teacherId?: string; code?: string }) =>
+  create: (payload: { name: string; classIds?: string[]; teacherId?: string; code?: string }) =>
     apiClient.post('/subjects', payload).then(r => r.data),
 
-  update: (id: string, payload: Partial<{ name: string; classId: string; teacherId: string; code: string }>) =>
+  update: (id: string, payload: Partial<{ name: string; classIds: string[]; teacherId: string; code: string }>) =>
     apiClient.put(`/subjects/${id}`, payload).then(r => r.data),
 
   remove: (id: string) =>

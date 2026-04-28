@@ -35,7 +35,7 @@ export const canteenApi = {
     date: string;
     mealType: string;
     price?: number;
-    items: MenuItem[];
+    itemsJson: MenuItem[];
   }) =>
     apiClient.post<MenuDay>('/canteen', payload).then(r => r.data),
 

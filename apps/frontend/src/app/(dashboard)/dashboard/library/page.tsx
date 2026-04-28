@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Library, Plus, Search, BookOpen, Users, RotateCcw, BookMarked, Loader2, AlertTriangle, Download, PackageOpen } from 'lucide-react';
+import { Library, Plus, Search, BookOpen, Users, RotateCcw, BookMarked, Loader2, AlertTriangle, Download, PackageOpen, ChevronsUpDown } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,6 +27,8 @@ export default function LibraryPage() {
 
   const canManage = ['school_admin', 'librarian'].includes(user?.role ?? '');
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [studentSearch, setStudentSearch] = useState('');
   const [tab, setTab] = useState<'books' | 'loans'>('books');
   const [bookOpen, setBookOpen] = useState(false);
   const [loanOpen, setLoanOpen] = useState(false);
@@ -35,8 +37,14 @@ export default function LibraryPage() {
   const [bookErrors, setBookErrors] = useState<Record<string, string>>({});
   const [loanErrors, setLoanErrors] = useState<Record<string, string>>({});
 
+  // Debounce book search — 350ms
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search), 350);
+    return () => clearTimeout(t);
+  }, [search]);
+
   const { data: stats, isLoading: statsLoading } = useQuery<LibraryStats>({ queryKey: ['library', 'stats'], queryFn: libraryApi.getStats });
-  const { data: books = [], isLoading: booksLoading } = useQuery<LibraryBook[]>({ queryKey: ['library', 'books', search], queryFn: () => libraryApi.getBooks(search || undefined) });
+  const { data: books = [], isLoading: booksLoading } = useQuery<LibraryBook[]>({ queryKey: ['library', 'books', debouncedSearch], queryFn: () => libraryApi.getBooks(debouncedSearch || undefined) });
   const { data: loans = [], isLoading: loansLoading } = useQuery<LibraryLoan[]>({ queryKey: ['library', 'loans'], queryFn: () => libraryApi.getLoans(true), enabled: tab === 'loans' });
 
   const { data: studentsData } = useQuery({ queryKey: ['users', 1], queryFn: () => usersApi.getAll({ page: 1, limit: 100 }), enabled: loanOpen });
@@ -98,7 +106,7 @@ export default function LibraryPage() {
                 : <><Download className="mr-1.5 h-4 w-4" /> PDF Tarix</>
               }
             </Button>
-            <Button variant="outline" onClick={() => { setLoanOpen(true); setLoanForm(EMPTY_LOAN); setLoanErrors({}); }}>
+            <Button variant="outline" onClick={() => { setLoanOpen(true); setLoanForm(EMPTY_LOAN); setLoanErrors({}); setStudentSearch(''); }}>
               <BookMarked className="mr-2 h-4 w-4" /> Kitob berish
             </Button>
             <Button onClick={() => { setBookOpen(true); setBookForm(EMPTY_BOOK); setBookErrors({}); }}>
@@ -254,7 +262,7 @@ export default function LibraryPage() {
       </Dialog>
 
       {/* Loan book modal */}
-      <Dialog open={loanOpen} onOpenChange={setLoanOpen}>
+      <Dialog open={loanOpen} onOpenChange={v => { setLoanOpen(v); if (!v) { setLoanForm(EMPTY_LOAN); setStudentSearch(''); setLoanErrors({}); } }}>
         <DialogContent className="max-w-sm">
           <DialogHeader><DialogTitle>Kitob berish</DialogTitle><DialogDescription>O'quvchiga kitob bering</DialogDescription></DialogHeader>
           <div className="space-y-4 py-2">
@@ -267,11 +275,52 @@ export default function LibraryPage() {
               {loanErrors.bookId && <p className="text-xs text-destructive">{loanErrors.bookId}</p>}
             </div>
             <div className="space-y-1.5">
-              <Label>O'quvchi <span className="text-destructive">*</span></Label>
-              <Select value={loanForm.studentId} onValueChange={v => { setLoanForm(f => ({ ...f, studentId: v })); setLoanErrors(e => { const n = { ...e }; delete n.studentId; return n; }); }}>
-                <SelectTrigger><SelectValue placeholder="O'quvchi tanlang..." /></SelectTrigger>
-                <SelectContent>{students.map((s: any) => <SelectItem key={s.id} value={s.id}>{s.firstName} {s.lastName}</SelectItem>)}</SelectContent>
-              </Select>
+              <Label>O&apos;quvchi <span className="text-destructive">*</span></Label>
+              <div className="relative">
+                <div className="flex items-center border rounded-md px-3 py-2 gap-2 focus-within:ring-1 focus-within:ring-ring">
+                  <Search className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <input
+                    className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+                    placeholder="Ism bo'yicha qidirish..."
+                    value={studentSearch}
+                    onChange={e => setStudentSearch(e.target.value)}
+                  />
+                  <ChevronsUpDown className="h-4 w-4 text-muted-foreground shrink-0 opacity-50" />
+                </div>
+                {studentSearch && (
+                  <div className="absolute z-50 mt-1 w-full rounded-md border bg-popover shadow-md max-h-48 overflow-y-auto">
+                    {students
+                      .filter((s: any) =>
+                        `${s.firstName} ${s.lastName}`.toLowerCase().includes(studentSearch.toLowerCase())
+                      )
+                      .map((s: any) => (
+                        <button
+                          key={s.id}
+                          type="button"
+                          className={`w-full text-left px-3 py-2 text-sm hover:bg-accent transition-colors ${loanForm.studentId === s.id ? 'bg-accent font-medium' : ''}`}
+                          onClick={() => {
+                            setLoanForm(f => ({ ...f, studentId: s.id }));
+                            setStudentSearch(`${s.firstName} ${s.lastName}`);
+                            setLoanErrors(e => { const n = { ...e }; delete n.studentId; return n; });
+                          }}
+                        >
+                          {s.firstName} {s.lastName}
+                        </button>
+                      ))
+                    }
+                    {students.filter((s: any) =>
+                      `${s.firstName} ${s.lastName}`.toLowerCase().includes(studentSearch.toLowerCase())
+                    ).length === 0 && (
+                      <p className="px-3 py-2 text-sm text-muted-foreground">O&apos;quvchi topilmadi</p>
+                    )}
+                  </div>
+                )}
+              </div>
+              {loanForm.studentId && (
+                <p className="text-xs text-muted-foreground">
+                  ✓ Tanlandi: {students.find((s: any) => s.id === loanForm.studentId)?.firstName} {students.find((s: any) => s.id === loanForm.studentId)?.lastName}
+                </p>
+              )}
               {loanErrors.studentId && <p className="text-xs text-destructive">{loanErrors.studentId}</p>}
             </div>
           </div>

@@ -55,6 +55,7 @@ export function useSwitchBranch() {
           'payments', 'users', 'subjects', 'class-students',
           'students-for-payment-create',
           'reports', 'analytics',
+          'meetings', 'canteen', 'library', 'leave-requests',
         ];
         await Promise.all(
           branchKeys.map(key => queryClient.invalidateQueries({ queryKey: [key] })),

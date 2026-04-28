@@ -70,12 +70,11 @@ export default function SubjectsPage() {
     if (!validate()) return;
     setCreating(true);
     try {
-      // Create one subject per selected class (in parallel)
-      await Promise.all(
-        form.classIds.map(classId =>
-          subjectsApi.create({ name: form.name.trim(), classId, teacherId: form.teacherId }),
-        ),
-      );
+      await subjectsApi.create({
+        name: form.name.trim(),
+        classIds: form.classIds,
+        teacherId: form.teacherId,
+      });
       toast({ title: `✅ Fan ${form.classIds.length > 1 ? `${form.classIds.length} sinfga` : ''} qo'shildi` });
       queryClient.invalidateQueries({ queryKey: ['subjects'] });
       setOpen(false);
