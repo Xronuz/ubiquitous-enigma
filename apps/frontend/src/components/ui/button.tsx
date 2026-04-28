@@ -20,21 +20,14 @@ const buttonVariants = cva(
           'bg-emerald-600 text-white shadow-md shadow-emerald-600/20 hover:bg-emerald-500 hover:shadow-lg hover:shadow-emerald-600/25',
         destructive:
           'bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90',
-        /* Outline — glass border pill */
         outline:
-          'bg-white/70 text-slate-700 border border-white/90 shadow-sm backdrop-blur-sm hover:bg-white/90 hover:shadow-md dark:bg-slate-800/60 dark:text-slate-200 dark:border-white/10 dark:hover:bg-slate-700/60',
-        /* Secondary — soft tinted pill */
+          'bg-white text-slate-700 border border-slate-200 shadow-xs hover:bg-slate-50 hover:border-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 dark:hover:bg-slate-700',
         secondary:
-          'bg-slate-100/80 text-slate-900 backdrop-blur-sm hover:bg-slate-200/80 dark:bg-slate-800/60 dark:text-slate-100 dark:hover:bg-slate-700/60',
-        /* Ghost — transparent */
+          'bg-slate-100 text-slate-900 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700',
         ghost:
-          'text-slate-600 hover:bg-white/60 hover:text-slate-900 backdrop-blur-sm dark:text-slate-300 dark:hover:bg-slate-800/50 dark:hover:text-white',
+          'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white',
         link:
           'text-emerald-600 underline-offset-4 hover:underline p-0 h-auto',
-        success:
-          'bg-emerald-600 text-white shadow-md shadow-emerald-600/20 hover:bg-emerald-500',
-        warning:
-          'bg-amber-500 text-white shadow-sm hover:bg-amber-400',
       },
       size: {
         default: 'h-9 px-5 py-2',

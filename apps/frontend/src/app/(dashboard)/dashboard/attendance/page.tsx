@@ -18,7 +18,7 @@ import { attendanceApi } from '@/lib/api/attendance';
 import { classesApi } from '@/lib/api/classes';
 import { useAuthStore } from '@/store/auth.store';
 import { useToast } from '@/components/ui/use-toast';
-import { cn } from '@/lib/utils';
+import { cn, getScoreColor } from '@/lib/utils';
 import { AttendanceStatus } from '@eduplatform/types';
 import { ImportDialog } from '@/components/import/import-dialog';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -554,7 +554,7 @@ export default function AttendancePage() {
                                 <HeatCell pct={d} />
                               </td>
                             ))}
-                            <td className="pl-3 text-right font-bold" style={{ color: avg === null ? undefined : avg >= 80 ? '#22c55e' : avg >= 60 ? '#f59e0b' : '#ef4444' }}>
+                            <td className="pl-3 text-right font-bold" style={{ color: avg !== null ? getScoreColor(avg) : undefined }}>
                               {avg !== null ? `${avg}%` : '—'}
                             </td>
                           </tr>

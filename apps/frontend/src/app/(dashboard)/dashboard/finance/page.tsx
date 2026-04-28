@@ -235,7 +235,7 @@ export default function FinanceDashboardPage() {
       {/* ── Row 1: Header + Tab bar ───────────────────────────────────────── */}
       <div className="flex shrink-0 flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-bold text-[#1e293b] dark:text-white">Moliyaviy dashboard</h1>
+          <h1 className="text-xl font-bold text-foreground">Moliyaviy dashboard</h1>
           <p className="text-sm text-muted-foreground">To&apos;lovlar, maoshlar va qarzdorlar</p>
         </div>
         <TabBar active={activeTab} onChange={setActiveTab} />

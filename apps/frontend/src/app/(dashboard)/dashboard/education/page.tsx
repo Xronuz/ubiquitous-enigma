@@ -70,7 +70,7 @@ function EducationContent() {
   return (
     <div>
       <div className="mb-1">
-        <h1 className="text-xl font-bold text-[#1e293b] dark:text-white">Ta&apos;lim</h1>
+        <h1 className="text-xl font-bold text-foreground">Ta&apos;lim</h1>
         <p className="text-sm text-muted-foreground">Sinflar, dars jadvali va akademik rejalar</p>
       </div>
 

@@ -71,7 +71,7 @@ function ResourcesContent() {
   return (
     <div>
       <div className="mb-1">
-        <h1 className="text-2xl font-bold text-[#1e293b] dark:text-white">Resurslar</h1>
+        <h1 className="text-2xl font-bold text-foreground">Resurslar</h1>
         <p className="text-sm text-muted-foreground">Kutubxona, o&apos;quv markazi, EduCoin va boshqalar</p>
       </div>
 

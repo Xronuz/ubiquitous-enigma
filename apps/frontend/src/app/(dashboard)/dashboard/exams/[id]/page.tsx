@@ -25,7 +25,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { examsApi } from '@/lib/api/exams';
 import { classesApi } from '@/lib/api/classes';
 import { onlineExamApi, ExamQuestion, ExamSession, StartSessionResponse } from '@/lib/api/online-exam';
-import { cn } from '@/lib/utils';
+import { cn, getScoreColor } from '@/lib/utils';
 import { useAuthStore } from '@/store/auth.store';
 import { useToast } from '@/components/ui/use-toast';
 import { usePrint } from '@/hooks/use-print';
@@ -79,12 +79,7 @@ const SCORE_COLORS = {
   poor: '#ef4444',
 };
 
-function scoreColor(pct: number) {
-  if (pct >= 90) return SCORE_COLORS.excellent;
-  if (pct >= 70) return SCORE_COLORS.good;
-  if (pct >= 50) return SCORE_COLORS.average;
-  return SCORE_COLORS.poor;
-}
+const scoreColor = getScoreColor;
 
 function scoreBadgeVariant(pct: number): 'default' | 'secondary' | 'destructive' {
   if (pct >= 70) return 'default';

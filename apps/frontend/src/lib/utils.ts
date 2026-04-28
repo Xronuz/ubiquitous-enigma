@@ -61,3 +61,19 @@ export function getGradeTypeLabel(type: string): string {
   };
   return labels[type] ?? type;
 }
+
+export function getScoreColor(score: number | null | undefined): string {
+  if (score === null || score === undefined) return '#94a3b8';
+  if (score >= 90) return '#22c55e';
+  if (score >= 70) return '#84cc16';
+  if (score >= 50) return '#f59e0b';
+  return '#ef4444';
+}
+
+export function getScoreColorClass(score: number | null | undefined): string {
+  if (score === null || score === undefined) return 'text-slate-400';
+  if (score >= 90) return 'text-emerald-500';
+  if (score >= 70) return 'text-lime-500';
+  if (score >= 50) return 'text-amber-500';
+  return 'text-red-500';
+}

@@ -53,12 +53,11 @@ const config: Config = {
 
       /* ── Border radius ── */
       borderRadius: {
-        lg:   'var(--radius)',                      /* 10px — inputs/small btns */
-        md:   'calc(var(--radius) - 2px)',          /* 8px  */
-        sm:   'calc(var(--radius) - 4px)',          /* 6px  */
+        lg:   'var(--radius)',                      /* 12px — inputs/small btns */
+        md:   'calc(var(--radius) - 2px)',          /* 10px */
+        sm:   'calc(var(--radius) - 4px)',          /* 8px  */
         xl:   '1rem',                               /* 16px — mid cards */
         '2xl':'1.25rem',                            /* 20px — dashboard cards */
-        '3xl':'1.75rem',                            /* 28px — hero surfaces */
       },
 
       /* ── Elevation shadows ── */

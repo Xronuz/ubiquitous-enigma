@@ -22,7 +22,7 @@ import { classesApi } from '@/lib/api/classes';
 import { subjectsApi } from '@/lib/api/subjects';
 import { useAuthStore } from '@/store/auth.store';
 import { useToast } from '@/components/ui/use-toast';
-import { formatDate } from '@/lib/utils';
+import { formatDate, getScoreColor } from '@/lib/utils';
 import { GradeType } from '@eduplatform/types';
 import { usePrint } from '@/hooks/use-print';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -824,7 +824,7 @@ export default function GradesPage() {
                             {subjectStats.map((s, i) => (
                               <Cell
                                 key={i}
-                                fill={s.avg >= 80 ? '#22c55e' : s.avg >= 60 ? '#f59e0b' : '#ef4444'}
+                                fill={getScoreColor(s.avg)}
                               />
                             ))}
                           </Bar>
@@ -841,7 +841,7 @@ export default function GradesPage() {
                         }}>
                         <CardContent className="p-3">
                           <p className="text-xs text-muted-foreground truncate">{s.name}</p>
-                          <p className="text-xl font-bold" style={{ color: s.avg >= 80 ? '#22c55e' : s.avg >= 60 ? '#f59e0b' : '#ef4444' }}>
+                          <p className="text-xl font-bold" style={{ color: getScoreColor(s.avg) }}>
                             {s.avg}%
                           </p>
                           <div className="h-1 rounded-full bg-muted mt-1 overflow-hidden">

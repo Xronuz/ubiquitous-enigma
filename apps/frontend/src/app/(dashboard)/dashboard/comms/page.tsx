@@ -50,7 +50,7 @@ function CommsContent() {
   return (
     <div>
       <div className="mb-1">
-        <h1 className="text-2xl font-bold text-[#1e293b] dark:text-white">Kommunikatsiya</h1>
+        <h1 className="text-2xl font-bold text-foreground">Kommunikatsiya</h1>
         <p className="text-sm text-muted-foreground">Xabarlar, bildirishnomalar va e&apos;lonlar</p>
       </div>
 
