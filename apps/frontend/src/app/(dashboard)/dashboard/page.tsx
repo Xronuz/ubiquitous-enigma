@@ -1341,7 +1341,7 @@ function SchoolDashboard() {
 
 // ── Parent Dashboard ───────────────────────────────────────────────────────────
 function ParentDashboard() {
-  const { user }    = useAuthStore();
+  const { user, activeBranchId }    = useAuthStore();
   const [selectedChildId, setSelectedChildId] = useState<string>('');
 
   const { data: children = [], isLoading: childrenLoading } = useQuery({ queryKey: ['parent', 'children', activeBranchId], queryFn: parentApi.getChildren });
