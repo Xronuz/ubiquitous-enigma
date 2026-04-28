@@ -164,11 +164,11 @@ function SectionHeader({ title, action }: { title: string; action?: React.ReactN
 }
 
 // ── Premium card wrapper ───────────────────────────────────────────────────────
-function PCard({ className, children }: { className?: string; children: React.ReactNode }) {
+function PCard({ className, style, children }: { className?: string; style?: React.CSSProperties; children: React.ReactNode }) {
   return (
     <div
       className={cn('rounded-[22px] bg-white border p-6', className)}
-      style={{ borderColor: C.border, boxShadow: C.shadow }}
+      style={{ borderColor: C.border, boxShadow: C.shadow, ...style }}
     >
       {children}
     </div>
