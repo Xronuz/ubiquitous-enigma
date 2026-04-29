@@ -6,23 +6,27 @@ import {
   LayoutDashboard, BookOpen, Users, TrendingUp,
   Briefcase, Package, MessageSquare,
   ChevronLeft, ChevronRight,
+  Calendar, GraduationCap, ClipboardList, BookMarked,
+  CalendarCheck, UserCircle, BookCheck,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useUIStore } from '@/store/ui.store';
+import { useAuthStore } from '@/store/auth.store';
 
+// ── Section map: child route → parent nav item ────────────────────────────────
 const SECTION_MAP: Record<string, string> = {
   '/dashboard/education':         '/dashboard/education',
   '/dashboard/classes':           '/dashboard/education',
-  '/dashboard/schedule':          '/dashboard/education',
+  '/dashboard/schedule':          '/dashboard/schedule',
   '/dashboard/academic-calendar': '/dashboard/education',
   '/dashboard/subjects':          '/dashboard/education',
   '/dashboard/my-class':          '/dashboard/education',
   '/dashboard/students':          '/dashboard/students',
-  '/dashboard/attendance':        '/dashboard/students',
-  '/dashboard/grades':            '/dashboard/students',
-  '/dashboard/exams':             '/dashboard/students',
-  '/dashboard/homework':          '/dashboard/students',
+  '/dashboard/attendance':        '/dashboard/attendance',
+  '/dashboard/grades':            '/dashboard/grades',
+  '/dashboard/exams':             '/dashboard/exams',
+  '/dashboard/homework':          '/dashboard/homework',
   '/dashboard/finance':           '/dashboard/finance',
   '/dashboard/payments':          '/dashboard/finance',
   '/dashboard/fee-structures':    '/dashboard/finance',
@@ -46,23 +50,96 @@ const SECTION_MAP: Record<string, string> = {
   '/dashboard/messages':          '/dashboard/comms',
   '/dashboard/notifications':     '/dashboard/comms',
   '/dashboard/announcements':     '/dashboard/comms',
+  '/dashboard/parent':            '/dashboard/parent',
 };
 
-type NavItem = { label: string; href: string; icon: LucideIcon; exact?: boolean; section: 'main' | 'system' };
+// ── Nav item type ─────────────────────────────────────────────────────────────
+type NavItem = {
+  label: string;
+  href: string;
+  icon: LucideIcon;
+  exact?: boolean;
+  section: 'main' | 'system';
+  roles?: string[]; // undefined = all roles
+};
 
+// ── Navigation config ─────────────────────────────────────────────────────────
 const NAV: NavItem[] = [
-  { label: 'Dashboard',      href: '/dashboard',           icon: LayoutDashboard, exact: true, section: 'main' },
-  { label: "Ta'lim",         href: '/dashboard/education', icon: BookOpen,                     section: 'main' },
-  { label: "O'quvchilar",    href: '/dashboard/students',  icon: Users,                        section: 'main' },
-  { label: 'Moliya',         href: '/dashboard/finance',   icon: TrendingUp,                   section: 'main' },
-  { label: 'Xodimlar',       href: '/dashboard/staff',     icon: Briefcase,                    section: 'system' },
-  { label: 'Resurslar',      href: '/dashboard/resources', icon: Package,                      section: 'system' },
-  { label: 'Kommunikatsiya', href: '/dashboard/comms',     icon: MessageSquare,                section: 'system' },
+  // ── All roles ──
+  {
+    label: 'Dashboard', href: '/dashboard',
+    icon: LayoutDashboard, exact: true, section: 'main',
+  },
+
+  // ── Admin / Teachers ──
+  {
+    label: "Ta'lim", href: '/dashboard/education',
+    icon: BookOpen, section: 'main',
+    roles: ['school_admin', 'vice_principal', 'super_admin', 'teacher', 'class_teacher'],
+  },
+  {
+    label: "O'quvchilar", href: '/dashboard/students',
+    icon: Users, section: 'main',
+    roles: ['school_admin', 'vice_principal', 'super_admin', 'teacher', 'class_teacher'],
+  },
+  {
+    label: 'Moliya', href: '/dashboard/finance',
+    icon: TrendingUp, section: 'main',
+    roles: ['school_admin', 'vice_principal', 'super_admin', 'accountant'],
+  },
+
+  // ── Student-specific ──
+  {
+    label: 'Dars jadvali', href: '/dashboard/schedule',
+    icon: Calendar, section: 'main',
+    roles: ['student'],
+  },
+  {
+    label: 'Baholar', href: '/dashboard/grades',
+    icon: GraduationCap, section: 'main',
+    roles: ['student'],
+  },
+  {
+    label: 'Imtihonlar', href: '/dashboard/exams',
+    icon: ClipboardList, section: 'main',
+    roles: ['student'],
+  },
+  {
+    label: 'Uy vazifalari', href: '/dashboard/homework',
+    icon: BookMarked, section: 'main',
+    roles: ['student'],
+  },
+  {
+    label: 'Davomat', href: '/dashboard/attendance',
+    icon: CalendarCheck, section: 'main',
+    roles: ['student'],
+  },
+
+  // ── Parent-specific ──
+  {
+    label: 'Farzand', href: '/dashboard/parent',
+    icon: UserCircle, section: 'main',
+    roles: ['parent'],
+  },
+
+  // ── System section ──
+  {
+    label: 'Xodimlar', href: '/dashboard/staff',
+    icon: Briefcase, section: 'system',
+    roles: ['school_admin', 'vice_principal', 'super_admin'],
+  },
+  {
+    label: 'Resurslar', href: '/dashboard/resources',
+    icon: Package, section: 'system',
+    roles: ['school_admin', 'vice_principal', 'super_admin', 'teacher', 'class_teacher', 'student', 'librarian'],
+  },
+  {
+    label: 'Kommunikatsiya', href: '/dashboard/comms',
+    icon: MessageSquare, section: 'system',
+  },
 ];
 
-const MAIN_ITEMS  = NAV.filter(n => n.section === 'main');
-const SYSTEM_ITEMS = NAV.filter(n => n.section === 'system');
-
+// ── Helpers ───────────────────────────────────────────────────────────────────
 function XeduMark({ size = 22 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 26 26" fill="none" aria-label="Xedu">
@@ -129,11 +206,22 @@ function SectionLabel({ label, expanded }: { label: string; expanded: boolean })
   );
 }
 
+// ── Sidebar ───────────────────────────────────────────────────────────────────
 export function Sidebar() {
   const pathname      = usePathname();
   const activeSection = getActiveSection(pathname);
   const { sidebarCollapsed, toggleSidebar } = useUIStore();
+  const { user } = useAuthStore();
   const expanded = !sidebarCollapsed;
+  const userRole = user?.role ?? '';
+
+  // Filter nav items by current user's role
+  const visibleNav = NAV.filter(item =>
+    !item.roles || item.roles.includes(userRole),
+  );
+
+  const MAIN_ITEMS   = visibleNav.filter(n => n.section === 'main');
+  const SYSTEM_ITEMS = visibleNav.filter(n => n.section === 'system');
 
   return (
     <aside
@@ -186,13 +274,17 @@ export function Sidebar() {
           })}
         </div>
 
-        <SectionLabel label="Tizim" expanded={expanded} />
-        <div className="flex flex-col gap-0.5">
-          {SYSTEM_ITEMS.map((item) => {
-            const active = item.exact ? pathname === item.href : activeSection === item.href;
-            return <NavLink key={item.href} item={item} active={active} expanded={expanded} />;
-          })}
-        </div>
+        {SYSTEM_ITEMS.length > 0 && (
+          <>
+            <SectionLabel label="Tizim" expanded={expanded} />
+            <div className="flex flex-col gap-0.5">
+              {SYSTEM_ITEMS.map((item) => {
+                const active = item.exact ? pathname === item.href : activeSection === item.href;
+                return <NavLink key={item.href} item={item} active={active} expanded={expanded} />;
+              })}
+            </div>
+          </>
+        )}
       </nav>
 
       {/* Footer */}
