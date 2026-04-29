@@ -37,12 +37,11 @@ export function SectionTabs({ tabs, defaultTab }: SectionTabsProps) {
   };
 
   return (
-    /* iOS Segmented Control — glass pill tray */
     <div
-      className="mb-5 inline-flex items-center gap-0.5 overflow-x-auto no-scrollbar rounded-full p-1"
+      className="mb-6 inline-flex items-center gap-1 overflow-x-auto no-scrollbar rounded-[18px] p-1.5"
       style={{
-        background: 'rgba(0,0,0,0.05)',
-        boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.08)',
+        background: 'rgba(0,0,0,0.04)',
+        boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.06)',
       }}
     >
       {visibleTabs.map((tab) => {
@@ -52,12 +51,13 @@ export function SectionTabs({ tabs, defaultTab }: SectionTabsProps) {
             key={tab.id}
             onClick={() => go(tab.id)}
             className={cn(
-              'whitespace-nowrap rounded-full px-4 py-1.5',
-              'text-[13px] font-medium transition-all duration-200',
+              'whitespace-nowrap rounded-[14px] px-5 py-2',
+              'text-[13px] font-semibold transition-all duration-200',
               active
                 ? 'bg-white text-slate-800 shadow-sm'
-                : 'text-slate-500 hover:text-slate-700',
+                : 'text-slate-500 hover:text-slate-700 hover:bg-white/40',
             )}
+            style={active ? { boxShadow: '0 1px 4px rgba(0,0,0,0.10)' } : undefined}
           >
             {tab.label}
           </button>

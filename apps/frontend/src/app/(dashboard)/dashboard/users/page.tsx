@@ -8,15 +8,12 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Plus, Search, Users, Loader2, Eye, EyeOff, UserCheck, GraduationCap, Heart, Ban, RotateCcw, Link2, Upload, FileText, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
-import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
-import { EmptyState } from '@/components/ui/empty-state';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { PageShell, PageHeader, FilterBar, TableShell, THead, TH, TBody, TR, TD, AvatarCell, StatusBadge, EmptyCard, Pagination, Btn, DS } from '@/components/ui/page-ui';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { usersApi } from '@/lib/api/users';
 import { classesApi } from '@/lib/api/classes';
@@ -192,153 +189,119 @@ export default function UsersPage() {
   if (isSuperAdmin) return null;
 
   return (
-    <div className="space-y-6">
-
+    <PageShell>
       {/* CSV import natija dialogi */}
       {csvResult && (
         <Dialog open={!!csvResult} onOpenChange={() => setCsvResult(null)}>
           <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5 text-primary" /> CSV Import natijalari
+                <FileText className="h-5 w-5" style={{ color: DS.primary }} /> CSV Import natijalari
               </DialogTitle>
             </DialogHeader>
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
-                <div className="rounded-lg bg-green-500/10 p-3 text-center">
-                  <p className="text-2xl font-bold text-green-600">{csvResult.created}</p>
-                  <p className="text-xs text-muted-foreground">Qo'shildi</p>
+                <div className="rounded-2xl p-4 text-center" style={{ background: '#DDF5EA' }}>
+                  <p className="text-2xl font-black" style={{ color: DS.primary }}>{csvResult.created}</p>
+                  <p className="text-xs font-semibold mt-1" style={{ color: DS.muted }}>Qo&apos;shildi</p>
                 </div>
-                <div className="rounded-lg bg-yellow-500/10 p-3 text-center">
-                  <p className="text-2xl font-bold text-yellow-600">{csvResult.skipped}</p>
-                  <p className="text-xs text-muted-foreground">O'tkazildi</p>
+                <div className="rounded-2xl p-4 text-center" style={{ background: '#FEF3C7' }}>
+                  <p className="text-2xl font-black text-amber-600">{csvResult.skipped}</p>
+                  <p className="text-xs font-semibold mt-1" style={{ color: DS.muted }}>O&apos;tkazildi</p>
                 </div>
               </div>
               {csvResult.errors.length > 0 && (
-                <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3">
-                  <p className="flex items-center gap-1.5 text-sm font-medium text-destructive mb-2">
+                <div className="rounded-2xl border border-red-100 bg-red-50 p-3">
+                  <p className="flex items-center gap-1.5 text-sm font-semibold text-red-600 mb-2">
                     <AlertTriangle className="h-4 w-4" /> Xatolar ({csvResult.errors.length} ta)
                   </p>
                   <div className="max-h-40 overflow-y-auto space-y-1">
                     {csvResult.errors.map((e, i) => (
-                      <p key={i} className="text-xs text-muted-foreground">{e}</p>
+                      <p key={i} className="text-xs" style={{ color: DS.muted }}>{e}</p>
                     ))}
                   </div>
                 </div>
               )}
             </div>
-            <DialogFooter>
-              <Button onClick={() => setCsvResult(null)}>Yopish</Button>
-            </DialogFooter>
+            <div className="flex justify-end pt-2">
+              <Btn variant="primary" onClick={() => setCsvResult(null)}>Yopish</Btn>
+            </div>
           </DialogContent>
         </Dialog>
       )}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Foydalanuvchilar</h1>
-          <p className="text-muted-foreground">Jami: {meta?.total ?? 0} ta</p>
-        </div>
-        <div className="flex items-center gap-2">
-          {/* Hidden CSV file input */}
-          <input
-            ref={csvInputRef}
-            type="file"
-            accept=".csv,text/csv"
-            className="hidden"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) { csvMutation.mutate(file); e.target.value = ''; }
-            }}
-          />
-          <Button variant="outline" size="sm" className="gap-2"
-            onClick={() => csvInputRef.current?.click()}
-            disabled={csvMutation.isPending}>
-            {csvMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-            CSV Import
-          </Button>
-          <Button variant="outline" size="sm" className="gap-2" asChild>
-            <Link href="/dashboard/users/link-parent">
-              <Link2 className="h-4 w-4" />
-              Ota-ona bog'lash
-            </Link>
-          </Button>
-          <Button variant="outline" onClick={() => setImportOpen(true)}>
-            <Upload className="mr-2 h-4 w-4" /> Excel import
-          </Button>
-          <Button onClick={() => { setOpen(true); reset(); }}>
-            <Plus className="mr-2 h-4 w-4" /> Qo'shish
-          </Button>
-        </div>
-      </div>
 
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input placeholder="Ism, email bo'yicha qidirish..." className="pl-9" value={search} onChange={(e) => setSearch(e.target.value)} />
-      </div>
+      <PageHeader
+        title="Foydalanuvchilar"
+        subtitle={`Jami: ${meta?.total ?? 0} ta`}
+        actions={
+          <>
+            <input ref={csvInputRef} type="file" accept=".csv,text/csv" className="hidden"
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) { csvMutation.mutate(f); e.target.value = ''; } }} />
+            <Btn variant="secondary" size="sm" icon={csvMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+              onClick={() => csvInputRef.current?.click()} loading={csvMutation.isPending}>
+              CSV
+            </Btn>
+            <Btn variant="secondary" size="sm" icon={<Link2 className="h-4 w-4" />} onClick={() => window.location.href = '/dashboard/users/link-parent'}>
+              Bog&apos;lash
+            </Btn>
+            <Btn variant="secondary" size="sm" icon={<Upload className="h-4 w-4" />} onClick={() => setImportOpen(true)}>
+              Import
+            </Btn>
+            <Btn variant="primary" size="sm" icon={<Plus className="h-4 w-4" />} onClick={() => { setOpen(true); reset(); }}>
+              Qo&apos;shish
+            </Btn>
+          </>
+        }
+      />
+
+      <FilterBar
+        search={search}
+        onSearch={setSearch}
+        searchPlaceholder="Ism, email bo'yicha qidirish..."
+      />
 
       {isLoading ? (
-        <div className="space-y-2">{[...Array(6)].map((_, i) => <Skeleton key={i} className="h-16 rounded-xl" />)}</div>
+        <div className="space-y-2">{[...Array(6)].map((_, i) => <Skeleton key={i} className="h-16 rounded-2xl" />)}</div>
+      ) : filtered.length === 0 ? (
+        <EmptyCard icon={<Users className="h-6 w-6" />} title="Foydalanuvchilar topilmadi" description="Qidiruv natijasida hech narsa topilmadi" />
       ) : (
-        <div className="space-y-2">
-          {filtered.map((u: any) => (
-            <Card key={u.id} className="hover:shadow-sm transition-shadow">
-              <CardContent className="flex items-center gap-4 p-4">
-                <Avatar>
-                  <AvatarFallback className="text-sm font-medium">{getInitials(u.firstName, u.lastName)}</AvatarFallback>
-                </Avatar>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium truncate">{u.firstName} {u.lastName}</p>
-                  <p className="text-sm text-muted-foreground truncate">{u.email}</p>
-                  {u.phone && <p className="text-xs text-muted-foreground">{u.phone}</p>}
-                </div>
-                <div className="flex items-center gap-2 flex-wrap justify-end">
-                  <Badge variant="secondary">{getRoleLabel(u.role)}</Badge>
-                  <Badge variant="outline" className={u.isActive ? 'border-green-500 text-green-600' : 'border-red-400 text-red-500'}>
+        <TableShell>
+          <THead>
+            <TH>Foydalanuvchi</TH>
+            <TH>Rol</TH>
+            <TH>Telefon</TH>
+            <TH>Holat</TH>
+            <TH className="text-right">Amal</TH>
+          </THead>
+          <TBody>
+            {filtered.map((u: any) => (
+              <TR key={u.id}>
+                <TD><AvatarCell name={`${u.firstName} ${u.lastName}`} subtitle={u.email} /></TD>
+                <TD><span className="text-[12px] font-semibold" style={{ color: DS.muted }}>{getRoleLabel(u.role)}</span></TD>
+                <TD><span className="text-[13px]" style={{ color: DS.muted }}>{u.phone || '—'}</span></TD>
+                <TD>
+                  <StatusBadge variant={u.isActive ? 'success' : 'danger'}>
                     {u.isActive ? 'Aktiv' : 'Bloklangan'}
-                  </Badge>
+                  </StatusBadge>
+                </TD>
+                <TD className="text-right">
                   {u.isActive ? (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                      title="Bloklash"
-                      onClick={() => setConfirmDelete(u)}
-                    >
-                      <Ban className="h-4 w-4" />
-                    </Button>
+                    <Btn variant="danger" size="sm" icon={<Ban className="h-3.5 w-3.5" />} onClick={() => setConfirmDelete(u)}>
+                      Bloklash
+                    </Btn>
                   ) : (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50"
-                      title="Faollashtirish"
-                      onClick={() => setConfirmDelete({ ...u, restore: true })}
-                    >
-                      <RotateCcw className="h-4 w-4" />
-                    </Button>
+                    <Btn variant="soft" size="sm" icon={<RotateCcw className="h-3.5 w-3.5" />} onClick={() => setConfirmDelete({ ...u, restore: true })}>
+                      Faollashtirish
+                    </Btn>
                   )}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-          {filtered.length === 0 && (
-            <Card><CardContent className="py-4">
-              <EmptyState
-                icon={Users}
-                title="Foydalanuvchilar topilmadi"
-                description="Qidiruv yoki filtr natijasida hech narsa topilmadi"
-              />
-            </CardContent></Card>
+                </TD>
+              </TR>
+            ))}
+          </TBody>
+          {meta && meta.totalPages > 1 && (
+            <Pagination page={page} total={meta.total} perPage={20} onPage={setPage} />
           )}
-        </div>
-      )}
-
-      {meta && meta.totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>Oldingi</Button>
-          <span className="text-sm text-muted-foreground">{page} / {meta.totalPages}</span>
-          <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(meta.totalPages, p + 1))} disabled={page === meta.totalPages}>Keyingi</Button>
-        </div>
+        </TableShell>
       )}
 
       {/* Delete/Block confirm dialog */}
@@ -351,21 +314,20 @@ export default function UsersPage() {
             <DialogDescription>
               {confirmDelete?.restore
                 ? `${confirmDelete?.firstName} ${confirmDelete?.lastName} ni qayta faollashtirasizmi?`
-                : `${confirmDelete?.firstName} ${confirmDelete?.lastName} ni tizimdan o'chirish (bloklash)ni tasdiqlaysizmi? Bu amalni bekor qilish mumkin.`
+                : `${confirmDelete?.firstName} ${confirmDelete?.lastName} ni bloklashni tasdiqlaysizmi?`
               }
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setConfirmDelete(null)}>Bekor</Button>
-            <Button
-              variant={confirmDelete?.restore ? 'default' : 'destructive'}
+          <div className="flex justify-end gap-2 pt-2">
+            <Btn variant="secondary" onClick={() => setConfirmDelete(null)}>Bekor</Btn>
+            <Btn
+              variant={confirmDelete?.restore ? 'soft' : 'danger'}
+              loading={deleteMutation.isPending}
               onClick={() => deleteMutation.mutate({ id: confirmDelete?.id, restore: confirmDelete?.restore })}
-              disabled={deleteMutation.isPending}
             >
-              {deleteMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {confirmDelete?.restore ? 'Faollashtirish' : 'Bloklash'}
-            </Button>
-          </DialogFooter>
+            </Btn>
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -480,12 +442,12 @@ export default function UsersPage() {
               </div>
             )}
 
-            <DialogFooter className="gap-2 pt-2">
-              <Button type="button" variant="outline" onClick={() => setOpen(false)}>Bekor qilish</Button>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saqlanmoqda...</> : <><UserCheck className="mr-2 h-4 w-4" />Qo'shish</>}
-              </Button>
-            </DialogFooter>
+            <div className="flex justify-end gap-2 pt-2">
+              <Btn type="button" variant="secondary" onClick={() => setOpen(false)}>Bekor qilish</Btn>
+              <Btn type="submit" variant="primary" loading={isSubmitting} icon={<UserCheck className="h-4 w-4" />}>
+                Qo&apos;shish
+              </Btn>
+            </div>
           </form>
         </DialogContent>
       </Dialog>
@@ -497,6 +459,6 @@ export default function UsersPage() {
         type="users"
         onSuccess={() => queryClient.invalidateQueries({ queryKey: ['users'] })}
       />
-    </div>
+    </PageShell>
   );
 }

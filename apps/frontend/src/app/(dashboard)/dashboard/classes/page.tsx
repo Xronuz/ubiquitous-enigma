@@ -3,11 +3,9 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, MoreVertical, Users, Pencil, Trash2, Loader2, School, Eye } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
@@ -19,6 +17,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import Link from 'next/link';
+import { PageShell, PageHeader, PCard, EmptyCard, Btn, DS } from '@/components/ui/page-ui';
 import { classesApi } from '@/lib/api/classes';
 import { usersApi } from '@/lib/api/users';
 import { useToast } from '@/components/ui/use-toast';
@@ -133,96 +132,101 @@ export default function ClassesPage() {
   const classList = Array.isArray(classes) ? classes : [];
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Sinflar</h1>
-          <p className="text-muted-foreground">{classList.length} ta sinf mavjud</p>
-        </div>
-        {canManage && (
-          <Button onClick={() => { setEditClass(null); setForm(EMPTY); setErrors({}); setOpen(true); }}>
-            <Plus className="mr-2 h-4 w-4" /> Sinf qo'shish
-          </Button>
-        )}
-      </div>
+    <PageShell>
+      <PageHeader
+        title="Sinflar"
+        subtitle={`${classList.length} ta sinf mavjud`}
+        actions={canManage ? (
+          <Btn variant="primary" icon={<Plus className="h-4 w-4" />}
+            onClick={() => { setEditClass(null); setForm(EMPTY); setErrors({}); setOpen(true); }}>
+            Sinf qo&apos;shish
+          </Btn>
+        ) : undefined}
+      />
 
       {isLoading ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-40 rounded-xl" />)}
+          {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-44 rounded-[24px]" />)}
         </div>
       ) : classList.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-            <School className="mb-4 h-12 w-12 text-muted-foreground opacity-40" />
-            <h3 className="font-semibold">Sinflar yo'q</h3>
-            <p className="text-sm text-muted-foreground">
-              {canManage ? 'Yuqoridagi tugmani bosib birinchi sinfni yarating' : 'Hali sinflar qo\'shilmagan'}
-            </p>
-          </CardContent>
-        </Card>
+        <EmptyCard
+          icon={<School className="h-6 w-6" />}
+          title="Sinflar yo'q"
+          description={canManage ? "Yuqoridagi tugmani bosib birinchi sinfni yarating" : "Hali sinflar qo'shilmagan"}
+          action={canManage ? (
+            <Btn variant="primary" icon={<Plus className="h-4 w-4" />}
+              onClick={() => { setEditClass(null); setForm(EMPTY); setErrors({}); setOpen(true); }}>
+              Sinf qo&apos;shish
+            </Btn>
+          ) : undefined}
+        />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {classList.map((cls: any) => (
-            <Card key={cls.id} className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => window.location.href = `/dashboard/classes/${cls.id}`}>
-              <CardHeader className="flex flex-row items-start justify-between pb-2">
-                <div>
-                  <CardTitle className="text-lg">{cls.name}</CardTitle>
-                  <p className="text-sm text-muted-foreground">{cls.academicYear}</p>
-                </div>
-                {canManage && (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 -mt-1 -mr-2">
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem asChild>
-                        <Link href={`/dashboard/classes/${cls.id}`}>
-                          <Eye className="mr-2 h-4 w-4" /> Ko'rish
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={(e) => {
+            <PCard key={cls.id} hoverable padding="none"
+              onClick={() => window.location.href = `/dashboard/classes/${cls.id}`}>
+              {/* Card top stripe */}
+              <div className="h-1.5 rounded-t-[24px]" style={{ background: 'linear-gradient(90deg, #0F7B53, #10b981)' }} />
+              <div className="p-6">
+                <div className="flex items-start justify-between mb-4">
+                  <div>
+                    <p className="text-[17px] font-bold" style={{ color: DS.text }}>{cls.name}</p>
+                    <p className="text-[12px] mt-0.5 font-medium" style={{ color: DS.muted }}>{cls.academicYear}</p>
+                  </div>
+                  {canManage && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          onClick={e => e.stopPropagation()}
+                          className="h-8 w-8 flex items-center justify-center rounded-xl hover:bg-slate-100 transition-colors"
+                        >
+                          <MoreVertical className="h-4 w-4" style={{ color: DS.muted }} />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem asChild>
+                          <Link href={`/dashboard/classes/${cls.id}`}>
+                            <Eye className="mr-2 h-4 w-4" /> Ko&apos;rish
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={(e) => {
                           e.stopPropagation();
                           setEditClass(cls);
-                          setForm({
-                            name: cls.name,
-                            gradeLevel: String(cls.gradeLevel),
-                            academicYear: cls.academicYear,
-                            classTeacherId: cls.classTeacherId ?? '',
-                          });
-                          setErrors({});
-                          setOpen(true);
-                        }}
-                      >
-                        <Pencil className="mr-2 h-4 w-4" /> Tahrirlash
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        className="text-destructive focus:text-destructive"
-                        onClick={() => deleteMutation.mutate(cls.id)}
-                      >
-                        <Trash2 className="mr-2 h-4 w-4" /> O'chirish
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                )}
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Users className="h-4 w-4" />
-                    <span>{cls._count?.students ?? 0} o'quvchi</span>
-                  </div>
-                  <Badge variant="secondary">{cls.gradeLevel}-sinf</Badge>
+                          setForm({ name: cls.name, gradeLevel: String(cls.gradeLevel), academicYear: cls.academicYear, classTeacherId: cls.classTeacherId ?? '' });
+                          setErrors({}); setOpen(true);
+                        }}>
+                          <Pencil className="mr-2 h-4 w-4" /> Tahrirlash
+                        </DropdownMenuItem>
+                        <DropdownMenuItem className="text-destructive focus:text-destructive"
+                          onClick={e => { e.stopPropagation(); deleteMutation.mutate(cls.id); }}>
+                          <Trash2 className="mr-2 h-4 w-4" /> O&apos;chirish
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
                 </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-[13px]" style={{ color: DS.muted }}>
+                    <Users className="h-4 w-4" />
+                    <span className="font-semibold">{cls._count?.students ?? 0}</span>
+                    <span>o&apos;quvchi</span>
+                  </div>
+                  <span
+                    className="text-[11px] font-bold px-2.5 py-1 rounded-full"
+                    style={{ background: DS.primaryLight, color: DS.primary }}
+                  >
+                    {cls.gradeLevel}-sinf
+                  </span>
+                </div>
+
                 {cls.classTeacher && (
-                  <p className="mt-2 text-xs text-muted-foreground">
+                  <p className="mt-3 text-[12px] font-medium truncate pt-3 border-t" style={{ color: DS.muted, borderColor: 'rgba(0,0,0,0.05)' }}>
                     Sinf rahbari: {cls.classTeacher.firstName} {cls.classTeacher.lastName}
                   </p>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            </PCard>
           ))}
         </div>
       )}
@@ -232,20 +236,14 @@ export default function ClassesPage() {
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle>{editClass ? 'Sinfni tahrirlash' : "Yangi sinf qo'shish"}</DialogTitle>
-            <DialogDescription>Sinf ma'lumotlarini kiriting</DialogDescription>
+            <DialogDescription>Sinf ma&apos;lumotlarini kiriting</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
               <Label>Sinf nomi <span className="text-destructive">*</span></Label>
-              <Input
-                placeholder="Masalan: 5-A"
-                value={form.name}
-                onChange={e => {
-                  setForm(f => ({ ...f, name: e.target.value }));
-                  setErrors(er => { const n = { ...er }; delete n.name; return n; });
-                }}
-              />
+              <Input placeholder="Masalan: 5-A" value={form.name}
+                onChange={e => { setForm(f => ({ ...f, name: e.target.value })); setErrors(er => { const n = { ...er }; delete n.name; return n; }); }} />
               {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
             </div>
 
@@ -254,20 +252,15 @@ export default function ClassesPage() {
                 <Label>Sinf darajasi <span className="text-destructive">*</span></Label>
                 <Select value={form.gradeLevel} onValueChange={sel('gradeLevel')}>
                   <SelectTrigger><SelectValue placeholder="1-12..." /></SelectTrigger>
-                  <SelectContent>
-                    {GRADES.map(g => <SelectItem key={g} value={String(g)}>{g}-sinf</SelectItem>)}
-                  </SelectContent>
+                  <SelectContent>{GRADES.map(g => <SelectItem key={g} value={String(g)}>{g}-sinf</SelectItem>)}</SelectContent>
                 </Select>
                 {errors.gradeLevel && <p className="text-xs text-destructive">{errors.gradeLevel}</p>}
               </div>
-
               <div className="space-y-1.5">
-                <Label>O'quv yili <span className="text-destructive">*</span></Label>
+                <Label>O&apos;quv yili <span className="text-destructive">*</span></Label>
                 <Select value={form.academicYear} onValueChange={sel('academicYear')}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {ACADEMIC_YEARS.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}
-                  </SelectContent>
+                  <SelectContent>{ACADEMIC_YEARS.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}</SelectContent>
                 </Select>
                 {errors.academicYear && <p className="text-xs text-destructive">{errors.academicYear}</p>}
               </div>
@@ -280,24 +273,21 @@ export default function ClassesPage() {
                 <SelectContent>
                   <SelectItem value="__none__">— Sinf rahbarisiz —</SelectItem>
                   {teachers.map((t: any) => (
-                    <SelectItem key={t.id} value={t.id}>
-                      {t.firstName} {t.lastName}
-                    </SelectItem>
+                    <SelectItem key={t.id} value={t.id}>{t.firstName} {t.lastName}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
           </div>
 
-          <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={closeDialog}>Bekor qilish</Button>
-            <Button onClick={handleSubmit} disabled={createMutation.isPending || updateMutation.isPending}>
-              {(createMutation.isPending || updateMutation.isPending) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          <div className="flex justify-end gap-2">
+            <Btn variant="secondary" onClick={closeDialog}>Bekor qilish</Btn>
+            <Btn variant="primary" loading={createMutation.isPending || updateMutation.isPending} onClick={handleSubmit}>
               {editClass ? 'Saqlash' : "Qo'shish"}
-            </Button>
-          </DialogFooter>
+            </Btn>
+          </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </PageShell>
   );
 }

@@ -5,19 +5,16 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import {
   Settings, Bell, Shield, Palette, Globe, User, Save, Loader2, Eye, EyeOff, Check,
 } from 'lucide-react';
-import {
-  Card, CardContent, CardHeader, CardTitle, CardDescription,
-} from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { PageShell, PageHeader, PCard, Btn, DS } from '@/components/ui/page-ui';
 import { Switch } from '@/components/ui/switch';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useAuthStore } from '@/store/auth.store';
 import { usersApi } from '@/lib/api/users';
 import { systemConfigApi, SystemConfigMap } from '@/lib/api/system-config';
@@ -267,17 +264,8 @@ export default function SettingsPage() {
   // ─── Render ───────────────────────────────────────────────────────────────
 
   return (
-    <div className="max-w-3xl space-y-6">
-      {/* Page Header */}
-      <div>
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <Settings className="h-6 w-6 text-primary" />
-          Sozlamalar
-        </h1>
-        <p className="text-muted-foreground text-sm mt-1">
-          Profil, xavfsizlik va interfeys sozlamalarini boshqaring
-        </p>
-      </div>
+    <PageShell className="max-w-3xl">
+      <PageHeader title="Sozlamalar" subtitle="Profil, xavfsizlik va interfeys sozlamalarini boshqaring" />
 
       <div className="flex gap-6">
         {/* ── Sidebar Navigation ── */}
@@ -286,11 +274,10 @@ export default function SettingsPage() {
             <button
               key={key}
               onClick={() => setActiveTab(key)}
-              className={`w-full flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-colors ${
-                activeTab === key
-                  ? 'bg-primary text-primary-foreground shadow-sm'
-                  : 'text-muted-foreground hover:bg-accent hover:text-foreground'
-              }`}
+              className="w-full flex items-center gap-2.5 rounded-[14px] px-3 py-2.5 text-left text-[13px] font-semibold transition-all duration-200"
+              style={activeTab === key
+                ? { background: DS.primaryLight, color: DS.primary, boxShadow: '0 1px 4px rgba(15,123,83,0.12)' }
+                : { color: DS.muted }}
             >
               <Icon className="h-4 w-4 shrink-0" />
               {label}
@@ -304,24 +291,18 @@ export default function SettingsPage() {
           {/* ══════════════════════ PROFIL TAB ══════════════════════ */}
           {activeTab === 'profil' && (
             <>
-              <Card>
-                <CardHeader className="pb-4">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <User className="h-4 w-4 text-primary" />
-                    Profil ma'lumotlari
-                  </CardTitle>
-                  <CardDescription>
-                    Shaxsiy ma'lumotlaringizni yangilang
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-5">
+              <PCard>
+                <div className="mb-4">
+                  <p className="text-[15px] font-bold" style={{ color: DS.text }}>Profil ma&apos;lumotlari</p>
+                  <p className="text-[12px] mt-0.5" style={{ color: DS.muted }}>Shaxsiy ma&apos;lumotlaringizni yangilang</p>
+                </div>
+                <div className="space-y-5">
                   {/* Avatar + user summary */}
-                  <div className="flex items-center gap-4 rounded-xl bg-muted/40 p-4">
-                    <Avatar className="h-16 w-16">
-                      <AvatarFallback className="bg-primary/10 text-primary text-lg font-semibold">
-                        {userInitials}
-                      </AvatarFallback>
-                    </Avatar>
+                  <div className="flex items-center gap-4 rounded-[16px] p-4" style={{ background: 'rgba(0,0,0,0.025)' }}>
+                    <div className="h-16 w-16 rounded-[16px] flex items-center justify-center text-[20px] font-bold shrink-0"
+                      style={{ background: DS.primaryLight, color: DS.primary }}>
+                      {userInitials}
+                    </div>
                     <div className="min-w-0">
                       <p className="font-semibold text-base truncate">
                         {user?.firstName} {user?.lastName}
@@ -387,48 +368,25 @@ export default function SettingsPage() {
                   </div>
 
                   <div className="flex justify-end">
-                    <Button
-                      onClick={handleProfileSave}
-                      disabled={updateMutation.isPending}
-                      className="min-w-32"
-                    >
-                      {updateMutation.isPending ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Saqlanmoqda...
-                        </>
-                      ) : profileSaved ? (
-                        <>
-                          <Check className="mr-2 h-4 w-4" />
-                          Saqlandi
-                        </>
-                      ) : (
-                        <>
-                          <Save className="mr-2 h-4 w-4" />
-                          Saqlash
-                        </>
-                      )}
-                    </Button>
+                    <Btn variant="primary" loading={updateMutation.isPending} onClick={handleProfileSave}
+                      icon={profileSaved ? <Check className="h-4 w-4" /> : <Save className="h-4 w-4" />}>
+                      {profileSaved ? 'Saqlandi' : 'Saqlash'}
+                    </Btn>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </PCard>
             </>
           )}
 
           {/* ══════════════════════ XAVFSIZLIK TAB ══════════════════════ */}
           {activeTab === 'xavfsizlik' && (
             <>
-              <Card>
-                <CardHeader className="pb-4">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Shield className="h-4 w-4 text-primary" />
-                    Parol o'zgartirish
-                  </CardTitle>
-                  <CardDescription>
-                    Hisobingiz xavfsizligini ta'minlash uchun parolni muntazam yangilab turing
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
+              <PCard>
+                <div className="mb-4">
+                  <p className="text-[15px] font-bold" style={{ color: DS.text }}>Parol o&apos;zgartirish</p>
+                  <p className="text-[12px] mt-0.5" style={{ color: DS.muted }}>Hisobingiz xavfsizligini ta&apos;minlash uchun parolni muntazam yangilab turing</p>
+                </div>
+                <div className="space-y-4">
                   {/* Current password */}
                   <div className="space-y-1.5">
                     <Label htmlFor="currentPassword">
@@ -555,76 +513,45 @@ export default function SettingsPage() {
                   </div>
 
                   <div className="flex justify-end">
-                    <Button
+                    <Btn variant="primary" loading={pwMutation.isPending}
+                      disabled={!pwForm.currentPassword || !pwForm.newPassword}
                       onClick={handlePasswordSave}
-                      disabled={pwMutation.isPending || !pwForm.currentPassword || !pwForm.newPassword}
-                      className="min-w-36"
-                    >
-                      {pwMutation.isPending ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Saqlanmoqda...
-                        </>
-                      ) : pwSaved ? (
-                        <>
-                          <Check className="mr-2 h-4 w-4" />
-                          Yangilandi
-                        </>
-                      ) : (
-                        <>
-                          <Shield className="mr-2 h-4 w-4" />
-                          Parolni yangilash
-                        </>
-                      )}
-                    </Button>
+                      icon={pwSaved ? <Check className="h-4 w-4" /> : <Shield className="h-4 w-4" />}>
+                      {pwSaved ? 'Yangilandi' : 'Parolni yangilash'}
+                    </Btn>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </PCard>
 
-              {/* Security info */}
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Shield className="h-4 w-4 text-primary" />
-                    Sessiya ma'lumotlari
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    {[
-                      { label: 'Foydalanuvchi', value: `${user?.firstName} ${user?.lastName}` },
-                      { label: 'Email', value: user?.email ?? '—' },
-                      { label: 'Rol', value: roleLabel },
-                      { label: 'Access token muddati', value: '15 daqiqa' },
-                      { label: 'Sessiya muddati', value: '7 kun' },
-                    ].map(({ label, value }) => (
-                      <div
-                        key={label}
-                        className="flex items-center justify-between rounded-lg bg-muted/40 px-3 py-2.5 text-sm"
-                      >
-                        <span className="text-muted-foreground">{label}</span>
-                        <span className="font-medium">{value}</span>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
+              <PCard>
+                <p className="text-[15px] font-bold mb-3" style={{ color: DS.text }}>Sessiya ma&apos;lumotlari</p>
+                <div className="space-y-2">
+                  {[
+                    { label: 'Foydalanuvchi', value: `${user?.firstName} ${user?.lastName}` },
+                    { label: 'Email', value: user?.email ?? '—' },
+                    { label: 'Rol', value: roleLabel },
+                    { label: 'Access token muddati', value: '15 daqiqa' },
+                    { label: 'Sessiya muddati', value: '7 kun' },
+                  ].map(({ label, value }) => (
+                    <div key={label} className="flex items-center justify-between rounded-[12px] px-3 py-2.5 text-[13px]"
+                      style={{ background: 'rgba(0,0,0,0.025)' }}>
+                      <span style={{ color: DS.muted }}>{label}</span>
+                      <span className="font-semibold" style={{ color: DS.text }}>{value}</span>
+                    </div>
+                  ))}
+                </div>
+              </PCard>
             </>
           )}
 
           {/* ══════════════════════ BILDIRISHNOMALAR TAB ══════════════════════ */}
           {activeTab === 'bildirishnomalar' && (
-            <Card>
-              <CardHeader className="pb-4">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Bell className="h-4 w-4 text-primary" />
-                  Bildirishnoma sozlamalari
-                </CardTitle>
-                <CardDescription>
-                  Qaysi kanal orqali xabar olishni sozlang
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-2">
+            <PCard>
+              <div className="mb-4">
+                <p className="text-[15px] font-bold" style={{ color: DS.text }}>Bildirishnoma sozlamalari</p>
+                <p className="text-[12px] mt-0.5" style={{ color: DS.muted }}>Qaysi kanal orqali xabar olishni sozlang</p>
+              </div>
+              <div className="space-y-2">
                 {/* In-app */}
                 <div className="flex items-center justify-between rounded-xl border p-4 transition-colors hover:bg-muted/30">
                   <div className="space-y-0.5">
@@ -672,48 +599,26 @@ export default function SettingsPage() {
 
                 <Separator className="my-2" />
 
-                <div className="flex items-center justify-between">
-                  <p className="text-xs text-muted-foreground italic">
-                    Sozlamalar saqlanadi (mahalliy holat)
-                  </p>
-                  <Button
-                    variant="default"
-                    size="sm"
-                    onClick={handleNotifSave}
-                    className="min-w-28"
-                  >
-                    {notifSaved ? (
-                      <>
-                        <Check className="mr-2 h-4 w-4" />
-                        Saqlandi
-                      </>
-                    ) : (
-                      <>
-                        <Save className="mr-2 h-4 w-4" />
-                        Saqlash
-                      </>
-                    )}
-                  </Button>
+                <div className="flex items-center justify-between mt-2">
+                  <p className="text-[12px] italic" style={{ color: DS.muted }}>Sozlamalar saqlanadi (mahalliy holat)</p>
+                  <Btn variant="primary" onClick={handleNotifSave}
+                    icon={notifSaved ? <Check className="h-4 w-4" /> : <Save className="h-4 w-4" />}>
+                    {notifSaved ? 'Saqlandi' : 'Saqlash'}
+                  </Btn>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </PCard>
           )}
 
           {/* ══════════════════════ TIZIM TAB ══════════════════════ */}
           {activeTab === 'tizim' && isAdmin && (
             <>
-              {/* Maktab ma'lumotlari */}
-              <Card>
-                <CardHeader className="pb-4">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Settings className="h-4 w-4 text-primary" />
-                    Maktab ma'lumotlari
-                  </CardTitle>
-                  <CardDescription>
-                    Maktab nomi, telefon va manzil
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
+              <PCard>
+                <div className="mb-4">
+                  <p className="text-[15px] font-bold" style={{ color: DS.text }}>Maktab ma&apos;lumotlari</p>
+                  <p className="text-[12px] mt-0.5" style={{ color: DS.muted }}>Maktab nomi, telefon va manzil</p>
+                </div>
+                <div className="space-y-4">
                   <div className="space-y-1.5">
                     <Label htmlFor="school_name">Maktab nomi</Label>
                     <Input
@@ -752,21 +657,15 @@ export default function SettingsPage() {
                       placeholder="Toshkent sh., Chilonzor tumani, ..."
                     />
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </PCard>
 
-              {/* Maosh va ta'lim sozlamalari */}
-              <Card>
-                <CardHeader className="pb-4">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Settings className="h-4 w-4 text-primary" />
-                    Maosh va ta'lim parametrlari
-                  </CardTitle>
-                  <CardDescription>
-                    BHM (bazaviy hisob-kitob miqdori), o'tish bali va ish kunlari
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
+              <PCard>
+                <div className="mb-4">
+                  <p className="text-[15px] font-bold" style={{ color: DS.text }}>Maosh va ta&apos;lim parametrlari</p>
+                  <p className="text-[12px] mt-0.5" style={{ color: DS.muted }}>BHM (bazaviy hisob-kitob miqdori), o&apos;tish bali va ish kunlari</p>
+                </div>
+                <div className="space-y-4">
                   <div className="grid gap-4 sm:grid-cols-3">
                     <div className="space-y-1.5">
                       <Label htmlFor="bhm">BHM (so'm)</Label>
@@ -825,49 +724,25 @@ export default function SettingsPage() {
                   <Separator />
 
                   <div className="flex justify-end">
-                    <Button
-                      onClick={handleSysConfigSave}
-                      disabled={sysConfigMutation.isPending}
-                      className="min-w-36"
-                    >
-                      {sysConfigMutation.isPending ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Saqlanmoqda...
-                        </>
-                      ) : sysSaved ? (
-                        <>
-                          <Check className="mr-2 h-4 w-4" />
-                          Saqlandi
-                        </>
-                      ) : (
-                        <>
-                          <Save className="mr-2 h-4 w-4" />
-                          Saqlash
-                        </>
-                      )}
-                    </Button>
+                    <Btn variant="primary" loading={sysConfigMutation.isPending} onClick={handleSysConfigSave}
+                      icon={sysSaved ? <Check className="h-4 w-4" /> : <Save className="h-4 w-4" />}>
+                      {sysSaved ? 'Saqlandi' : 'Saqlash'}
+                    </Btn>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </PCard>
             </>
           )}
 
           {/* ══════════════════════ INTERFEYS TAB ══════════════════════ */}
           {activeTab === 'interfeys' && (
             <>
-              {/* Language selector */}
-              <Card>
-                <CardHeader className="pb-4">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Globe className="h-4 w-4 text-primary" />
-                    Til sozlamalari
-                  </CardTitle>
-                  <CardDescription>
-                    Interfeys tilini tanlang
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
+              <PCard>
+                <div className="mb-4">
+                  <p className="text-[15px] font-bold" style={{ color: DS.text }}>Til sozlamalari</p>
+                  <p className="text-[12px] mt-0.5" style={{ color: DS.muted }}>Interfeys tilini tanlang</p>
+                </div>
+                <div className="space-y-4">
                   <div className="space-y-1.5">
                     <Label htmlFor="language-select">Interfeys tili</Label>
                     <Select
@@ -899,82 +774,47 @@ export default function SettingsPage() {
                       </Badge>
                     </p>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </PCard>
 
-              {/* Theme info */}
-              <Card>
-                <CardHeader className="pb-4">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Palette className="h-4 w-4 text-primary" />
-                    Mavzu (Tema)
-                  </CardTitle>
-                  <CardDescription>
-                    Qorongʻi / yorqin rejim sozlamalari
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="rounded-xl bg-muted/40 p-4 flex items-start gap-3">
-                    <Palette className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium">Mavzu sarlavha panelida</p>
-                      <p className="text-sm text-muted-foreground">
-                        Qorongʻi va yorqin rejimni almashtirish uchun sahifaning yuqori qismidagi
-                        sarlavha panelidagi mavzu tugmasidan foydalaning.
-                      </p>
-                    </div>
+              <PCard>
+                <p className="text-[15px] font-bold mb-3" style={{ color: DS.text }}>Mavzu (Tema)</p>
+                <div className="rounded-[16px] p-4 flex items-start gap-3" style={{ background: 'rgba(0,0,0,0.03)' }}>
+                  <Palette className="h-5 w-5 mt-0.5 shrink-0" style={{ color: DS.muted }} />
+                  <div className="space-y-1">
+                    <p className="text-[14px] font-semibold" style={{ color: DS.text }}>Mavzu sarlavha panelida</p>
+                    <p className="text-[13px]" style={{ color: DS.muted }}>
+                      Qoron&apos;g&apos;i va yorqin rejimni almashtirish uchun sahifaning yuqori qismidagi sarlavha panelidagi mavzu tugmasidan foydalaning.
+                    </p>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </PCard>
 
-              {/* Role info */}
-              <Card>
-                <CardHeader className="pb-4">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Shield className="h-4 w-4 text-primary" />
-                    Joriy rol
-                  </CardTitle>
-                  <CardDescription>
-                    Sizga berilgan ruxsatlar va vakolatlar
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="flex items-center gap-3">
-                    <Avatar className="h-10 w-10">
-                      <AvatarFallback className="bg-primary/10 text-primary font-semibold">
-                        {userInitials}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="font-medium text-sm">
-                        {user?.firstName} {user?.lastName}
-                      </p>
-                      <span
-                        className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium ${roleBadgeClass}`}
-                      >
-                        <Shield className="h-3 w-3" />
-                        {roleLabel}
-                      </span>
-                    </div>
+              <PCard>
+                <p className="text-[15px] font-bold mb-3" style={{ color: DS.text }}>Joriy rol</p>
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="h-10 w-10 rounded-[12px] flex items-center justify-center text-[14px] font-bold"
+                    style={{ background: DS.primaryLight, color: DS.primary }}>
+                    {userInitials}
                   </div>
-
-                  {roleDescription && (
-                    <>
-                      <Separator />
-                      <div className="rounded-lg bg-muted/40 p-3">
-                        <p className="text-xs text-muted-foreground leading-relaxed">
-                          {roleDescription}
-                        </p>
-                      </div>
-                    </>
-                  )}
-                </CardContent>
-              </Card>
+                  <div>
+                    <p className="font-semibold text-[14px]" style={{ color: DS.text }}>{user?.firstName} {user?.lastName}</p>
+                    <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium ${roleBadgeClass}`}>
+                      <Shield className="h-3 w-3" />{roleLabel}
+                    </span>
+                  </div>
+                </div>
+                {roleDescription && (
+                  <div className="rounded-[12px] p-3" style={{ background: 'rgba(0,0,0,0.025)' }}>
+                    <p className="text-[12px] leading-relaxed" style={{ color: DS.muted }}>{roleDescription}</p>
+                  </div>
+                )}
+              </PCard>
             </>
           )}
 
         </div>
       </div>
-    </div>
+    </PageShell>
   );
 }

@@ -9,7 +9,6 @@ import {
   Layers, Check, BarChart2, BookOpen, Trash2, HelpCircle,
   Users, Star, ChevronDown, ChevronUp,
 } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -26,7 +25,7 @@ import { classesApi } from '@/lib/api/classes';
 import { subjectsApi } from '@/lib/api/subjects';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuthStore } from '@/store/auth.store';
-import { EmptyState } from '@/components/ui/empty-state';
+import { PageShell, PageHeader, PCard, Btn, DS, EmptyCard } from '@/components/ui/page-ui';
 
 // ── Types (H-10) ─────────────────────────────────────────────────────────────
 export interface Exam {
@@ -476,133 +475,114 @@ export default function ExamsPage() {
   const sel = (setState: any) => (k: string) => (v: string) => setState((f: any) => ({ ...f, [k]: v }));
   const inp = (setState: any) => (k: string) => (e: React.ChangeEvent<HTMLInputElement>) => setState((f: any) => ({ ...f, [k]: e.target.value }));
 
+  const actions = canManage ? (
+    <div className="flex gap-2">
+      {isAdmin && (
+        <Btn variant="secondary" icon={<Layers className="h-4 w-4" />} onClick={() => { setBulkOpen(true); setBForm(BULK_EMPTY); setBErrors({}); }}>
+          Ommaviy
+        </Btn>
+      )}
+      <Btn variant="primary" icon={<Plus className="h-4 w-4" />} onClick={() => { setSingleOpen(true); setSForm(SINGLE_EMPTY); setSErrors({}); }}>
+        Yangi imtihon
+      </Btn>
+    </div>
+  ) : undefined;
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2"><FileText className="h-6 w-6 text-primary" /> Imtihonlar</h1>
-          <p className="text-muted-foreground">Imtihon jadvali va natijalari</p>
-        </div>
-        {canManage && (
-          <div className="flex gap-2">
-            {isAdmin && (
-              <Button variant="outline" onClick={() => { setBulkOpen(true); setBForm(BULK_EMPTY); setBErrors({}); }}>
-                <Layers className="mr-2 h-4 w-4" /> Ommaviy
-              </Button>
-            )}
-            <Button onClick={() => { setSingleOpen(true); setSForm(SINGLE_EMPTY); setSErrors({}); }}>
-              <Plus className="mr-2 h-4 w-4" /> Yangi imtihon
-            </Button>
-          </div>
-        )}
-      </div>
+    <PageShell>
+      <PageHeader title="Imtihonlar" subtitle="Imtihon jadvali va natijalari" actions={actions} />
 
       {isLoading ? (
-        <div className="space-y-3">{Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
+        <div className="space-y-3">{Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-20 w-full rounded-[20px]" />)}</div>
       ) : isError ? (
-        <EmptyState
-          icon={FileText}
-          title="Imtihonlar yuklanmadi"
-          description="Server bilan bog'lanishda xato yuz berdi. Sahifani yangilang yoki qayta urinib ko'ring."
-        />
+        <EmptyCard icon={<FileText className="h-6 w-6" />} title="Imtihonlar yuklanmadi" description="Server bilan bog'lanishda xato yuz berdi. Sahifani yangilang yoki qayta urinib ko'ring." />
       ) : (exams as any[]).length === 0 ? (
-        <EmptyState
-          icon={FileText}
-          title="Hali imtihonlar yo'q"
-          description={canManage ? "Yuqoridagi '+ Yangi imtihon' tugmasini bosib birinchi imtihonni qo'shing" : "O'qituvchi tomonidan e'lon qilingan imtihonlar bu yerda ko'rinadi"}
-        />
+        <EmptyCard icon={<FileText className="h-6 w-6" />} title="Hali imtihonlar yo'q" description={canManage ? "Yuqoridagi '+ Yangi imtihon' tugmasini bosib birinchi imtihonni qo'shing" : "O'qituvchi tomonidan e'lon qilingan imtihonlar bu yerda ko'rinadi"} />
       ) : (
         <div className="space-y-6">
           {upcoming.length > 0 && (
             <div>
-              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Kelgusi imtihonlar</h2>
+              <p className="text-[11px] font-bold uppercase tracking-[0.12em] mb-3" style={{ color: DS.muted }}>Kelgusi imtihonlar</p>
               <div className="space-y-3">
                 {upcoming.map((exam: any) => (
-                  <Card key={exam.id} className="hover:shadow-md transition-shadow">
-                    <CardContent className="p-4 flex items-center justify-between gap-4">
+                  <PCard key={exam.id} hoverable padding="sm">
+                    <div className="flex items-center justify-between gap-4">
                       <div className="flex items-center gap-4">
-                        <div className="p-2.5 rounded-xl bg-blue-500/10"><Clock className="h-5 w-5 text-blue-500" /></div>
+                        <div className="p-2.5 rounded-[14px]" style={{ background: 'rgba(59,130,246,0.08)' }}>
+                          <Clock className="h-5 w-5 text-blue-500" />
+                        </div>
                         <div>
-                          <p className="font-semibold">{exam.title}</p>
+                          <p className="font-bold text-[15px]" style={{ color: DS.text }}>{exam.title}</p>
                           <div className="flex items-center gap-2 mt-1 flex-wrap">
-                            <Badge variant="outline" className="text-xs">{FREQUENCY_LABELS[exam.frequency] ?? exam.frequency}</Badge>
-                            {exam.subject && <span className="text-xs text-muted-foreground">{exam.subject.name}</span>}
-                            {exam.class && <span className="text-xs text-muted-foreground">• {exam.class.name}</span>}
+                            <span className="text-[11px] font-bold px-2 py-0.5 rounded-full" style={{ background: DS.primaryLight, color: DS.primary }}>
+                              {FREQUENCY_LABELS[exam.frequency] ?? exam.frequency}
+                            </span>
+                            {exam.subject && <span className="text-[12px]" style={{ color: DS.muted }}>{exam.subject.name}</span>}
+                            {exam.class && <span className="text-[12px]" style={{ color: DS.muted }}>· {exam.class.name}</span>}
                           </div>
                         </div>
                       </div>
                       <div className="flex items-center gap-3 shrink-0">
                         <div className="text-right">
-                          <p className="text-sm font-medium flex items-center gap-1"><Calendar className="h-3.5 w-3.5" />{new Date(exam.scheduledAt).toLocaleDateString('uz-UZ')}</p>
-                          <p className="text-xs text-muted-foreground">{exam.duration ? `${exam.duration} daqiqa •` : ''} Max: {exam.maxScore} ball</p>
+                          <p className="text-[13px] font-semibold flex items-center gap-1" style={{ color: DS.text }}>
+                            <Calendar className="h-3.5 w-3.5" />{new Date(exam.scheduledAt).toLocaleDateString('uz-UZ')}
+                          </p>
+                          <p className="text-[12px]" style={{ color: DS.muted }}>{exam.duration ? `${exam.duration} daqiqa · ` : ''}Max: {exam.maxScore} ball</p>
                         </div>
                         {canManage && (
-                          <Button size="sm" variant="outline" onClick={() => setManagingExam(exam)}>
-                            <BookOpen className="mr-1 h-3.5 w-3.5" /> Savollar
-                          </Button>
+                          <Btn variant="secondary" icon={<BookOpen className="h-3.5 w-3.5" />} onClick={() => setManagingExam(exam)}>
+                            Savollar
+                          </Btn>
                         )}
                         {canManage && !exam.isPublished && (
-                          <Button size="sm" variant="outline" onClick={() => publishMutation.mutate(exam.id)} disabled={publishMutation.isPending}>
+                          <Btn variant="secondary" loading={publishMutation.isPending} onClick={() => publishMutation.mutate(exam.id)}>
                             E&apos;lon qilish
-                          </Button>
+                          </Btn>
                         )}
                         {exam.isPublished && !isStudent && (
-                          <Badge className="bg-green-500/10 text-green-600 border-green-200 dark:border-green-800">
-                            <CheckCircle className="h-3 w-3 mr-1" />E&apos;lon qilingan
-                          </Badge>
+                          <span className="flex items-center gap-1 text-[12px] font-bold px-3 py-1 rounded-full" style={{ background: '#DDF5EA', color: DS.primary }}>
+                            <CheckCircle className="h-3.5 w-3.5" />E&apos;lon qilingan
+                          </span>
                         )}
                         {isStudent && exam.isPublished && (
-                          <Button
-                            size="sm"
-                            className="bg-green-600 hover:bg-green-700 text-white"
-                            onClick={() => router.push(`/exam/${exam.id}/take`)}
-                          >
+                          <Btn variant="primary" onClick={() => router.push(`/exam/${exam.id}/take`)}>
                             Imtihonni boshlash
-                          </Button>
+                          </Btn>
                         )}
                       </div>
-                    </CardContent>
-                  </Card>
+                    </div>
+                  </PCard>
                 ))}
               </div>
             </div>
           )}
           {past.length > 0 && (
             <div>
-              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">O'tgan imtihonlar</h2>
+              <p className="text-[11px] font-bold uppercase tracking-[0.12em] mb-3" style={{ color: DS.muted }}>O&apos;tgan imtihonlar</p>
               <div className="space-y-2">
                 {past.map((exam: any) => (
-                  <Card key={exam.id} className="opacity-70 hover:opacity-100 transition-opacity">
-                    <CardContent className="p-3 flex items-center justify-between gap-4">
+                  <PCard key={exam.id} hoverable padding="sm" className="opacity-75 hover:opacity-100 transition-opacity">
+                    <div className="flex items-center justify-between gap-4">
                       <div className="flex items-center gap-3 min-w-0">
-                        <CheckCircle className="h-4 w-4 text-muted-foreground shrink-0" />
-                        <span className="text-sm font-medium truncate">{exam.title}</span>
-                        {exam.subject && <Badge variant="outline" className="text-xs shrink-0">{exam.subject.name}</Badge>}
-                        {exam.class && <Badge variant="secondary" className="text-xs shrink-0">{exam.class.name}</Badge>}
+                        <CheckCircle className="h-4 w-4 shrink-0" style={{ color: DS.muted }} />
+                        <span className="text-[14px] font-semibold truncate" style={{ color: DS.text }}>{exam.title}</span>
+                        {exam.subject && <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full shrink-0" style={{ background: 'rgba(0,0,0,0.04)', color: DS.muted }}>{exam.subject.name}</span>}
+                        {exam.class && <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full shrink-0" style={{ background: 'rgba(0,0,0,0.04)', color: DS.muted }}>{exam.class.name}</span>}
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
-                        <span className="text-xs text-muted-foreground">{new Date(exam.scheduledAt).toLocaleDateString('uz-UZ')}</span>
+                        <span className="text-[12px]" style={{ color: DS.muted }}>{new Date(exam.scheduledAt).toLocaleDateString('uz-UZ')}</span>
                         {canManage && (
                           <>
-                            <Button size="sm" variant="ghost" className="h-7 px-2 text-xs gap-1"
-                              onClick={() => setManagingExam(exam)}>
-                              <BarChart2 className="h-3.5 w-3.5" /> Natijalar
-                            </Button>
-                            <Button size="sm" variant="outline" className="h-7 px-2 text-xs gap-1"
-                              onClick={() => router.push(`/dashboard/exams/${exam.id}`)}>
-                              <HelpCircle className="h-3.5 w-3.5" /> Savollar
-                            </Button>
+                            <Btn variant="ghost" icon={<BarChart2 className="h-3.5 w-3.5" />} onClick={() => setManagingExam(exam)}>Natijalar</Btn>
+                            <Btn variant="secondary" icon={<HelpCircle className="h-3.5 w-3.5" />} onClick={() => router.push(`/dashboard/exams/${exam.id}`)}>Savollar</Btn>
                           </>
                         )}
                         {isStudent && (
-                          <Button size="sm" variant="ghost" className="h-7 px-2 text-xs gap-1"
-                            onClick={() => router.push(`/dashboard/exams/${exam.id}`)}>
-                            <BarChart2 className="h-3.5 w-3.5" /> Natijam
-                          </Button>
+                          <Btn variant="ghost" icon={<BarChart2 className="h-3.5 w-3.5" />} onClick={() => router.push(`/dashboard/exams/${exam.id}`)}>Natijam</Btn>
                         )}
                       </div>
-                    </CardContent>
-                  </Card>
+                    </div>
+                  </PCard>
                 ))}
               </div>
             </div>
@@ -610,14 +590,8 @@ export default function ExamsPage() {
         </div>
       )}
 
-      {/* ── Exam detail dialog (questions + sessions) ── */}
       {managingExam && (
-        <ExamDetailDialog
-          exam={managingExam}
-          open={!!managingExam}
-          onClose={() => setManagingExam(null)}
-          canManage={canManage}
-        />
+        <ExamDetailDialog exam={managingExam} open={!!managingExam} onClose={() => setManagingExam(null)} canManage={canManage} />
       )}
 
       {/* ── Single create dialog ── */}
@@ -833,6 +807,6 @@ export default function ExamsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </PageShell>
   );
 }

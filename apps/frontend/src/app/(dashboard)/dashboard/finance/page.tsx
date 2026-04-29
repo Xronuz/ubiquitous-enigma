@@ -12,7 +12,6 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Cell,
 } from 'recharts';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -20,6 +19,7 @@ import { financeApi, FinanceDashboardStats, MonthlyRevenueItem, DebtorItem } fro
 import { TreasuryPanel } from '@/components/finance/treasury-panel';
 import { ShiftManager } from '@/components/finance/shift-manager';
 import { cn } from '@/lib/utils';
+import { DS } from '@/components/ui/page-ui';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function fmt(amount: number) {
@@ -229,14 +229,13 @@ export default function FinanceDashboardPage() {
   });
 
   return (
-    // Zero-scroll wrapper: fills available height below header+breadcrumb
     <div className="flex flex-col gap-3" style={{ height: 'calc(100vh - 10.5rem)' }}>
 
       {/* ── Row 1: Header + Tab bar ───────────────────────────────────────── */}
       <div className="flex shrink-0 flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-bold text-foreground">Moliyaviy dashboard</h1>
-          <p className="text-sm text-muted-foreground">To&apos;lovlar, maoshlar va qarzdorlar</p>
+          <h1 className="text-[26px] font-bold tracking-tight leading-tight" style={{ color: DS.text }}>Moliyaviy dashboard</h1>
+          <p className="text-[13px] mt-0.5 font-medium" style={{ color: DS.muted }}>To&apos;lovlar, maoshlar va qarzdorlar</p>
         </div>
         <TabBar active={activeTab} onChange={setActiveTab} />
       </div>
