@@ -8,14 +8,22 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Deploy via SSH
+      - name: Check runner
+        run: echo "Runner OK"
+
+      - name: Write SSH key
+        env:
+          SSH_KEY: ${{ secrets.SSH_KEY }}
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_KEY }}" > ~/.ssh/id_rsa
+          printf '%s' "$SSH_KEY" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh -o StrictHostKeyChecking=no -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} '
-            cd /opt/eduplatform &&
-            git pull origin main &&
-            docker compose -f docker-compose.selfhost.yml up -d --build --no-deps backend nginx &&
-            docker compose -f docker-compose.selfhost.yml ps
-          '
+          head -1 ~/.ssh/id_rsa
+
+      - name: Deploy
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+        run: |
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -p "$SSH_PORT" "$SSH_USER@$SSH_HOST"             'cd /opt/eduplatform && git pull origin main && docker compose -f docker-compose.selfhost.yml up -d --build --no-deps backend nginx && docker compose -f docker-compose.selfhost.yml ps'
