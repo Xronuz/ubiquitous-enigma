@@ -355,8 +355,8 @@ export default function ExamsPage() {
   const { user } = useAuthStore();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const canManage = ['school_admin', 'vice_principal', 'teacher', 'class_teacher'].includes(user?.role ?? '');
-  const isAdmin = ['school_admin', 'vice_principal'].includes(user?.role ?? '');
+  const canManage = ['school_admin', 'director', 'vice_principal', 'teacher', 'class_teacher'].includes(user?.role ?? '');
+  const isAdmin = ['school_admin', 'director', 'vice_principal'].includes(user?.role ?? '');
   const isStudent = user?.role === 'student';
 
   // Dialogs

@@ -397,7 +397,7 @@ export default function GradesPage() {
 
   const isStudent = user?.role === 'student';
   const isTeacher = ['teacher', 'class_teacher'].includes(user?.role ?? '');
-  const canManage = ['school_admin', 'vice_principal', 'teacher', 'class_teacher'].includes(user?.role ?? '');
+  const canManage = ['school_admin', 'director', 'vice_principal', 'teacher', 'class_teacher'].includes(user?.role ?? '');
 
   const [selectedClass, setSelectedClass] = useState('');
   const [selectedSubject, setSelectedSubject] = useState('');
