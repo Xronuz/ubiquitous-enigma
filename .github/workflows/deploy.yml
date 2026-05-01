@@ -15,6 +15,7 @@ jobs:
           port: ${{ secrets.SSH_PORT }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
+          known_hosts: unnecessary
           command_timeout: 15m
           script: |
             cd /opt/eduplatform
