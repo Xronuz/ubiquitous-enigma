@@ -1,15 +1,18 @@
 import {
-  Controller, Get, Query, Res,
+  Controller, Get, Query, Res, UseGuards,
 } from '@nestjs/common';
 import { Response } from 'express';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { AuditService, AuditAction } from './audit.service';
 import { CurrentUser } from '@/common/decorators/current-user.decorator';
 import { Roles } from '@/common/decorators/roles.decorator';
+import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
+import { RolesGuard } from '@/common/guards/roles.guard';
 import { JwtPayload, UserRole } from '@eduplatform/types';
 
 @ApiTags('audit-logs')
 @ApiBearerAuth('JWT')
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller({ path: 'audit-logs', version: '1' })
 export class AuditController {
   constructor(private readonly auditService: AuditService) {}
@@ -18,7 +21,7 @@ export class AuditController {
    * Maktab bo'yicha audit log tarixi — school_admin va vice_principal uchun
    */
   @Get()
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.VICE_PRINCIPAL)
+  @Roles(UserRole.SCHOOL_ADMIN, UserRole.VICE_PRINCIPAL, UserRole.DIRECTOR)
   @ApiOperation({ summary: 'Maktab audit log tarixi' })
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
@@ -52,7 +55,7 @@ export class AuditController {
    * Audit loglarni Excel sifatida yuklab olish
    */
   @Get('export')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.VICE_PRINCIPAL)
+  @Roles(UserRole.SCHOOL_ADMIN, UserRole.VICE_PRINCIPAL, UserRole.DIRECTOR)
   @ApiOperation({ summary: 'Audit loglarni Excel sifatida eksport' })
   async exportLogs(
     @CurrentUser() user: JwtPayload,

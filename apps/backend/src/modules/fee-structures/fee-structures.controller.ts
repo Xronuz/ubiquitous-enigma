@@ -15,7 +15,7 @@ export class FeeStructuresController {
   constructor(private readonly feeStructuresService: FeeStructuresService) {}
 
   @Get()
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.ACCOUNTANT, UserRole.VICE_PRINCIPAL)
+  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.ACCOUNTANT, UserRole.VICE_PRINCIPAL)
   @ApiOperation({ summary: 'To\'lov tartiblari ro\'yxati' })
   findAll(
     @CurrentUser() user: JwtPayload,
@@ -25,21 +25,21 @@ export class FeeStructuresController {
   }
 
   @Get(':id')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.ACCOUNTANT, UserRole.VICE_PRINCIPAL)
+  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.ACCOUNTANT, UserRole.VICE_PRINCIPAL)
   @ApiOperation({ summary: 'To\'lov tartibi ma\'lumoti' })
   findOne(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
     return this.feeStructuresService.findOne(id, user);
   }
 
   @Post()
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.ACCOUNTANT)
+  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.ACCOUNTANT)
   @ApiOperation({ summary: 'Yangi to\'lov tartibi yaratish' })
   create(@Body() dto: CreateFeeStructureDto, @CurrentUser() user: JwtPayload) {
     return this.feeStructuresService.create(dto, user);
   }
 
   @Put(':id')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.ACCOUNTANT)
+  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.ACCOUNTANT)
   @ApiOperation({ summary: 'To\'lov tartibini yangilash' })
   update(
     @Param('id') id: string,
@@ -57,7 +57,7 @@ export class FeeStructuresController {
   }
 
   @Post(':id/generate-payments')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.ACCOUNTANT)
+  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.ACCOUNTANT)
   @ApiOperation({ summary: 'To\'lov tartibidan payment yozuvlari yaratish' })
   generatePayments(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
     return this.feeStructuresService.generatePayments(id, user);
