@@ -74,6 +74,11 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // ── 1.5. /dashboard/classes → /dashboard/education (duplicate route) ───
+  if (pathname === '/dashboard/classes') {
+    return NextResponse.redirect(new URL('/dashboard/education', request.url));
+  }
+
   // ── 2. Dashboard routes require authentication ────────────────────────
   if (pathname.startsWith('/dashboard')) {
     if (!isAuthenticated) {

@@ -1,0 +1,46 @@
+=== git pull ===
+Exit 0: From https://github.com/Xronuz/ubiquitous-enigma
+ * branch            main       -> FETCH_HEAD
+   a3cb9f4..5d2ab4d  main       -> origin/main
+Updating a3cb9f4..5d2ab4d
+Fast-forward
+ docker-compose.selfhost.yml | 1 +
+ 1 file changed, 1 insertion(+)
+
+=== docker compose up (no rebuild needed) ===
+Exit 0:  Container eduplatform-redis Running 
+ Container eduplatform-postgres Running 
+ Container eduplatform-backend Recreate 
+ Container eduplatform-backend Recreated 
+ Container eduplatform-frontend Running 
+ Container eduplatform-postgres Waiting 
+ Container eduplatform-postgres Healthy 
+ Container eduplatform-migrate Starting 
+ Container eduplatform-migrate Started 
+ Container eduplatform-postgres Waiting 
+ Container eduplatform-redis Waiting 
+ Container eduplatform-migrate Waiting 
+ Container eduplatform-postgres Healthy 
+ Container eduplatform-redis Healthy 
+ Container eduplatform-migrate Exited 
+ Container eduplatform-backend Starting 
+ Container eduplatform-backend Started 
+ Container eduplatform-backend Waiting 
+ Container eduplatform-backend Healthy 
+ Container eduplatform-frontend Waiting 
+ Container eduplatform-backend Waiting 
+ Container eduplatform-backend Healthy 
+ Container eduplatform-frontend Healthy 
+ Container eduplatform-nginx Starting 
+ Container eduplatform-nginx Started 
+
+=== CONTAINER STATUS ===
+NAME                   IMAGE                  COMMAND                  SERVICE    CREATED              STATUS                          PORTS
+eduplatform-backend    eduplatform-backend    "docker-entrypoint.s?"   backend    About a minute ago   Up 22 seconds (healthy)         3001/tcp
+eduplatform-frontend   eduplatform-frontend   "docker-entrypoint.s?"   frontend   19 minutes ago       Up 18 minutes (healthy)         3000/tcp
+eduplatform-nginx      nginx:1.25-alpine      "/docker-entrypoint.?"   nginx      About an hour ago    Restarting (1) 29 seconds ago   
+eduplatform-postgres   postgres:16-alpine     "docker-entrypoint.s?"   postgres   About an hour ago    Up About an hour (healthy)      5432/tcp
+eduplatform-redis      redis:7-alpine         "docker-entrypoint.s?"   redis      5 days ago           Up 5 days (healthy)             6379/tcp
+
+=== HTTP check ===
+Status code: 000

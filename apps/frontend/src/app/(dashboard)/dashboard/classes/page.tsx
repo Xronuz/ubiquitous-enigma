@@ -291,10 +291,10 @@ export default function ClassesPage() {
             {branchesList.length > 0 && (
               <div className="space-y-1.5">
                 <Label>Filial</Label>
-                <Select value={form.branchId} onValueChange={sel('branchId')}>
+                <Select value={form.branchId || '__auto__'} onValueChange={v => sel('branchId')(v === '__auto__' ? '' : v)}>
                   <SelectTrigger><SelectValue placeholder="Filial tanlang..." /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Joriy filial (avtomatik)</SelectItem>
+                    <SelectItem value="__auto__">Joriy filial (avtomatik)</SelectItem>
                     {branchesList.map((b: any) => (
                       <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
                     ))}

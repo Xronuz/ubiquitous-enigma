@@ -1,0 +1,20 @@
+Connected
+=== git pull ===
+Exit 0: From https://github.com/Xronuz/ubiquitous-enigma
+ * branch            main       -> FETCH_HEAD
+   fcd741b..a3cb9f4  main       -> origin/main
+Updating fcd741b..a3cb9f4
+Fast-forward
+ .../migrations/20260429120000_add_branch_id_to_models/migration.sql     | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+=== Resolving failed migration ===
+Exit 0: warn The configuration property `package.json#prisma` is deprecated and will be removed in Prisma 7. Please migrate to a Prisma config file (e.g., `prisma.config.ts`).
+For more information, see: https://pris.ly/prisma-config
+
+Prisma schema loaded from prisma/schema.prisma
+Datasource "db": PostgreSQL database "eduplatform_db", schema "public" at "postgres:5432"
+
+Migration 20260429120000_add_branch_id_to_models marked as rolled back.
+???????????????????????????????????????????????????????????
+?  U

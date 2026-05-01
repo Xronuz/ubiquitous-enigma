@@ -307,22 +307,18 @@ function NavLink({ item, active, expanded }: { item: NavItem; active: boolean; e
         'relative flex items-center gap-3 rounded-xl transition-all duration-150',
         expanded ? 'h-[50px] w-full px-3.5' : 'h-[50px] w-[50px] justify-center',
         active
-          ? 'text-emerald-700'
-          : 'text-slate-500 hover:bg-slate-100/80 hover:text-slate-700',
+          ? 'bg-emerald-50 dark:bg-emerald-900/25 text-emerald-700 dark:text-emerald-400 shadow-sm'
+          : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100/80 dark:hover:bg-slate-800/60 hover:text-slate-700 dark:hover:text-slate-200',
       )}
-      style={active ? {
-        background: '#DDF5EA',
-        boxShadow: '0 2px 8px rgba(15,123,83,0.12)',
-      } : undefined}
     >
       <Icon
         style={{ width: 18, height: 18 }}
-        className={cn('shrink-0', active ? 'text-emerald-600' : 'text-slate-400')}
+        className={cn('shrink-0', active ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400 dark:text-slate-500')}
       />
       {expanded && (
         <span className={cn(
           'text-[15px] font-semibold truncate',
-          active ? 'text-emerald-700' : 'text-slate-600',
+          active ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-300',
         )}>
           {item.label}
         </span>
@@ -335,7 +331,7 @@ function NavLink({ item, active, expanded }: { item: NavItem; active: boolean; e
 }
 
 function SectionLabel({ label, expanded }: { label: string; expanded: boolean }) {
-  if (!expanded) return <div className="h-px w-8 my-1.5 mx-auto bg-slate-100 rounded-full" />;
+  if (!expanded) return <div className="h-px w-8 my-1.5 mx-auto bg-slate-100 dark:bg-slate-700 rounded-full" />;
   return (
     <p className="mt-4 mb-1 px-3.5 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400 select-none">
       {label}
@@ -364,31 +360,28 @@ export function Sidebar() {
   return (
     <aside
       className={cn(
-        'flex h-full shrink-0 flex-col rounded-2xl transition-all duration-300 ease-in-out overflow-hidden',
+        'flex h-full shrink-0 flex-col rounded-2xl transition-all duration-300 ease-in-out',
+        'bg-white/95 dark:bg-slate-900/95',
+        'border border-slate-200/70 dark:border-slate-700/70',
+        'shadow-sm dark:shadow-slate-900/20',
+        '[backdrop-filter:blur(20px)] [-webkit-backdrop-filter:blur(20px)]',
         expanded ? 'w-[260px]' : 'w-[62px]',
       )}
-      style={{
-        background: 'rgba(255,255,255,0.95)',
-        backdropFilter: 'blur(20px)',
-        WebkitBackdropFilter: 'blur(20px)',
-        border: '1px solid rgba(226,232,240,0.7)',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.04)',
-      }}
     >
       {/* Logo row */}
       <div className={cn(
-        'flex h-[70px] shrink-0 items-center px-4 border-b border-slate-100/80',
+        'flex h-[70px] shrink-0 items-center px-4 border-b border-slate-100/80 dark:border-slate-700/80',
         expanded ? 'justify-between' : 'flex-col justify-center gap-2',
       )}>
         <Link
           href="/dashboard"
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 border border-emerald-100/80 hover:bg-emerald-100 transition-colors"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-100/80 dark:border-emerald-800/50 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors"
         >
           <XeduMark size={22} />
         </Link>
 
         {expanded && (
-          <span className="flex-1 ml-2.5 text-[15px] font-bold text-slate-800 tracking-tight truncate">
+          <span className="flex-1 ml-2.5 text-[15px] font-bold text-slate-800 dark:text-slate-100 tracking-tight truncate">
             Xedu
           </span>
         )}
@@ -396,14 +389,14 @@ export function Sidebar() {
         <button
           onClick={toggleSidebar}
           title={expanded ? 'Yopish' : 'Kengaytirish'}
-          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
         >
           {expanded ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
         </button>
       </div>
 
       {/* Nav */}
-      <nav className="flex flex-1 flex-col overflow-y-auto overflow-x-hidden px-2.5 pb-2">
+      <nav className="flex flex-1 flex-col overflow-y-auto overflow-x-hidden px-2.5 pb-2 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700 scrollbar-track-transparent">
         {/* Main section */}
         {MAIN_ITEMS.length > 0 && (
           <>
@@ -446,16 +439,16 @@ export function Sidebar() {
 
       {/* Footer */}
       <div className={cn(
-        'shrink-0 border-t border-slate-100/80 py-3',
+        'shrink-0 border-t border-slate-100/80 dark:border-slate-700/80 py-3',
         expanded ? 'px-4' : 'px-2.5',
       )}>
         {expanded ? (
           <div className="flex items-center justify-between">
-            <p className="text-[11px] text-slate-400 font-medium">Xedu Platform</p>
-            <span className="text-[10px] text-slate-300 font-semibold bg-slate-100 px-2 py-0.5 rounded-full">v1.0</span>
+            <p className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">Xedu Platform</p>
+            <span className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full">v1.0</span>
           </div>
         ) : (
-          <p className="text-[10px] text-slate-300 text-center font-semibold">v1</p>
+          <p className="text-[10px] text-slate-400 dark:text-slate-500 text-center font-semibold">v1</p>
         )}
       </div>
     </aside>

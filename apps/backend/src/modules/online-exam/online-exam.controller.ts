@@ -78,7 +78,7 @@ export class OnlineExamController {
           // .docx fayllari turli MIME yuborishi mumkin (macOS → application/zip)
           // Shuning uchun keng regex ishlatamiz; kengayma tekshirish servisda
           new FileTypeValidator({
-            fileType: /application\/vnd\.openxmlformats-officedocument\.wordprocessingml\.document|application\/msword|application\/zip|application\/x-zip|application\/octet-stream/,
+            fileType: /wordprocessingml|msword|zip|octet-stream/,
           }),
         ],
         fileIsRequired: true,
