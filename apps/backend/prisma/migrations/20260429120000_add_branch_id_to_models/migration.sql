@@ -66,4 +66,4 @@ CREATE INDEX IF NOT EXISTS "grades_studentId_date_idx" ON "grades"("studentId", 
 CREATE INDEX IF NOT EXISTS "attendance_studentId_date_idx" ON "attendance"("studentId", "date");
 
 -- ─── 11. Homework (performance index) ─────────────────────────────────────
-CREATE INDEX IF NOT EXISTS "homeworks_classId_status_idx" ON "homeworks"("classId", "status");
+CREATE INDEX IF NOT EXISTS "homeworks_classId_dueDate_idx" ON "homeworks"("classId", "dueDate");
