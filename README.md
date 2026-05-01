@@ -260,3 +260,4 @@ Ilova quyidagi holatlarda ham ishlashda davom etadi:
 ## Node.js v24 haqida
 
 Loyiha Node.js v24 da to'g'ri ishlaydi. `pnpm install` avtomatik `packageExtensions` orqali eski paketlarni (`lazystream`, `send`, `path-scurry`) to'g'ri versiyalarga yo'naltiradi — qo'shimcha hech narsa kerak emas.
+# CI/CD active Fri May  1 18:36:02     2026
