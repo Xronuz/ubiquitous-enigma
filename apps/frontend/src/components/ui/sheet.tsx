@@ -159,9 +159,11 @@ interface SheetContentProps {
   side?: 'left' | 'right' | 'top' | 'bottom';
   className?: string;
   children: React.ReactNode;
+  /** Hide the auto-generated close (X) button — use when the caller renders its own header/close */
+  hideClose?: boolean;
 }
 
-export function SheetContent({ side = 'right', className, children }: SheetContentProps) {
+export function SheetContent({ side = 'right', className, children, hideClose = false }: SheetContentProps) {
   const { open, onOpenChange } = React.useContext(SheetContext);
 
   if (!open) return null;
@@ -189,14 +191,16 @@ export function SheetContent({ side = 'right', className, children }: SheetConte
           className,
         )}
       >
-        {/* Close button */}
-        <button
-          onClick={() => onOpenChange(false)}
-          className="absolute right-4 top-4 rounded-md p-1 text-muted-foreground hover:text-foreground transition-colors z-10"
-        >
-          <X className="h-5 w-5" />
-          <span className="sr-only">Yopish</span>
-        </button>
+        {/* Close button — hidden when caller manages its own close UI */}
+        {!hideClose && (
+          <button
+            onClick={() => onOpenChange(false)}
+            className="absolute right-4 top-4 rounded-md p-1 text-muted-foreground hover:text-foreground transition-colors z-10"
+          >
+            <X className="h-5 w-5" />
+            <span className="sr-only">Yopish</span>
+          </button>
+        )}
         {children}
       </div>
     </div>

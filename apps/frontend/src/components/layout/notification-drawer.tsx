@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Bell, CheckCheck, ExternalLink, Loader2,
-  AlertCircle, BookOpen, CreditCard, ClipboardCheck, Info,
+  AlertCircle, BookOpen, CreditCard, ClipboardCheck, Info, X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -142,7 +142,7 @@ export function NotificationDrawer() {
         </button>
       </SheetTrigger>
 
-      <SheetContent side="right" className="w-full sm:w-[400px] p-0 flex flex-col">
+      <SheetContent side="right" className="w-full sm:w-[400px] p-0 flex flex-col" hideClose>
         {/* header */}
         <SheetHeader className="flex flex-row items-center justify-between px-4 py-3 border-b shrink-0">
           <SheetTitle className="text-base font-semibold flex items-center gap-2">
@@ -153,21 +153,30 @@ export function NotificationDrawer() {
               </Badge>
             )}
           </SheetTitle>
-          {unreadInList > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 text-xs gap-1.5 text-muted-foreground"
-              disabled={markAllMutation.isPending}
-              onClick={() => markAllMutation.mutate()}
+          <div className="flex items-center gap-1">
+            {unreadInList > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs gap-1.5 text-muted-foreground"
+                disabled={markAllMutation.isPending}
+                onClick={() => markAllMutation.mutate()}
+              >
+                {markAllMutation.isPending
+                  ? <Loader2 className="h-3 w-3 animate-spin" />
+                  : <CheckCheck className="h-3.5 w-3.5" />
+                }
+                Hammasini o&apos;qildi
+              </Button>
+            )}
+            <button
+              onClick={() => setOpen(false)}
+              className="h-7 w-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+              aria-label="Yopish"
             >
-              {markAllMutation.isPending
-                ? <Loader2 className="h-3 w-3 animate-spin" />
-                : <CheckCheck className="h-3.5 w-3.5" />
-              }
-              Hammasini o'qildi
-            </Button>
-          )}
+              <X className="h-4 w-4" />
+            </button>
+          </div>
         </SheetHeader>
 
         {/* body */}
