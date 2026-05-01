@@ -1727,7 +1727,7 @@ function DirectorDashboard() {
             { label: 'Baholar',          href: '/dashboard/grades',     icon: BarChart2,      iconColor: '#2563EB'  },
             { label: 'Moliya xulosasi',  href: '/dashboard/finance',    icon: TrendingUp,     iconColor: '#D97706'  },
             { label: 'Dars jadvali',     href: '/dashboard/schedule',   icon: Calendar,       iconColor: '#7C3AED'  },
-            { label: 'Xodimlar',         href: '/dashboard/users',      icon: Users,          iconColor: C.muted    },
+            { label: 'Xodimlar',         href: '/dashboard/staff',      icon: Users,          iconColor: C.muted    },
             { label: 'Hisobotlar',       href: '/dashboard/reports',    icon: BarChart2,      iconColor: '#4338CA'  },
           ]} />
         </PCard>

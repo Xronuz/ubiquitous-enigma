@@ -60,7 +60,7 @@ export default function PayrollPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const isAdmin = user?.role === 'school_admin';
-  const isManager = ['school_admin', 'accountant'].includes(user?.role ?? '');
+  const isManager = ['school_admin', 'director', 'accountant'].includes(user?.role ?? '');
 
   // ── salary config modal ───────────────────────────────────────────────────
   const [configOpen, setConfigOpen] = useState(false);

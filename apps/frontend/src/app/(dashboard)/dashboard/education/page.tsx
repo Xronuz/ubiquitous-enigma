@@ -17,7 +17,7 @@ const TABS = [
   { id: 'classes',  label: 'Sinflar',          roles: ['director', 'school_admin', 'vice_principal', 'teacher', 'class_teacher'] },
   { id: 'schedule', label: 'Dars jadvali',      roles: ['director', 'school_admin', 'vice_principal', 'teacher', 'class_teacher'] },
   { id: 'calendar', label: 'Akademik kalendar', roles: ['director', 'school_admin', 'vice_principal', 'teacher', 'class_teacher'] },
-  { id: 'subjects', label: 'Fanlar',            roles: ['school_admin', 'vice_principal'] },
+  { id: 'subjects', label: 'Fanlar',            roles: ['director', 'school_admin', 'vice_principal'] },
 ];
 
 // Per-tab header actions (dispatches custom events — each child page listens)

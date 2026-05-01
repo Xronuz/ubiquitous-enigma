@@ -34,7 +34,7 @@ export default function ClassesPage() {
   const { user , activeBranchId } = useAuthStore();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const canManage = ['school_admin', 'vice_principal'].includes(user?.role ?? '');
+  const canManage = ['school_admin', 'director', 'vice_principal'].includes(user?.role ?? '');
 
   const [open, setOpen] = useState(false);
   const [editClass, setEditClass] = useState<any | null>(null);

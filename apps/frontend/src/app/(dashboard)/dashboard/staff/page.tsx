@@ -7,6 +7,7 @@ import { SectionTabs } from '@/components/layout/section-tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { usePageActions } from '@/lib/header-actions-context';
+import { useAuthStore } from '@/store/auth.store';
 
 import UsersPage         from '../users/page';
 import BranchesPage      from '../branches/page';
@@ -68,8 +69,14 @@ function TabContent({ tab }: { tab: string }) {
 
 function StaffContent() {
   const searchParams   = useSearchParams();
-  const tab            = searchParams.get('tab') ?? 'users';
+  const { user }       = useAuthStore();
   const { setActions } = usePageActions();
+
+  // Compute first accessible tab for this role (fallback when no ?tab= param)
+  const firstVisibleTab = TABS.find(t =>
+    !t.roles || t.roles.includes(user?.role ?? ''),
+  )?.id ?? 'branches';
+  const tab = searchParams.get('tab') ?? firstVisibleTab;
 
   useEffect(() => {
     setActions(TAB_ACTIONS[tab] ?? null);
@@ -83,7 +90,7 @@ function StaffContent() {
         <p className="text-sm text-muted-foreground">Foydalanuvchilar, filiallar, CRM va boshqaruv</p>
       </div>
       <div className="mt-3">
-        <SectionTabs tabs={TABS} defaultTab="users" />
+        <SectionTabs tabs={TABS} defaultTab={firstVisibleTab} />
       </div>
       <Suspense fallback={<TabFallback />}>
         <TabContent tab={tab} />
