@@ -9,16 +9,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          port: ${{ secrets.SSH_PORT }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_KEY }}
-          known_hosts: unnecessary
-          command_timeout: 15m
-          script: |
-            cd /opt/eduplatform
-            git pull origin main
-            docker compose -f docker-compose.selfhost.yml up -d --build --no-deps backend nginx
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh -o StrictHostKeyChecking=no -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} '
+            cd /opt/eduplatform &&
+            git pull origin main &&
+            docker compose -f docker-compose.selfhost.yml up -d --build --no-deps backend nginx &&
             docker compose -f docker-compose.selfhost.yml ps
+          '
