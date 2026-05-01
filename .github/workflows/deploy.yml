@@ -1,10 +1,24 @@
 name: Deploy to Server
+
 on:
   push:
     branches: [main]
+
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
-      - name: hello
-        run: echo "WORKS"
+      - name: Pull latest code
+        run: |
+          cd /opt/eduplatform
+          git pull origin main
+
+      - name: Rebuild and restart
+        run: |
+          cd /opt/eduplatform
+          docker compose -f docker-compose.selfhost.yml up -d --build --no-deps backend nginx
+
+      - name: Status
+        run: |
+          cd /opt/eduplatform
+          docker compose -f docker-compose.selfhost.yml ps
