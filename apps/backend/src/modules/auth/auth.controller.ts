@@ -6,6 +6,7 @@ import { Response } from 'express';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { LogoutDto } from './dto/logout.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { SwitchBranchDto } from './dto/switch-branch.dto';
@@ -77,16 +78,16 @@ export class AuthController {
     return tokens;
   }
 
+  @Public()
   @Post('logout')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Tizimdan chiqish' })
-  logout(@Body() dto: RefreshTokenDto, @Res({ passthrough: true }) res: Response) {
+  logout(@Body() dto: LogoutDto, @Res({ passthrough: true }) res: Response) {
     res.clearCookie('access_token', this.cookieOptions);
     res.clearCookie('refresh_token', this.cookieOptions);
-    // Also support cookie-based logout (no body needed)
     const cookieRefresh = (res.req as any)?.headers?.cookie?.match(/refresh_token=([^;]+)/);
     const refreshToken = dto?.refreshToken || (cookieRefresh ? decodeURIComponent(cookieRefresh[1]) : '');
-    return this.authService.logout(refreshToken);
+    return this.authService.logout(refreshToken ?? '');
   }
 
   @Public()

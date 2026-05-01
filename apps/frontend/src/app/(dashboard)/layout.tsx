@@ -31,9 +31,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   useRoleGuard();
 
   // Session recovery: zustand cleared lekin server cookie hali valid bo'lsa re-sync qiladi.
-  // Bu Chrome bfcache yoki logout API muvaffaqiyatsiz bo'lganda yuz beradi.
+  // Faqat sahifa yangilanishida ishlashi kerak, LOGOUT dan keyin EMAS.
   useEffect(() => {
-    if (!_hasHydrated || isAuthenticated || recoveryAttempted.current) return;
+    if (!_hasHydrated) return;
+    if (isAuthenticated) {
+      // Foydalanuvchi allaqachon autentifikatsiyadan o'tgan.
+      // Flagni true qilamiz: logout isAuthenticated-ni false qilganda bu effect
+      // session recovery'ni qayta ishga tushirmasin.
+      recoveryAttempted.current = true;
+      return;
+    }
+    if (recoveryAttempted.current) return;
     recoveryAttempted.current = true;
     setIsRecovering(true);
     authApi.me()

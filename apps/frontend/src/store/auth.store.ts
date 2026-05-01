@@ -80,8 +80,10 @@ export const useAuthStore = create<AuthState>()(
           refreshToken: null,
           isAuthenticated: false,
           activeBranchId: null,
-          _hasHydrated: false,
         });
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('auth-storage');
+        }
       },
 
       switchBranch: (branchId) => set({ activeBranchId: branchId }),
