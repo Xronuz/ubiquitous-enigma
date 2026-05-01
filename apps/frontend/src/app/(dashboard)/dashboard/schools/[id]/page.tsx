@@ -7,7 +7,7 @@ import {
   Building2, ArrowLeft, Save, Layers, Users,
   Globe, Phone, Mail, MapPin, CheckCircle2, XCircle,
   BookOpen, CreditCard, Bell, Calendar, GraduationCap,
-  Utensils, Library, Bus, Package,
+  Utensils, Library, Bus, Package, UserPlus, Loader2,
 } from 'lucide-react';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,8 +17,17 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+  DialogDescription, DialogFooter,
+} from '@/components/ui/dialog';
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
 import { superAdminApi } from '@/lib/api/super-admin';
+import { usersApi } from '@/lib/api/users';
 import { formatDate } from '@/lib/utils';
+import { useToast } from '@/components/ui/use-toast';
 
 const MODULE_META: Record<string, { icon: React.ElementType; label: string; description: string; category: string }> = {
   attendance:  { icon: CheckCircle2, label: 'Davomat',        description: 'Kunlik davomat belgilash va hisobotlar',          category: 'Asosiy' },
@@ -39,10 +48,20 @@ export default function SchoolDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   const [editMode, setEditMode] = useState(false);
   const [editForm, setEditForm] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'info' | 'modules'>('info');
+  const [showAdminDialog, setShowAdminDialog] = useState(false);
+  const [adminForm, setAdminForm] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    password: '',
+    role: 'school_admin',
+  });
 
   const { data: school, isLoading } = useQuery({
     queryKey: ['school', id],
@@ -68,6 +87,35 @@ export default function SchoolDetailPage() {
       superAdminApi.toggleModule(id, moduleName, isEnabled),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['school-modules', id] });
+    },
+  });
+
+  const createAdminMutation = useMutation({
+    mutationFn: () =>
+      usersApi.create({
+        firstName: adminForm.firstName,
+        lastName: adminForm.lastName,
+        email: adminForm.email,
+        phone: adminForm.phone || undefined,
+        password: adminForm.password,
+        role: 'school_admin',
+        schoolId: id,
+      }),
+    onSuccess: () => {
+      toast({
+        title: 'Foydalanuvchi muvaffaqiyatli yaratildi',
+        description: `${adminForm.firstName} ${adminForm.lastName} maktabga qo'shildi.`,
+      });
+      setShowAdminDialog(false);
+      setAdminForm({ firstName: '', lastName: '', email: '', phone: '', password: '', role: 'school_admin' });
+      queryClient.invalidateQueries({ queryKey: ['school', id] });
+    },
+    onError: (err: any) => {
+      toast({
+        title: 'Xatolik',
+        description: err?.response?.data?.message || err?.message || 'Noma\'lum xatolik yuz berdi',
+        variant: 'destructive',
+      });
     },
   });
 
@@ -133,6 +181,13 @@ export default function SchoolDetailPage() {
         </div>
 
         <div className="flex gap-2">
+          <Button
+            size="sm"
+            onClick={() => setShowAdminDialog(true)}
+          >
+            <UserPlus className="mr-1.5 h-3.5 w-3.5" />
+            Foydalanuvchi qo\'shish
+          </Button>
           <Button
             variant={school.isActive ? 'destructive' : 'default'}
             size="sm"
@@ -209,8 +264,8 @@ export default function SchoolDetailPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
-              <CardTitle className="text-base">Maktab ma'lumotlari</CardTitle>
-              <CardDescription>Asosiy kontakt va manzil ma'lumotlari</CardDescription>
+              <CardTitle className="text-base">Maktab ma\'lumotlari</CardTitle>
+              <CardDescription>Asosiy kontakt va manzil ma\'lumotlari</CardDescription>
             </div>
             {!editMode ? (
               <Button variant="outline" size="sm" onClick={startEdit}>
@@ -359,6 +414,115 @@ export default function SchoolDetailPage() {
           )}
         </div>
       )}
+
+      {/* Admin qo'shish dialogi */}
+      <Dialog open={showAdminDialog} onOpenChange={setShowAdminDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Foydalanuvchi qo\'shish</DialogTitle>
+            <DialogDescription>
+              {school.name} maktabiga yangi foydalanuvchi qo\'shing. Parol tizimga kirish uchun ishlatiladi.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="admin-role">Rol</Label>
+              <Select
+                value={adminForm.role}
+                onValueChange={(value) => setAdminForm((f) => ({ ...f, role: value }))}
+              >
+                <SelectTrigger id="admin-role">
+                  <SelectValue placeholder="Rol tanlang" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="school_admin">Maktab admini</SelectItem>
+                  <SelectItem value="director">Direktor</SelectItem>
+                  <SelectItem value="vice_principal">O\'rinbosar</SelectItem>
+                  <SelectItem value="accountant">Hisobchi</SelectItem>
+                  <SelectItem value="teacher">O\'qituvchi</SelectItem>
+                  <SelectItem value="class_teacher">Sinf rahbari</SelectItem>
+                  <SelectItem value="librarian">Kutubxonachi</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="admin-firstName">Ism</Label>
+                <Input
+                  id="admin-firstName"
+                  value={adminForm.firstName}
+                  onChange={(e) => setAdminForm((f) => ({ ...f, firstName: e.target.value }))}
+                  placeholder="Ali"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="admin-lastName">Familiya</Label>
+                <Input
+                  id="admin-lastName"
+                  value={adminForm.lastName}
+                  onChange={(e) => setAdminForm((f) => ({ ...f, lastName: e.target.value }))}
+                  placeholder="Valiyev"
+                />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="admin-email">Email</Label>
+              <Input
+                id="admin-email"
+                type="email"
+                value={adminForm.email}
+                onChange={(e) => setAdminForm((f) => ({ ...f, email: e.target.value }))}
+                placeholder="admin@school.uz"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="admin-phone">Telefon</Label>
+              <Input
+                id="admin-phone"
+                value={adminForm.phone}
+                onChange={(e) => setAdminForm((f) => ({ ...f, phone: e.target.value }))}
+                placeholder="+998 90 123 45 67"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="admin-password">Parol</Label>
+              <Input
+                id="admin-password"
+                type="password"
+                value={adminForm.password}
+                onChange={(e) => setAdminForm((f) => ({ ...f, password: e.target.value }))}
+                placeholder="Kamida 8 ta belgi"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="ghost"
+              onClick={() => setShowAdminDialog(false)}
+              disabled={createAdminMutation.isPending}
+            >
+              Bekor
+            </Button>
+            <Button
+              onClick={() => createAdminMutation.mutate()}
+              disabled={
+                createAdminMutation.isPending ||
+                !adminForm.firstName ||
+                !adminForm.lastName ||
+                !adminForm.email ||
+                !adminForm.password
+              }
+            >
+              {createAdminMutation.isPending ? (
+                <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+              ) : (
+                <UserPlus className="mr-1.5 h-4 w-4" />
+              )}
+              Qo'shish
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

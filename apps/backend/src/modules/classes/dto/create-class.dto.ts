@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsInt, Min, Max, IsOptional } from 'class-validator';
+import { IsString, IsNotEmpty, IsInt, Min, Max, IsOptional, IsUUID } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateClassDto {
@@ -22,4 +22,9 @@ export class CreateClassDto {
   @IsOptional()
   @IsString()
   classTeacherId?: string | null;
+
+  @ApiPropertyOptional({ description: 'Filial ID (null = maktab bo\'yicha)' })
+  @IsOptional()
+  @IsUUID('4', { message: 'branchId UUID formatida bo\'lishi kerak' })
+  branchId?: string | null;
 }

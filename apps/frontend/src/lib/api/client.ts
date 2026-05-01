@@ -7,19 +7,13 @@ export const apiClient = axios.create({
   baseURL: BASE_URL,
   timeout: 30_000, // 30 soniya — hang qolmaslik uchun
   headers: { 'Content-Type': 'application/json' },
-  withCredentials: false,
+  withCredentials: true,
 });
 
-// Attach access token + branch context header
+// Attach branch context header (auth is now cookie-based, no Bearer header needed)
 apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   if (typeof window !== 'undefined') {
-    const token = localStorage.getItem('accessToken');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-
     // x-branch-id: Zustand store dan aktiv branchId ni qo'shish.
-    // Director/admin boshqa filialga "switch" qilganda bu header override qilinadi.
     // Lazy import — circular dep dan qochish uchun runtime require
     try {
       // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -104,33 +98,16 @@ apiClient.interceptors.response.use(
       isRefreshing = true;
       refreshAttempts += 1;
 
-      const refreshToken = typeof window !== 'undefined'
-        ? localStorage.getItem('refreshToken')
-        : null;
-
-      if (!refreshToken) {
-        isRefreshing = false;
-        refreshAttempts = 0;
-        if (typeof window !== 'undefined') {
-          localStorage.clear();
-          window.location.href = '/login';
-        }
-        return Promise.reject(error);
-      }
-
+      // Cookie-based refresh: body is empty, backend reads refresh_token from cookie
       try {
-        const { data: raw } = await axios.post(`${BASE_URL}/auth/refresh`, { refreshToken });
+        const { data: raw } = await axios.post(`${BASE_URL}/auth/refresh`, {}, { withCredentials: true });
         // Unwrap TransformInterceptor envelope if present
         const data = (raw && raw.success === true && 'data' in raw) ? raw.data : raw;
-        localStorage.setItem('accessToken', data.accessToken);
-        localStorage.setItem('refreshToken', data.refreshToken);
         refreshAttempts = 0; // Muvaffaqiyatli — counter reset
         processQueue(null, data.accessToken);
-        original.headers.Authorization = `Bearer ${data.accessToken}`;
         return apiClient(original);
       } catch (refreshError) {
         processQueue(refreshError, null);
-        localStorage.clear();
         window.location.href = '/login';
         return Promise.reject(refreshError);
       } finally {

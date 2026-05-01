@@ -33,8 +33,12 @@ const SWITCHER_ROLES = new Set(['director', 'school_admin', 'branch_admin']);
 
 export function BranchSwitcher() {
   const user = useAuthStore((s) => s.user);
-  const { activeBranchId, activeBranchMeta, branches, setBranches } = useBranchStore();
+  const authBranchId = useAuthStore((s) => s.activeBranchId);
+  const { activeBranchMeta, branches, setBranches } = useBranchStore();
   const { switchBranch, isSwitching } = useSwitchBranch();
+
+  // Source of truth: auth.store (apiClient reads from here)
+  const activeBranchId = authBranchId;
 
   // Faqat tegishli rollar uchun render
   if (!user || !SWITCHER_ROLES.has(user.role)) return null;
@@ -96,7 +100,7 @@ export function BranchSwitcher() {
             'hover:shadow-md transition-all duration-150',
             'disabled:opacity-60 disabled:cursor-not-allowed',
             'focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/30',
-            activeBranchId && 'text-blue-700 dark:text-blue-300',
+            authBranchId && 'text-blue-700 dark:text-blue-300',
           )}
         >
           {isSwitching ? (

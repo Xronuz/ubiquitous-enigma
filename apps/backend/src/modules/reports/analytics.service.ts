@@ -15,6 +15,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@/common/prisma/prisma.service';
 import { JwtPayload } from '@eduplatform/types';
+import { branchFilter, SCHOOL_WIDE_ROLES } from '@/common/utils/branch-filter.util';
 import ExcelJS from 'exceljs';
 
 @Injectable()
@@ -205,9 +206,14 @@ export class AnalyticsService {
    */
   async getBranchComparison(currentUser: JwtPayload) {
     const schoolId = currentUser.schoolId!;
+    const isScoped = !SCHOOL_WIDE_ROLES.has(currentUser.role);
 
     const branches = await this.prisma.branch.findMany({
-      where: { schoolId, isActive: true },
+      where: {
+        schoolId,
+        isActive: true,
+        ...(isScoped && currentUser.branchId ? { id: currentUser.branchId } : {}),
+      },
       select: { id: true, name: true, code: true },
       orderBy: { name: 'asc' },
     });
@@ -366,8 +372,8 @@ export class AnalyticsService {
    * Dashboard "Pulse" widget uchun: bugungi real vaqt ma'lumotlari.
    * Barcha hisob parallel — $transaction orqali.
    */
-  async getSchoolPulse(currentUser: JwtPayload) {
-    const schoolId = currentUser.schoolId!;
+  async getSchoolPulse(currentUser: JwtPayload, branchCtx?: string | null) {
+    const filter = branchFilter(currentUser, branchCtx);
     const today    = new Date();
     const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
     const todayEnd   = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
@@ -386,46 +392,46 @@ export class AnalyticsService {
       activeBranches,
     ] = await this.prisma.$transaction([
       this.prisma.user.count({
-        where: { schoolId, role: 'student' as any, isActive: true },
+        where: { ...filter, role: 'student' as any, isActive: true },
       }),
       this.prisma.user.count({
-        where: { schoolId, role: { in: ['teacher', 'class_teacher'] as any }, isActive: true },
+        where: { ...filter, role: { in: ['teacher', 'class_teacher'] as any }, isActive: true },
       }),
       this.prisma.attendance.count({
-        where: { schoolId, status: 'present', date: { gte: todayStart, lt: todayEnd } },
+        where: { ...filter, status: 'present', date: { gte: todayStart, lt: todayEnd } },
       }),
       this.prisma.attendance.count({
-        where: { schoolId, status: 'absent', date: { gte: todayStart, lt: todayEnd } },
+        where: { ...filter, status: 'absent', date: { gte: todayStart, lt: todayEnd } },
       }),
       this.prisma.attendance.count({
-        where: { schoolId, status: 'late', date: { gte: todayStart, lt: todayEnd } },
+        where: { ...filter, status: 'late', date: { gte: todayStart, lt: todayEnd } },
       }),
       this.prisma.payment.aggregate({
-        where: { schoolId, status: 'paid', paidAt: { gte: monthStart, lte: today } },
+        where: { ...filter, status: 'paid', paidAt: { gte: monthStart, lte: today } },
         _sum: { amount: true },
       }),
       this.prisma.lead.count({
         where: {
-          schoolId,
+          ...filter,
           createdAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
         },
       }),
       this.prisma.payment.aggregate({
-        where: { schoolId, status: { in: ['pending', 'overdue'] } },
+        where: { ...filter, status: { in: ['pending', 'overdue'] } },
         _sum:   { amount: true },
         _count: { _all: true },
       }),
       // Financial shifts with discrepancy
       this.prisma.financialShift.count({
         where: {
-          schoolId,
+          ...filter,
           status:      'CLOSED',
           discrepancy: { not: 0 },
           endTime:     { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
         },
       }),
       this.prisma.branch.count({
-        where: { schoolId, isActive: true },
+        where: { schoolId: currentUser.schoolId!, isActive: true },
       }),
     ]);
 
@@ -464,8 +470,8 @@ export class AnalyticsService {
    *   - Ochiq smena > 24 soat
    *   - Konversiya rate < 10%
    */
-  async getSmartAlerts(currentUser: JwtPayload) {
-    const schoolId = currentUser.schoolId!;
+  async getSmartAlerts(currentUser: JwtPayload, branchCtx?: string | null) {
+    const filter = branchFilter(currentUser, branchCtx);
     const alerts: {
       type:     'warning' | 'danger' | 'info';
       category: string;
@@ -483,7 +489,7 @@ export class AnalyticsService {
     // ─ 1. Treasury discrepancies (so'nggi 7 kun) ─────────────────────────
     const discrepancyShifts = await this.prisma.financialShift.findMany({
       where: {
-        schoolId,
+        ...filter,
         status:      'CLOSED',
         discrepancy: { not: 0 },
         endTime:     { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
@@ -508,7 +514,7 @@ export class AnalyticsService {
 
     // ─ 2. Overdue payments ────────────────────────────────────────────────
     const overdueStats = await this.prisma.payment.aggregate({
-      where: { schoolId, status: 'overdue' },
+      where: { ...filter, status: 'overdue' },
       _count: { _all: true },
       _sum:   { amount: true },
     });
@@ -525,14 +531,20 @@ export class AnalyticsService {
     // ─ 3. Today attendance < 70% (per branch) — N+1 fix ─────────────────
     // Before: N branches × 2 serial queries = O(branches) DB round-trips
     // After:  1 groupBy query → aggregate in JS
-    const branches = await this.prisma.branch.findMany({
-      where: { schoolId, isActive: true },
-      select: { id: true, name: true },
-    });
+    // If branchCtx is set, only check that branch. Otherwise check all branches.
+    const branches = branchCtx
+      ? await this.prisma.branch.findMany({
+          where: { id: branchCtx, schoolId: currentUser.schoolId!, isActive: true },
+          select: { id: true, name: true },
+        })
+      : await this.prisma.branch.findMany({
+          where: { schoolId: currentUser.schoolId!, isActive: true },
+          select: { id: true, name: true },
+        });
 
     const todayAttGroups = await this.prisma.attendance.groupBy({
       by:    ['branchId', 'status'],
-      where: { schoolId, date: { gte: todayStart, lt: todayEnd } },
+      where: { ...filter, date: { gte: todayStart, lt: todayEnd } },
       _count: { _all: true },
     });
 
@@ -567,7 +579,7 @@ export class AnalyticsService {
     // ─ 4. Open shifts > 24 hours ─────────────────────────────────────────
     const staleShifts = await this.prisma.financialShift.findMany({
       where: {
-        schoolId,
+        ...filter,
         status:    'OPEN',
         startTime: { lt: new Date(Date.now() - 24 * 60 * 60 * 1000) },
       },
@@ -590,7 +602,7 @@ export class AnalyticsService {
     // ─ 5. Low CRM conversion (< 10% bu oy) ───────────────────────────────
     const crmStats = await this.prisma.lead.groupBy({
       by:    ['status'],
-      where: { schoolId, createdAt: { gte: new Date(today.getFullYear(), today.getMonth(), 1) } },
+      where: { ...filter, createdAt: { gte: new Date(today.getFullYear(), today.getMonth(), 1) } },
       _count: { _all: true },
     });
     const crmTotal     = crmStats.reduce((s, r) => s + r._count._all, 0);

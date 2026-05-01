@@ -16,7 +16,7 @@ import {
 } from './online-exam.service';
 
 @UseGuards(JwtAuthGuard)
-@Controller('online-exam')
+@Controller({ path: 'online-exam', version: '1' })
 export class OnlineExamController {
   constructor(private readonly service: OnlineExamService) {}
 

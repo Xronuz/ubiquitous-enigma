@@ -80,28 +80,28 @@ export const importApi = {
   },
 
   // ── Commit (saqlash) ─────────────────────────────────────────────────────────
-  commitStudents: async (rows: ImportRow[]): Promise<CommitResult> => {
-    const { data } = await apiClient.post('/import/students/commit', { rows });
+  commitStudents: async (rows: ImportRow[], branchId?: string): Promise<CommitResult> => {
+    const { data } = await apiClient.post('/import/students/commit', { rows, branchId });
     return data;
   },
 
-  commitUsers: async (rows: ImportRow[]): Promise<CommitResult> => {
-    const { data } = await apiClient.post('/import/users/commit', { rows });
+  commitUsers: async (rows: ImportRow[], branchId?: string): Promise<CommitResult> => {
+    const { data } = await apiClient.post('/import/users/commit', { rows, branchId });
     return data;
   },
 
-  commitSchedule: async (rows: ImportRow[]): Promise<CommitResult> => {
-    const { data } = await apiClient.post('/import/schedule/commit', { rows });
+  commitSchedule: async (rows: ImportRow[], branchId?: string): Promise<CommitResult> => {
+    const { data } = await apiClient.post('/import/schedule/commit', { rows, branchId });
     return data;
   },
 
-  commitGrades: async (rows: ImportRow[]): Promise<CommitResult> => {
-    const { data } = await apiClient.post('/import/grades/commit', { rows });
+  commitGrades: async (rows: ImportRow[], branchId?: string): Promise<CommitResult> => {
+    const { data } = await apiClient.post('/import/grades/commit', { rows, branchId });
     return data;
   },
 
-  commitAttendance: async (rows: ImportRow[]): Promise<CommitResult> => {
-    const { data } = await apiClient.post('/import/attendance/commit', { rows });
+  commitAttendance: async (rows: ImportRow[], branchId?: string): Promise<CommitResult> => {
+    const { data } = await apiClient.post('/import/attendance/commit', { rows, branchId });
     return data;
   },
 };

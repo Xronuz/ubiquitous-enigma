@@ -7,6 +7,7 @@ import { RolesGuard } from '@/common/guards/roles.guard';
 import { ScheduleService } from './schedule.service';
 import { CreateScheduleDto } from './dto/create-schedule.dto';
 import { CurrentUser } from '@/common/decorators/current-user.decorator';
+import { BranchContext } from '@/common/decorators/branch-context.decorator';
 import { Roles } from '@/common/decorators/roles.decorator';
 import { JwtPayload, UserRole } from '@eduplatform/types';
 
@@ -45,20 +46,30 @@ export class ScheduleController {
 
   @Get('today')
   @ApiOperation({ summary: 'Bugungi darslar' })
-  getToday(@CurrentUser() user: JwtPayload) {
-    return this.scheduleService.getToday(user);
+  getToday(
+    @CurrentUser() user: JwtPayload,
+    @BranchContext() branchCtx: string | null,
+  ) {
+    return this.scheduleService.getToday(user, branchCtx);
   }
 
   @Get('week')
   @ApiOperation({ summary: 'Haftalik jadval' })
   @ApiQuery({ name: 'classId', required: false })
-  getWeek(@CurrentUser() user: JwtPayload, @Query('classId') classId?: string) {
-    return this.scheduleService.getWeek(user, classId);
+  getWeek(
+    @CurrentUser() user: JwtPayload,
+    @BranchContext() branchCtx: string | null,
+    @Query('classId') classId?: string,
+  ) {
+    return this.scheduleService.getWeek(user, classId, branchCtx);
   }
 
   @Get('class/:classId')
   @ApiOperation({ summary: 'Sinf jadvali' })
-  findByClass(@Param('classId') classId: string, @CurrentUser() user: JwtPayload) {
+  findByClass(
+    @Param('classId') classId: string,
+    @CurrentUser() user: JwtPayload,
+  ) {
     return this.scheduleService.findByClass(classId, user);
   }
 
@@ -83,8 +94,12 @@ export class ScheduleController {
   @Delete(':id')
   @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.BRANCH_ADMIN)
   @ApiOperation({ summary: 'Darsni jadvaldan o\'chirish' })
-  remove(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
-    return this.scheduleService.remove(id, user);
+  remove(
+    @Param('id') id: string,
+    @CurrentUser() user: JwtPayload,
+    @BranchContext() branchCtx: string | null,
+  ) {
+    return this.scheduleService.remove(id, user, branchCtx);
   }
 
   @Get('teacher/:teacherId/cross-branch')

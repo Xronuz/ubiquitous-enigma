@@ -83,16 +83,21 @@ export class ClubsController {
     @Param('id') id: string,
     @Body() dto: UpdateClubDto,
     @CurrentUser() user: JwtPayload,
+    @BranchContext() branchCtx: string | null,
   ) {
-    return this.clubsService.update(id, dto, user);
+    return this.clubsService.update(id, dto, user, branchCtx);
   }
 
   @Delete(':id')
   @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'To\'garakni o\'chirish' })
-  remove(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
-    return this.clubsService.remove(id, user);
+  remove(
+    @Param('id') id: string,
+    @CurrentUser() user: JwtPayload,
+    @BranchContext() branchCtx: string | null,
+  ) {
+    return this.clubsService.remove(id, user, branchCtx);
   }
 
   // ─── Join Request Flow ────────────────────────────────────────────────────
@@ -155,8 +160,12 @@ export class ClubsController {
   @Get(':id/members')
   @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.TEACHER, UserRole.CLASS_TEACHER)
   @ApiOperation({ summary: 'To\'garak a\'zolari ro\'yxati' })
-  getMembers(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
-    return this.clubsService.getMembers(id, user);
+  getMembers(
+    @Param('id') id: string,
+    @CurrentUser() user: JwtPayload,
+    @BranchContext() branchCtx: string | null,
+  ) {
+    return this.clubsService.getMembers(id, user, branchCtx);
   }
 
   @Delete(':id/members/:studentId')

@@ -1,8 +1,9 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
-import * as ExcelJS from 'exceljs';
+import { Injectable, BadRequestException, ForbiddenException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
+import * as ExcelJS from 'exceljs';
 import { PrismaService } from '@/common/prisma/prisma.service';
 import { JwtPayload, UserRole } from '@eduplatform/types';
+import { UsersService } from '@/modules/users/users.service';
 
 // ─── Natija tipi ───────────────────────────────────────────────────────────────
 
@@ -30,7 +31,10 @@ export interface CommitResult {
 
 @Injectable()
 export class ImportService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly usersService: UsersService,
+  ) {}
 
   // ─────────────────────────────────────────────────────────────────────────────
   // STUDENTS IMPORT
@@ -59,6 +63,7 @@ export class ImportService {
       const phone      = String(cells[4] ?? '').trim() || undefined;
       const password   = String(cells[5] ?? '').trim() || undefined;
       const classId    = String(cells[6] ?? '').trim() || undefined;
+      const branchId   = String(cells[7] ?? '').trim() || undefined;
 
       const errors: string[] = [];
       if (!firstName) errors.push('Ism kiritilmagan');
@@ -67,7 +72,7 @@ export class ImportService {
 
       rows.push({
         row: rowIndex,
-        data: { firstName, lastName, email, phone, password, classId },
+        data: { firstName, lastName, email, phone, password, classId, branchId },
         errors,
         valid: errors.length === 0,
       });
@@ -81,8 +86,9 @@ export class ImportService {
     };
   }
 
-  async commitStudents(rows: ImportRow[], currentUser: JwtPayload): Promise<CommitResult> {
+  async commitStudents(rows: ImportRow[], currentUser: JwtPayload, branchIdOverride?: string | null): Promise<CommitResult> {
     const schoolId = currentUser.schoolId!;
+    const branchId = branchIdOverride ?? currentUser.branchId ?? null;
     const validRows = rows.filter(r => r.valid);
     let created = 0;
     let skipped = 0;
@@ -93,10 +99,12 @@ export class ImportService {
         const existing = await this.prisma.user.findUnique({ where: { email: row.data.email } });
         if (existing) { skipped++; continue; }
 
+        const rowBranchId = row.data.branchId ?? branchId ?? null;
         const passwordHash = await bcrypt.hash(row.data.password ?? 'Student@123', 10);
         const student = await this.prisma.user.create({
           data: {
             schoolId,
+            branchId: rowBranchId,
             role: UserRole.STUDENT,
             firstName: row.data.firstName,
             lastName:  row.data.lastName,
@@ -171,8 +179,7 @@ export class ImportService {
     };
   }
 
-  async commitUsers(rows: ImportRow[], currentUser: JwtPayload): Promise<CommitResult> {
-    const schoolId = currentUser.schoolId!;
+  async commitUsers(rows: ImportRow[], currentUser: JwtPayload, branchIdOverride?: string | null): Promise<CommitResult> {
     const validRows = rows.filter(r => r.valid);
     let created = 0; let skipped = 0; const errors: string[] = [];
 
@@ -180,18 +187,21 @@ export class ImportService {
       try {
         const existing = await this.prisma.user.findUnique({ where: { email: row.data.email } });
         if (existing) { skipped++; continue; }
-        const passwordHash = await bcrypt.hash(row.data.password ?? 'Staff@123', 10);
-        await this.prisma.user.create({
-          data: {
-            schoolId,
-            role: row.data.role as any,
+
+        // Re-use UsersService.create() so that role authorization, branchId
+        // validation, and all business rules are enforced consistently.
+        await this.usersService.create(
+          {
             firstName: row.data.firstName,
             lastName:  row.data.lastName,
             email:     row.data.email,
             phone:     row.data.phone,
-            passwordHash,
+            password:  row.data.password ?? 'Staff@123',
+            role:      row.data.role as UserRole,
+            branchId:  branchIdOverride ?? undefined,
           },
-        });
+          currentUser,
+        );
         created++;
       } catch (e: any) {
         errors.push(`Qator ${row.row}: ${e.message}`);
@@ -253,13 +263,20 @@ export class ImportService {
     };
   }
 
-  async commitSchedule(rows: ImportRow[], currentUser: JwtPayload): Promise<CommitResult> {
+  async commitSchedule(rows: ImportRow[], currentUser: JwtPayload, branchIdOverride?: string | null): Promise<CommitResult> {
     const schoolId = currentUser.schoolId!;
     const validRows = rows.filter(r => r.valid);
     let created = 0; let skipped = 0; const errors: string[] = [];
 
     for (const row of validRows) {
       try {
+        // Classdan branchId ni olish (agar override berilmagan bo'lsa)
+        let branchId = branchIdOverride ?? undefined;
+        if (!branchId) {
+          const cls = await this.prisma.class.findUnique({ where: { id: row.data.classId }, select: { branchId: true } });
+          branchId = cls?.branchId ?? currentUser.branchId ?? undefined;
+        }
+
         // Konflikt tekshirish
         const conflict = await this.prisma.schedule.findFirst({
           where: {
@@ -274,6 +291,7 @@ export class ImportService {
         await this.prisma.schedule.create({
           data: {
             schoolId,
+            branchId,
             classId:    row.data.classId,
             subjectId:  row.data.subjectId,
             teacherId:  row.data.teacherId,
@@ -342,7 +360,7 @@ export class ImportService {
     };
   }
 
-  async commitGrades(rows: ImportRow[], currentUser: JwtPayload): Promise<CommitResult> {
+  async commitGrades(rows: ImportRow[], currentUser: JwtPayload, branchIdOverride?: string | null): Promise<CommitResult> {
     const schoolId = currentUser.schoolId!;
     const validRows = rows.filter(r => r.valid);
     let created = 0; const errors: string[] = [];
@@ -351,9 +369,17 @@ export class ImportService {
     try {
       await this.prisma.$transaction(async (tx) => {
         for (const row of validRows) {
+          // Classdan branchId ni olish (agar override berilmagan bo'lsa)
+          let branchId = branchIdOverride ?? undefined;
+          if (!branchId) {
+            const cls = await tx.class.findUnique({ where: { id: row.data.classId }, select: { branchId: true } });
+            branchId = cls?.branchId ?? currentUser.branchId ?? undefined;
+          }
+
           await tx.grade.create({
             data: {
               schoolId,
+              branchId,
               studentId: row.data.studentId,
               subjectId: row.data.subjectId,
               classId:   row.data.classId,
@@ -417,7 +443,7 @@ export class ImportService {
     };
   }
 
-  async commitAttendance(rows: ImportRow[], currentUser: JwtPayload): Promise<CommitResult> {
+  async commitAttendance(rows: ImportRow[], currentUser: JwtPayload, branchIdOverride?: string | null): Promise<CommitResult> {
     const schoolId = currentUser.schoolId!;
     const validRows = rows.filter(r => r.valid);
     let created = 0; let skipped = 0; const errors: string[] = [];
@@ -439,11 +465,13 @@ export class ImportService {
           } else {
             const enrollment = await tx.classStudent.findFirst({
               where: { studentId: row.data.studentId },
-              select: { classId: true },
+              include: { class: { select: { branchId: true } } },
             });
+            const branchId = branchIdOverride ?? enrollment?.class?.branchId ?? currentUser.branchId ?? undefined;
             await tx.attendance.create({
               data: {
                 schoolId,
+                branchId,
                 classId: enrollment?.classId ?? '',
                 studentId: row.data.studentId,
                 date: dateObj,
@@ -483,12 +511,12 @@ export class ImportService {
     };
 
     if (type === 'students') {
-      addHeaders(['Ism', 'Familiya', 'Email', 'Telefon', 'Parol (ixtiyoriy)', 'Sinf ID (ixtiyoriy)']);
-      sheet.addRow(['Ali', 'Valiyev', 'ali@example.com', '+998901234567', 'Student@123', '']);
-      sheet.addRow(['Nodira', 'Karimova', 'nodira@example.com', '+998901234568', '', '']);
+      addHeaders(['Ism', 'Familiya', 'Email', 'Telefon', 'Parol (ixtiyoriy)', 'Sinf ID (ixtiyoriy)', 'Filial ID (ixtiyoriy)']);
+      sheet.addRow(['Ali', 'Valiyev', 'ali@example.com', '+998901234567', 'Student@123', '', '']);
+      sheet.addRow(['Nodira', 'Karimova', 'nodira@example.com', '+998901234568', '', '', '']);
     } else if (type === 'users') {
-      addHeaders(['Ism', 'Familiya', 'Email', 'Telefon', 'Rol (teacher/accountant/...)', 'Parol']);
-      sheet.addRow(['Jasur', 'Toshmatov', 'jasur@example.com', '+998901234567', 'teacher', 'Staff@123']);
+      addHeaders(['Ism', 'Familiya', 'Email', 'Telefon', 'Rol (teacher/accountant/...)', 'Parol', 'Filial ID (ixtiyoriy)']);
+      sheet.addRow(['Jasur', 'Toshmatov', 'jasur@example.com', '+998901234567', 'teacher', 'Staff@123', '']);
     } else if (type === 'schedule') {
       addHeaders(['Sinf ID', 'Fan ID', "O'qituvchi ID", 'Kun (monday-sunday)', 'Slot (1-12)', 'Boshlanish (HH:MM)', 'Tugash (HH:MM)', 'Xona (ixtiyoriy)']);
       sheet.addRow(['class-uuid', 'subject-uuid', 'teacher-uuid', 'monday', '1', '08:00', '08:45', '101']);

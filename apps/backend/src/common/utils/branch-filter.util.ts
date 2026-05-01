@@ -4,7 +4,7 @@ import { JwtPayload, UserRole } from '@eduplatform/types';
  * SCHOOL_WIDE_ROLES — bu rollar barcha filiallarga kirish huquqiga ega.
  * branchId filter QOLLANILMAYDI, faqat schoolId bo'yicha ko'radi.
  */
-const SCHOOL_WIDE_ROLES = new Set<string>([
+export const SCHOOL_WIDE_ROLES = new Set<string>([
   UserRole.SUPER_ADMIN,
   UserRole.SCHOOL_ADMIN,
   UserRole.DIRECTOR,

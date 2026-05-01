@@ -1,7 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useRef, useState } from 'react';
 import { Sidebar } from '@/components/layout/sidebar';
 import { Header } from '@/components/layout/header';
 import { BreadcrumbNav } from '@/components/layout/breadcrumb-nav';
@@ -13,6 +12,8 @@ import { useRealtimeNotifications } from '@/hooks/use-realtime-notifications';
 import { CommandPalette } from '@/components/command-palette';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { HeaderActionsProvider } from '@/lib/header-actions-context';
+import { useRoleGuard } from '@/components/auth/role-guard';
+import { authApi } from '@/lib/api/auth';
 
 function RealtimeProvider() {
   useRealtimeNotifications();
@@ -20,14 +21,51 @@ function RealtimeProvider() {
 }
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const router = useRouter();
-  const { isAuthenticated, _hasHydrated } = useAuthStore();
+  const { isAuthenticated, _hasHydrated, restoreAuth } = useAuthStore();
   const { sidebarCollapsed, setSidebarCollapsed } = useUIStore();
   const [commandOpen, setCommandOpen] = useState(false);
+  const [isRecovering, setIsRecovering] = useState(false);
+  const recoveryAttempted = useRef(false);
 
+  // Role-based route guard — har bir dashboard route'da tekshiradi
+  useRoleGuard();
+
+  // Session recovery: zustand cleared lekin server cookie hali valid bo'lsa re-sync qiladi.
+  // Bu Chrome bfcache yoki logout API muvaffaqiyatsiz bo'lganda yuz beradi.
   useEffect(() => {
-    if (_hasHydrated && !isAuthenticated) router.replace('/login');
-  }, [isAuthenticated, _hasHydrated, router]);
+    if (!_hasHydrated || isAuthenticated || recoveryAttempted.current) return;
+    recoveryAttempted.current = true;
+    setIsRecovering(true);
+    authApi.me()
+      .then((meData) => {
+        restoreAuth({
+          id: meData.id,
+          email: meData.email,
+          firstName: meData.firstName,
+          lastName: meData.lastName,
+          role: meData.role,
+          schoolId: meData.schoolId ?? null,
+          branchId: null,
+        });
+      })
+      .catch(() => {
+        // Cookie ham yo'q — login sahifasiga yuboramiz (to'liq reload, middleware orqali)
+        window.location.href = '/login';
+      })
+      .finally(() => setIsRecovering(false));
+  }, [_hasHydrated, isAuthenticated, restoreAuth]);
+
+  // bfcache fix: Chrome back-forward cache sahifani qayta ko'rsatganda
+  // React effectlari qayta ishlamaydi, shuning uchun pageshow orqali tekshiramiz.
+  useEffect(() => {
+    const handlePageShow = (e: PageTransitionEvent) => {
+      if (e.persisted && !useAuthStore.getState().isAuthenticated) {
+        window.location.reload();
+      }
+    };
+    window.addEventListener('pageshow', handlePageShow);
+    return () => window.removeEventListener('pageshow', handlePageShow);
+  }, []);
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -43,7 +81,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return () => document.removeEventListener('open-command-palette', h);
   }, []);
 
-  if (!_hasHydrated) {
+  if (!_hasHydrated || isRecovering) {
     return (
       <div className="flex h-screen items-center justify-center bg-[#f8faf8]">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-emerald-500 border-t-transparent" />

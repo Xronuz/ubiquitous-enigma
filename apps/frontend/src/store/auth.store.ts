@@ -27,6 +27,7 @@ interface AuthState {
   activeBranchId: string | null;
 
   setAuth: (user: AuthUser, tokens: TokenPair) => void;
+  restoreAuth: (user: AuthUser) => void;
   updateUser: (user: Partial<AuthUser>) => void;
   logout: () => void;
   setHasHydrated: (state: boolean) => void;
@@ -47,10 +48,8 @@ export const useAuthStore = create<AuthState>()(
       setHasHydrated: (state) => set({ _hasHydrated: state }),
 
       setAuth: (user, tokens) => {
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('accessToken', tokens.accessToken);
-          localStorage.setItem('refreshToken', tokens.refreshToken);
-        }
+        // Tokens are now stored in httpOnly cookies by the backend.
+        // We keep them in memory for backward compat during transition.
         set({
           user,
           accessToken: tokens.accessToken,
@@ -61,22 +60,27 @@ export const useAuthStore = create<AuthState>()(
         });
       },
 
+      restoreAuth: (user) => {
+        set({
+          user,
+          isAuthenticated: true,
+          activeBranchId: user.branchId ?? null,
+        });
+      },
+
       updateUser: (partial) =>
         set((state) => ({
           user: state.user ? { ...state.user, ...partial } : null,
         })),
 
       logout: () => {
-        if (typeof window !== 'undefined') {
-          localStorage.removeItem('accessToken');
-          localStorage.removeItem('refreshToken');
-        }
         set({
           user: null,
           accessToken: null,
           refreshToken: null,
           isAuthenticated: false,
           activeBranchId: null,
+          _hasHydrated: false,
         });
       },
 
@@ -86,10 +90,9 @@ export const useAuthStore = create<AuthState>()(
       name: 'auth-storage',
       partialize: (state) => ({
         user: state.user,
-        accessToken: state.accessToken,
-        refreshToken: state.refreshToken,
         isAuthenticated: state.isAuthenticated,
         activeBranchId: state.activeBranchId,
+        // Tokens are stored in httpOnly cookies — do NOT persist them in localStorage
       }),
       onRehydrateStorage: () => (state) => {
         state?.setHasHydrated(true);

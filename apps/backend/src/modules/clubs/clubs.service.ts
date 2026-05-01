@@ -123,9 +123,9 @@ export class ClubsService {
   }
 
   // ─── Update ───────────────────────────────────────────────────────────────
-  async update(id: string, dto: UpdateClubDto, currentUser: JwtPayload) {
+  async update(id: string, dto: UpdateClubDto, currentUser: JwtPayload, branchCtx?: string | null) {
     const club = await this.prisma.club.findFirst({
-      where: { id, ...branchFilter(currentUser) },
+      where: { id, ...branchFilter(currentUser, branchCtx) },
     });
     if (!club) throw new NotFoundException('To\'garak topilmadi');
 
@@ -145,9 +145,9 @@ export class ClubsService {
   }
 
   // ─── Delete ───────────────────────────────────────────────────────────────
-  async remove(id: string, currentUser: JwtPayload) {
+  async remove(id: string, currentUser: JwtPayload, branchCtx?: string | null) {
     const club = await this.prisma.club.findFirst({
-      where: { id, ...branchFilter(currentUser) },
+      where: { id, ...branchFilter(currentUser, branchCtx) },
     });
     if (!club) throw new NotFoundException('To\'garak topilmadi');
 
@@ -312,9 +312,9 @@ export class ClubsService {
   }
 
   // ─── Get members list ─────────────────────────────────────────────────────
-  async getMembers(id: string, currentUser: JwtPayload) {
+  async getMembers(id: string, currentUser: JwtPayload, branchCtx?: string | null) {
     const club = await this.prisma.club.findFirst({
-      where: { id, ...branchFilter(currentUser) },
+      where: { id, ...branchFilter(currentUser, branchCtx) },
     });
     if (!club) throw new NotFoundException('To\'garak topilmadi');
 

@@ -27,6 +27,7 @@ import {
 import { useToast } from '@/components/ui/use-toast';
 import { useAuthStore } from '@/store/auth.store';
 import { classesApi } from '@/lib/api/classes';
+import { branchesApi } from '@/lib/api/branches';
 import {
   leadsApi, KANBAN_COLUMNS, LEAD_STATUS_CONFIG, LEAD_SOURCE_CONFIG,
   type Lead, type LeadStatus, type LeadSource, type LeadAnalytics,
@@ -306,6 +307,13 @@ function CreateLeadDialog({
     enabled:  open,
     select:   (d: any) => (Array.isArray(d) ? d : d?.data ?? []),
   });
+  const { data: branchesData } = useQuery({
+    queryKey: ['branches', activeBranchId],
+    queryFn:  () => branchesApi.getAll(),
+    enabled:  open,
+    select:   (d: any) => (Array.isArray(d) ? d : d?.data ?? []),
+  });
+  const branchesList = (branchesData as any[]) ?? [];
 
   const mutation = useMutation({
     mutationFn: leadsApi.create,
@@ -413,6 +421,21 @@ function CreateLeadDialog({
               className="resize-none"
             />
           </div>
+
+          {branchesList.length > 0 && (
+            <div className="space-y-1.5">
+              <Label>Filial</Label>
+              <Select value={form.branchId || '__auto__'} onValueChange={set('branchId')}>
+                <SelectTrigger><SelectValue placeholder="Filial tanlang..." /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__auto__">Joriy filial (avtomatik)</SelectItem>
+                  {branchesList.map((b: any) => (
+                    <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </div>
 
         <DialogFooter>
@@ -425,6 +448,7 @@ function CreateLeadDialog({
               source:          form.source,
               note:            form.note || undefined,
               expectedClassId: (form.expectedClassId && form.expectedClassId !== '__none__') ? form.expectedClassId : undefined,
+              branchId:        (form.branchId && form.branchId !== '__auto__') ? form.branchId : undefined,
             })}
             disabled={mutation.isPending || !form.firstName || !form.lastName || !form.phone || !!dupError}
           >

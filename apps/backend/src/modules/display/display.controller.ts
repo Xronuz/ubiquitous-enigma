@@ -4,7 +4,7 @@ import { DisplayService } from './display.service';
 import { Throttle } from '@nestjs/throttler';
 
 @ApiTags('display')
-@Controller('display')
+@Controller({ path: 'display', version: '1' })
 export class DisplayController {
   constructor(private readonly displayService: DisplayService) {}
 

@@ -25,12 +25,26 @@ export const authApi = {
     return data;
   },
 
-  logout: async (refreshToken: string) => {
-    await apiClient.post('/auth/logout', { refreshToken });
+  logout: async () => {
+    // Cookie-based: backend reads refresh_token from cookie
+    await apiClient.post('/auth/logout');
   },
 
-  refresh: async (refreshToken: string): Promise<TokenPair> => {
-    const { data } = await apiClient.post<TokenPair>('/auth/refresh', { refreshToken });
+  me: async () => {
+    const { data } = await apiClient.get<{
+      id: string;
+      email: string;
+      firstName: string;
+      lastName: string;
+      role: string;
+      schoolId: string | null;
+    }>('/users/me');
+    return data;
+  },
+
+  refresh: async (): Promise<TokenPair> => {
+    // Cookie-based: backend reads refresh_token from cookie
+    const { data } = await apiClient.post<TokenPair>('/auth/refresh');
     return data;
   },
 

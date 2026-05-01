@@ -1177,13 +1177,13 @@ function SchoolDashboard() {
   const { data: usersData, isLoading: usersLoading } = useQuery({
     queryKey: ['users', 'count', activeBranchId],
     queryFn: () => usersApi.getAll({ limit: 100 }),
-    enabled: ['school_admin', 'vice_principal'].includes(user?.role ?? ''),
+    enabled: ['school_admin', 'vice_principal', 'branch_admin'].includes(user?.role ?? ''),
   });
 
   const { data: classesData, isLoading: classesLoading } = useQuery({
     queryKey: ['classes', activeBranchId],
     queryFn: classesApi.getAll,
-    enabled: ['school_admin', 'vice_principal', 'teacher', 'class_teacher'].includes(user?.role ?? ''),
+    enabled: ['school_admin', 'vice_principal', 'teacher', 'class_teacher', 'branch_admin'].includes(user?.role ?? ''),
   });
 
   const { data: paymentReport, isLoading: paymentsLoading } = useQuery({
@@ -1195,7 +1195,7 @@ function SchoolDashboard() {
   const { data: subjectsData } = useQuery({
     queryKey: ['subjects', 'count', activeBranchId],
     queryFn: () => subjectsApi.getAll(),
-    enabled: user?.role === 'school_admin',
+    enabled: ['school_admin', 'branch_admin'].includes(user?.role ?? ''),
   });
 
   const classList     = Array.isArray(classesData) ? classesData : [];
@@ -1242,7 +1242,7 @@ function SchoolDashboard() {
 
       {/* ── Stat cards row ── */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {['school_admin', 'vice_principal'].includes(user?.role ?? '') && (
+        {['school_admin', 'vice_principal', 'branch_admin'].includes(user?.role ?? '') && (
           <StatCard title="Foydalanuvchilar" value={usersData?.meta.total ?? 0}      icon={Users}      description="Aktiv foydalanuvchilar" color="violet"  loading={usersLoading}   href="/dashboard/users" />
         )}
         {!['student', 'parent'].includes(user?.role ?? '') && (
@@ -1258,13 +1258,13 @@ function SchoolDashboard() {
 
       {/* ── Bottom grid ── */}
       <div className="grid gap-4 md:grid-cols-2">
-        {['school_admin', 'vice_principal', 'class_teacher', 'teacher'].includes(user?.role ?? '') && (
+        {['school_admin', 'vice_principal', 'class_teacher', 'teacher', 'branch_admin'].includes(user?.role ?? '') && (
           <AttendanceSummaryWidget />
         )}
-        {['school_admin', 'vice_principal', 'teacher', 'class_teacher'].includes(user?.role ?? '') && (
+        {['school_admin', 'vice_principal', 'teacher', 'class_teacher', 'branch_admin'].includes(user?.role ?? '') && (
           <UpcomingExamsWidget />
         )}
-        {['teacher', 'class_teacher', 'vice_principal', 'school_admin'].includes(user?.role ?? '') && (
+        {['teacher', 'class_teacher', 'vice_principal', 'school_admin', 'branch_admin'].includes(user?.role ?? '') && (
           <TodayScheduleWidget />
         )}
 
@@ -1346,6 +1346,14 @@ function SchoolDashboard() {
               { label: 'Baholar',      href: '/dashboard/grades',     icon: BookOpen,       iconColor: '#2563EB' },
               { label: 'Dars jadvali', href: '/dashboard/schedule',   icon: Calendar,       iconColor: '#7C3AED' },
               { label: 'Hisobot',      href: '/dashboard/reports',    icon: GraduationCap,  iconColor: '#D97706' },
+            ]} />
+          )}
+          {user?.role === 'branch_admin' && (
+            <QuickActions items={[
+              { label: 'Davomat',      href: '/dashboard/attendance', icon: ClipboardCheck, iconColor: C.primary },
+              { label: 'Baholar',      href: '/dashboard/grades',     icon: BookOpen,       iconColor: '#2563EB' },
+              { label: 'Dars jadvali', href: '/dashboard/schedule',   icon: Calendar,       iconColor: '#7C3AED' },
+              { label: "O'quvchilar",  href: '/dashboard/students',   icon: Users,          iconColor: '#D97706' },
             ]} />
           )}
           {user?.role === 'librarian' && (

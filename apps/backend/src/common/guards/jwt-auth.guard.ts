@@ -52,7 +52,17 @@ export class JwtAuthGuard implements CanActivate {
   }
 
   private extractToken(request: any): string | null {
+    // 1. Bearer header (backward compatible)
     const [type, token] = request.headers?.authorization?.split(' ') ?? [];
-    return type === 'Bearer' ? token : null;
+    if (type === 'Bearer') return token;
+
+    // 2. Cookie fallback (httpOnly cookie-based auth)
+    const cookieHeader = request.headers?.cookie as string | undefined;
+    if (cookieHeader) {
+      const match = cookieHeader.match(/access_token=([^;]+)/);
+      if (match) return decodeURIComponent(match[1]);
+    }
+
+    return null;
   }
 }

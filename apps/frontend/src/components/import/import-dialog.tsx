@@ -14,9 +14,13 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/components/ui/use-toast';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   importApi, ImportType, ImportResult, ImportRow, CommitResult,
 } from '@/lib/api/import';
+import { branchesApi } from '@/lib/api/branches';
+import { useAuthStore } from '@/store/auth.store';
+import { useQuery } from '@tanstack/react-query';
 
 // ─── Config ────────────────────────────────────────────────────────────────────
 
@@ -60,7 +64,7 @@ const PARSE_FUNS: Record<ImportType, (f: File) => Promise<ImportResult>> = {
   attendance: importApi.parseAttendance,
 };
 
-const COMMIT_FUNS: Record<ImportType, (rows: ImportRow[]) => Promise<CommitResult>> = {
+const COMMIT_FUNS: Record<ImportType, (rows: ImportRow[], branchId?: string) => Promise<CommitResult>> = {
   students:   importApi.commitStudents,
   users:      importApi.commitUsers,
   schedule:   importApi.commitSchedule,
@@ -81,6 +85,7 @@ interface ImportDialogProps {
 
 export function ImportDialog({ open, onOpenChange, type, onSuccess }: ImportDialogProps) {
   const { toast } = useToast();
+  const { user } = useAuthStore();
   const config = TYPE_CONFIG[type];
   const fileRef = useRef<HTMLInputElement>(null);
   const [step, setStep] = useState<Step>('upload');
@@ -88,12 +93,22 @@ export function ImportDialog({ open, onOpenChange, type, onSuccess }: ImportDial
   const [parseResult, setParseResult] = useState<ImportResult | null>(null);
   const [commitResult, setCommitResult] = useState<CommitResult | null>(null);
   const [showErrors, setShowErrors] = useState(false);
+  const [branchId, setBranchId] = useState('');
+
+  const { data: branchesData } = useQuery({
+    queryKey: ['branches', user?.schoolId],
+    queryFn: () => branchesApi.getAll(),
+    enabled: open && !!user?.schoolId && ['super_admin', 'school_admin', 'director'].includes(user?.role ?? ''),
+  });
+  const branchesList = Array.isArray(branchesData) ? branchesData : (branchesData as any)?.data ?? [];
+  const canSelectBranch = branchesList.length > 0;
 
   function reset() {
     setStep('upload');
     setParseResult(null);
     setCommitResult(null);
     setShowErrors(false);
+    setBranchId('');
   }
 
   function handleClose(v: boolean) {
@@ -117,7 +132,7 @@ export function ImportDialog({ open, onOpenChange, type, onSuccess }: ImportDial
   // ── Commit mutation ─────────────────────────────────────────────────────────
 
   const commitMutation = useMutation({
-    mutationFn: (rows: ImportRow[]) => COMMIT_FUNS[type](rows),
+    mutationFn: (rows: ImportRow[]) => COMMIT_FUNS[type](rows, branchId || undefined),
     onSuccess: (result) => {
       setCommitResult(result);
       setStep('result');
@@ -296,6 +311,26 @@ export function ImportDialog({ open, onOpenChange, type, onSuccess }: ImportDial
                     )}
                   </div>
                 </ScrollArea>
+              </div>
+            )}
+
+            {canSelectBranch && parseResult.valid > 0 && (
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium">Filial (ixtiyoriy)</label>
+                <Select value={branchId} onValueChange={setBranchId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Joriy filial (avtomatik)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Joriy filial (avtomatik)</SelectItem>
+                    {branchesList.map((b: any) => (
+                      <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Agar tanlanmasa, import joriy filialga amalga oshiriladi
+                </p>
               </div>
             )}
 

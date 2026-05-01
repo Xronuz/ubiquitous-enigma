@@ -9,6 +9,7 @@ import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
 import { ImportService, ImportRow } from './import.service';
 import { CurrentUser } from '@/common/decorators/current-user.decorator';
+import { BranchContext } from '@/common/decorators/branch-context.decorator';
 import { Roles } from '@/common/decorators/roles.decorator';
 import { JwtPayload, UserRole } from '@eduplatform/types';
 
@@ -53,8 +54,8 @@ export class ImportController {
   @Roles(...MANAGERS)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "O'quvchilarni bazaga saqlash" })
-  commitStudents(@Body() body: { rows: ImportRow[] }, @CurrentUser() user: JwtPayload) {
-    return this.importService.commitStudents(body.rows, user);
+  commitStudents(@Body() body: { rows: ImportRow[]; branchId?: string }, @CurrentUser() user: JwtPayload, @BranchContext() branchCtx: string | null) {
+    return this.importService.commitStudents(body.rows, user, body.branchId ?? branchCtx);
   }
 
   // ─── Xodimlar import ──────────────────────────────────────────────────────
@@ -73,8 +74,8 @@ export class ImportController {
   @Roles(UserRole.SCHOOL_ADMIN)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Xodimlarni bazaga saqlash' })
-  commitUsers(@Body() body: { rows: ImportRow[] }, @CurrentUser() user: JwtPayload) {
-    return this.importService.commitUsers(body.rows, user);
+  commitUsers(@Body() body: { rows: ImportRow[]; branchId?: string }, @CurrentUser() user: JwtPayload, @BranchContext() branchCtx: string | null) {
+    return this.importService.commitUsers(body.rows, user, body.branchId ?? branchCtx);
   }
 
   // ─── Jadval import ────────────────────────────────────────────────────────
@@ -93,8 +94,8 @@ export class ImportController {
   @Roles(...MANAGERS)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Jadvalni bazaga saqlash' })
-  commitSchedule(@Body() body: { rows: ImportRow[] }, @CurrentUser() user: JwtPayload) {
-    return this.importService.commitSchedule(body.rows, user);
+  commitSchedule(@Body() body: { rows: ImportRow[]; branchId?: string }, @CurrentUser() user: JwtPayload, @BranchContext() branchCtx: string | null) {
+    return this.importService.commitSchedule(body.rows, user, body.branchId ?? branchCtx);
   }
 
   // ─── Baholar import ───────────────────────────────────────────────────────
@@ -113,8 +114,8 @@ export class ImportController {
   @Roles(...MANAGERS, UserRole.TEACHER, UserRole.CLASS_TEACHER)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Baholarni bazaga saqlash' })
-  commitGrades(@Body() body: { rows: ImportRow[] }, @CurrentUser() user: JwtPayload) {
-    return this.importService.commitGrades(body.rows, user);
+  commitGrades(@Body() body: { rows: ImportRow[]; branchId?: string }, @CurrentUser() user: JwtPayload, @BranchContext() branchCtx: string | null) {
+    return this.importService.commitGrades(body.rows, user, body.branchId ?? branchCtx);
   }
 
   // ─── Davomat import ───────────────────────────────────────────────────────
@@ -133,7 +134,7 @@ export class ImportController {
   @Roles(...MANAGERS, UserRole.TEACHER, UserRole.CLASS_TEACHER)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Davomatni bazaga saqlash' })
-  commitAttendance(@Body() body: { rows: ImportRow[] }, @CurrentUser() user: JwtPayload) {
-    return this.importService.commitAttendance(body.rows, user);
+  commitAttendance(@Body() body: { rows: ImportRow[]; branchId?: string }, @CurrentUser() user: JwtPayload, @BranchContext() branchCtx: string | null) {
+    return this.importService.commitAttendance(body.rows, user, body.branchId ?? branchCtx);
   }
 }

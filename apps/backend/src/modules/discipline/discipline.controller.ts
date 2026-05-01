@@ -7,11 +7,12 @@ import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
 import { DisciplineService, CreateDisciplineDto, ResolveDto } from './discipline.service';
 import { CurrentUser } from '@/common/decorators/current-user.decorator';
+import { BranchContext } from '@/common/decorators/branch-context.decorator';
 import { Roles } from '@/common/decorators/roles.decorator';
 import { JwtPayload, UserRole } from '@eduplatform/types';
 
 const MANAGERS = [
-  UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL,
+  UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.BRANCH_ADMIN,
   UserRole.TEACHER, UserRole.CLASS_TEACHER,
 ];
 
@@ -23,10 +24,13 @@ export class DisciplineController {
   constructor(private readonly service: DisciplineService) {}
 
   @Get('stats')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL)
+  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.BRANCH_ADMIN)
   @ApiOperation({ summary: 'Intizom statistikasi' })
-  getStats(@CurrentUser() user: JwtPayload) {
-    return this.service.getStats(user);
+  getStats(
+    @CurrentUser() user: JwtPayload,
+    @BranchContext() branchCtx: string | null,
+  ) {
+    return this.service.getStats(user, branchCtx);
   }
 
   @Get()
@@ -40,6 +44,7 @@ export class DisciplineController {
   @ApiQuery({ name: 'limit',     required: false, type: Number })
   findAll(
     @CurrentUser() user: JwtPayload,
+    @BranchContext() branchCtx: string | null,
     @Query('studentId') studentId?: string,
     @Query('classId')   classId?: string,
     @Query('from')      from?: string,
@@ -47,7 +52,7 @@ export class DisciplineController {
     @Query('page')      page?: number,
     @Query('limit')     limit?: number,
   ) {
-    return this.service.findAll(user, {
+    return this.service.findAll(user, branchCtx, {
       studentId, classId, from, to,
       page:  page  ? +page  : undefined,
       limit: limit ? +limit : undefined,
@@ -60,15 +65,20 @@ export class DisciplineController {
   getStudentHistory(
     @Param('studentId') studentId: string,
     @CurrentUser() user: JwtPayload,
+    @BranchContext() branchCtx: string | null,
   ) {
-    return this.service.getStudentHistory(studentId, user);
+    return this.service.getStudentHistory(studentId, user, branchCtx);
   }
 
   @Post()
   @Roles(...MANAGERS)
   @ApiOperation({ summary: 'Intizom hodisasi yaratish' })
-  create(@Body() dto: CreateDisciplineDto, @CurrentUser() user: JwtPayload) {
-    return this.service.create(dto, user);
+  create(
+    @Body() dto: CreateDisciplineDto,
+    @CurrentUser() user: JwtPayload,
+    @BranchContext() branchCtx: string | null,
+  ) {
+    return this.service.create(dto, user, branchCtx);
   }
 
   @Patch(':id/resolve')
@@ -78,15 +88,20 @@ export class DisciplineController {
     @Param('id') id: string,
     @Body() dto: ResolveDto,
     @CurrentUser() user: JwtPayload,
+    @BranchContext() branchCtx: string | null,
   ) {
-    return this.service.resolve(id, dto, user);
+    return this.service.resolve(id, dto, user, branchCtx);
   }
 
   @Delete(':id')
   @Roles(...MANAGERS)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Hodisani o\'chirish' })
-  remove(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
-    return this.service.remove(id, user);
+  remove(
+    @Param('id') id: string,
+    @CurrentUser() user: JwtPayload,
+    @BranchContext() branchCtx: string | null,
+  ) {
+    return this.service.remove(id, user, branchCtx);
   }
 }

@@ -1,6 +1,8 @@
-import { Controller, Post, Body, HttpCode, HttpStatus, UseGuards } from '@nestjs/common';
+import { Controller, Post, Body, HttpCode, HttpStatus, UseGuards, Res } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
+import { Response } from 'express';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
@@ -17,7 +19,20 @@ import { JwtPayload, UserRole } from '@eduplatform/types';
 @ApiTags('auth')
 @Controller({ path: 'auth', version: '1' })
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly config: ConfigService,
+  ) {}
+
+  private get cookieOptions() {
+    const isProd = this.config.get('NODE_ENV') === 'production';
+    return {
+      httpOnly: true,
+      secure: isProd,
+      sameSite: isProd ? ('none' as const) : ('lax' as const),
+      path: '/',
+    };
+  }
 
   @Public()
   @Post('login')
@@ -28,23 +43,50 @@ export class AuthController {
   @ApiOperation({ summary: 'Tizimga kirish' })
   @ApiResponse({ status: 200, description: 'Muvaffaqiyatli kirish' })
   @ApiResponse({ status: 401, description: 'Email yoki parol noto\'g\'ri' })
-  login(@Body() dto: LoginDto) {
-    return this.authService.login(dto);
+  async login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: Response) {
+    const result = await this.authService.login(dto);
+    // httpOnly cookies for XSS-resistant auth
+    res.cookie('access_token', result.tokens.accessToken, {
+      ...this.cookieOptions,
+      maxAge: 24 * 60 * 60 * 1000,
+    });
+    res.cookie('refresh_token', result.tokens.refreshToken, {
+      ...this.cookieOptions,
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+    return result;
   }
 
   @Public()
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Access token yangilash' })
-  refresh(@Body() dto: RefreshTokenDto) {
-    return this.authService.refresh(dto);
+  async refresh(@Body() dto: RefreshTokenDto, @Res({ passthrough: true }) res: Response) {
+    // Prefer cookie if body is empty (cookie-based auth flow)
+    const cookieRefresh = (res.req as any)?.headers?.cookie?.match(/refresh_token=([^;]+)/);
+    const refreshToken = dto?.refreshToken || (cookieRefresh ? decodeURIComponent(cookieRefresh[1]) : '');
+    const tokens = await this.authService.refresh({ refreshToken });
+    res.cookie('access_token', tokens.accessToken, {
+      ...this.cookieOptions,
+      maxAge: 24 * 60 * 60 * 1000,
+    });
+    res.cookie('refresh_token', tokens.refreshToken, {
+      ...this.cookieOptions,
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+    return tokens;
   }
 
   @Post('logout')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Tizimdan chiqish' })
-  logout(@Body() dto: RefreshTokenDto) {
-    return this.authService.logout(dto.refreshToken);
+  logout(@Body() dto: RefreshTokenDto, @Res({ passthrough: true }) res: Response) {
+    res.clearCookie('access_token', this.cookieOptions);
+    res.clearCookie('refresh_token', this.cookieOptions);
+    // Also support cookie-based logout (no body needed)
+    const cookieRefresh = (res.req as any)?.headers?.cookie?.match(/refresh_token=([^;]+)/);
+    const refreshToken = dto?.refreshToken || (cookieRefresh ? decodeURIComponent(cookieRefresh[1]) : '');
+    return this.authService.logout(refreshToken);
   }
 
   @Public()
@@ -75,7 +117,16 @@ export class AuthController {
   @Roles(UserRole.SUPER_ADMIN, UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.BRANCH_ADMIN)
   @ApiOperation({ summary: 'Aktiv filialni almashtirish (director/admin)' })
   @ApiResponse({ status: 200, description: 'Yangi tokenlar qaytarildi' })
-  switchBranch(@Body() dto: SwitchBranchDto, @CurrentUser() user: JwtPayload) {
-    return this.authService.switchBranch(dto, user);
+  async switchBranch(@Body() dto: SwitchBranchDto, @CurrentUser() user: JwtPayload, @Res({ passthrough: true }) res: Response) {
+    const result = await this.authService.switchBranch(dto, user);
+    res.cookie('access_token', result.accessToken, {
+      ...this.cookieOptions,
+      maxAge: 24 * 60 * 60 * 1000,
+    });
+    res.cookie('refresh_token', result.refreshToken, {
+      ...this.cookieOptions,
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+    return result;
   }
 }

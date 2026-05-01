@@ -49,21 +49,21 @@ export class UsersController {
   }
 
   @Get(':id')
-  @Roles(UserRole.SUPER_ADMIN, UserRole.SCHOOL_ADMIN, UserRole.VICE_PRINCIPAL)
+  @Roles(UserRole.SUPER_ADMIN, UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL)
   @ApiOperation({ summary: 'Foydalanuvchi ma\'lumoti' })
   findOne(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
     return this.usersService.findOne(id, user);
   }
 
   @Post()
-  @Roles(UserRole.SUPER_ADMIN, UserRole.SCHOOL_ADMIN)
+  @Roles(UserRole.SUPER_ADMIN, UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.BRANCH_ADMIN)
   @ApiOperation({ summary: 'Yangi foydalanuvchi qo\'shish' })
   create(@Body() dto: CreateUserDto, @CurrentUser() user: JwtPayload) {
     return this.usersService.create(dto, user);
   }
 
   @Put(':id')
-  @Roles(UserRole.SUPER_ADMIN, UserRole.SCHOOL_ADMIN)
+  @Roles(UserRole.SUPER_ADMIN, UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL)
   @ApiOperation({ summary: 'Foydalanuvchini yangilash' })
   update(
     @Param('id') id: string,
@@ -74,7 +74,7 @@ export class UsersController {
   }
 
   @Delete(':id')
-  @Roles(UserRole.SUPER_ADMIN, UserRole.SCHOOL_ADMIN)
+  @Roles(UserRole.SUPER_ADMIN, UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Foydalanuvchini bloklash (soft delete)' })
   remove(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
@@ -82,7 +82,7 @@ export class UsersController {
   }
 
   @Put(':id/restore')
-  @Roles(UserRole.SUPER_ADMIN, UserRole.SCHOOL_ADMIN)
+  @Roles(UserRole.SUPER_ADMIN, UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Bloklangan foydalanuvchini qayta faollashtirish' })
   restore(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
@@ -145,7 +145,8 @@ export class UsersController {
       validators: [new MaxFileSizeValidator({ maxSize: 2 * 1024 * 1024 })], // 2MB
     })) file: Express.Multer.File,
     @CurrentUser() user: JwtPayload,
+    @BranchContext() branchCtx: string | null,
   ) {
-    return this.usersService.importFromCsv(file.buffer, user);
+    return this.usersService.importFromCsv(file.buffer, user, branchCtx);
   }
 }

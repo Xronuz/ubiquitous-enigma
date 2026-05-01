@@ -17,6 +17,7 @@ import { PageShell, PageHeader, FilterBar, TableShell, THead, TH, TBody, TR, TD,
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { usersApi } from '@/lib/api/users';
 import { classesApi } from '@/lib/api/classes';
+import { branchesApi } from '@/lib/api/branches';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuthStore } from '@/store/auth.store';
 import { getInitials, getRoleLabel } from '@/lib/utils';
@@ -32,6 +33,7 @@ const userSchema = z.object({
   role:      z.string().min(1, 'Rol tanlanishi shart'),
   classId:   z.string().optional(),
   studentId: z.string().optional(),
+  branchId:  z.string().optional(),
 });
 type UserFormValues = z.infer<typeof userSchema>;
 
@@ -80,10 +82,19 @@ export default function UsersPage() {
     formState: { errors, isSubmitting },
   } = useForm<UserFormValues>({
     resolver: zodResolver(userSchema),
-    defaultValues: { firstName: '', lastName: '', email: '', password: '', phone: '', role: '', classId: '', studentId: '' },
+    defaultValues: { firstName: '', lastName: '', email: '', password: '', phone: '', role: '', classId: '', studentId: '', branchId: activeBranchId ?? '' },
   });
 
   const watchedRole = watch('role');
+  const watchedBranchId = watch('branchId');
+
+  // Load branches for admin/director branch selection
+  const { data: branchesData } = useQuery({
+    queryKey: ['branches', user?.schoolId],
+    queryFn: () => branchesApi.getAll(),
+    enabled: open && !!user?.schoolId && ['super_admin', 'school_admin', 'director'].includes(user?.role ?? ''),
+  });
+  const branchesList = Array.isArray(branchesData) ? branchesData : (branchesData as any)?.data ?? [];
 
   const csvMutation = useMutation({
     mutationFn: (file: File) => usersApi.importCsv(file),
@@ -151,6 +162,7 @@ export default function UsersPage() {
         password:  values.password,
         phone:     values.phone?.trim() || undefined,
         role:      values.role,
+        branchId:  values.branchId?.trim() || undefined,
       } as any);
 
       // 2. Student → enroll in class if selected
@@ -385,6 +397,31 @@ export default function UsersPage() {
               />
               {errors.role && <p className="text-xs text-destructive">{errors.role.message}</p>}
             </div>
+
+            {/* Branch selector for school-wide roles */}
+            {branchesList.length > 0 && (
+              <div className="space-y-1.5">
+                <Label>Filial</Label>
+                <Controller
+                  name="branchId"
+                  control={control}
+                  render={({ field }) => (
+                    <Select value={field.value ?? ''} onValueChange={field.onChange}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Filial tanlang..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">Barcha filiallar (maktab bo'yicha)</SelectItem>
+                        {branchesList.map((b: any) => (
+                          <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+                <p className="text-xs text-muted-foreground">Agar tanlanmasa, foydalanuvchi joriy filialga biriktiriladi</p>
+              </div>
+            )}
 
             {/* O'quvchi → Sinf tanlash */}
             {watchedRole === 'student' && (

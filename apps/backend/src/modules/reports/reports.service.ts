@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import PDFDocument from 'pdfkit';
 import { PrismaService } from '@/common/prisma/prisma.service';
 import { JwtPayload } from '@eduplatform/types';
+import { branchFilter } from '@/common/utils/branch-filter.util';
 
 @Injectable()
 export class ReportsService {
@@ -12,8 +13,9 @@ export class ReportsService {
     currentUser: JwtPayload,
     classId?: string,
     month?: string,
+    branchCtx?: string | null,
   ) {
-    const where: any = { schoolId: currentUser.schoolId! };
+    const where: any = { ...branchFilter(currentUser, branchCtx) };
     if (classId) where.classId = classId;
     if (month) {
       const [year, m] = month.split('-').map(Number);
@@ -57,8 +59,9 @@ export class ReportsService {
     currentUser: JwtPayload,
     classId?: string,
     subjectId?: string,
+    branchCtx?: string | null,
   ) {
-    const where: any = { schoolId: currentUser.schoolId! };
+    const where: any = { ...branchFilter(currentUser, branchCtx) };
     if (classId)   where.classId   = classId;
     if (subjectId) where.subjectId = subjectId;
 
@@ -74,25 +77,25 @@ export class ReportsService {
   }
 
   // ─── Finance Summary ─────────────────────────────────────────────────────
-  async getFinanceSummary(currentUser: JwtPayload) {
-    const schoolId = currentUser.schoolId!;
+  async getFinanceSummary(currentUser: JwtPayload, branchCtx?: string | null) {
+    const filter = branchFilter(currentUser, branchCtx);
     const [debtors, totalPaid, totalPending, totalOverdue] = await Promise.all([
       this.prisma.payment.findMany({
-        where: { schoolId, status: { in: ['pending', 'overdue'] } },
+        where: { ...filter, status: { in: ['pending', 'overdue'] } },
         include: { student: { select: { firstName: true, lastName: true } } },
         orderBy: { dueDate: 'asc' },
         take: 50,
       }),
       this.prisma.payment.aggregate({
-        where: { schoolId, status: 'paid' },
+        where: { ...filter, status: 'paid' },
         _sum: { amount: true },
       }),
       this.prisma.payment.aggregate({
-        where: { schoolId, status: 'pending' },
+        where: { ...filter, status: 'pending' },
         _sum: { amount: true },
       }),
       this.prisma.payment.aggregate({
-        where: { schoolId, status: 'overdue' },
+        where: { ...filter, status: 'overdue' },
         _sum: { amount: true },
       }),
     ]);
@@ -110,8 +113,9 @@ export class ReportsService {
     currentUser: JwtPayload,
     classId?: string,
     month?: string,
+    branchCtx?: string | null,
   ): Promise<Buffer> {
-    const rows = await this.getAttendanceSummary(currentUser, classId, month);
+    const rows = await this.getAttendanceSummary(currentUser, classId, month, branchCtx);
     const school = await this.prisma.school.findUnique({
       where: { id: currentUser.schoolId! },
       select: { name: true },
@@ -188,8 +192,9 @@ export class ReportsService {
     currentUser: JwtPayload,
     classId?: string,
     subjectId?: string,
+    branchCtx?: string | null,
   ): Promise<Buffer> {
-    const grades = await this.getGradesSummary(currentUser, classId, subjectId);
+    const grades = await this.getGradesSummary(currentUser, classId, subjectId, branchCtx);
     const school = await this.prisma.school.findUnique({
       where: { id: currentUser.schoolId! },
       select: { name: true },
@@ -257,8 +262,8 @@ export class ReportsService {
   }
 
   // ─── PDF: Moliya hisoboti ─────────────────────────────────────────────────
-  async generateFinancePdf(currentUser: JwtPayload): Promise<Buffer> {
-    const fin = await this.getFinanceSummary(currentUser);
+  async generateFinancePdf(currentUser: JwtPayload, branchCtx?: string | null): Promise<Buffer> {
+    const fin = await this.getFinanceSummary(currentUser, branchCtx);
     const school = await this.prisma.school.findUnique({
       where: { id: currentUser.schoolId! },
       select: { name: true },
@@ -421,11 +426,13 @@ export class ReportsService {
     attendanceThreshold = 75,
     gradeThreshold = 60,
     classId?: string,
+    branchCtx?: string | null,
   ) {
     const schoolId = currentUser.schoolId!;
+    const branchFilterWhere = branchFilter(currentUser, branchCtx);
 
     // Get all active students (with optional class filter)
-    const classWhere: any = { class: { schoolId } };
+    const classWhere: any = { class: { ...branchFilterWhere } };
     if (classId) classWhere.classId = classId;
 
     const classStudents = await this.prisma.classStudent.findMany({
@@ -517,6 +524,7 @@ export class ReportsService {
     currentUser: JwtPayload,
     studentId: string,
     quarter: number,
+    branchCtx?: string | null,
   ): Promise<Buffer> {
     const schoolId = currentUser.schoolId!;
 
@@ -535,7 +543,7 @@ export class ReportsService {
 
     const [student, school, grades, attendance] = await Promise.all([
       this.prisma.user.findFirst({
-        where: { id: studentId, schoolId },
+        where: { id: studentId, ...branchFilter(currentUser, branchCtx) },
         include: {
           studentClasses: {
             include: { class: { select: { name: true, gradeLevel: true } } },

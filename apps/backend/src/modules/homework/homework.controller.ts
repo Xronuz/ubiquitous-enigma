@@ -3,6 +3,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { HomeworkService } from './homework.service';
 import { CreateHomeworkDto, UpdateHomeworkDto, SubmitHomeworkDto, GradeSubmissionDto } from './dto/homework.dto';
 import { CurrentUser } from '@/common/decorators/current-user.decorator';
+import { BranchContext } from '@/common/decorators/branch-context.decorator';
 import { Roles } from '@/common/decorators/roles.decorator';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
@@ -17,50 +18,49 @@ export class HomeworkController {
 
   @Get()
   @Roles(
-    UserRole.SCHOOL_ADMIN,
-    UserRole.VICE_PRINCIPAL,
-    UserRole.TEACHER,
-    UserRole.CLASS_TEACHER,
-    UserRole.STUDENT,
+    UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.BRANCH_ADMIN,
+    UserRole.TEACHER, UserRole.CLASS_TEACHER, UserRole.STUDENT,
   )
   @ApiOperation({ summary: 'Uyga vazifalar ro\'yxati' })
   findAll(
     @CurrentUser() user: JwtPayload,
+    @BranchContext() branchCtx: string | null,
     @Query('classId') classId?: string,
     @Query('subjectId') subjectId?: string,
   ) {
-    return this.homeworkService.findAll(user, classId, subjectId);
+    return this.homeworkService.findAll(user, classId, subjectId, branchCtx);
   }
 
   @Get(':id')
   @Roles(
-    UserRole.SCHOOL_ADMIN,
-    UserRole.VICE_PRINCIPAL,
-    UserRole.TEACHER,
-    UserRole.CLASS_TEACHER,
-    UserRole.STUDENT,
+    UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.BRANCH_ADMIN,
+    UserRole.TEACHER, UserRole.CLASS_TEACHER, UserRole.STUDENT,
   )
   @ApiOperation({ summary: 'Uyga vazifa ma\'lumoti' })
-  findOne(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
-    return this.homeworkService.findOne(id, user);
+  findOne(
+    @Param('id') id: string,
+    @CurrentUser() user: JwtPayload,
+    @BranchContext() branchCtx: string | null,
+  ) {
+    return this.homeworkService.findOne(id, user, branchCtx);
   }
 
   @Post()
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.TEACHER, UserRole.CLASS_TEACHER)
+  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.BRANCH_ADMIN, UserRole.TEACHER, UserRole.CLASS_TEACHER)
   @ApiOperation({ summary: 'Uyga vazifa yaratish' })
   create(@Body() dto: CreateHomeworkDto, @CurrentUser() user: JwtPayload) {
     return this.homeworkService.create(dto, user);
   }
 
   @Put(':id')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.TEACHER, UserRole.CLASS_TEACHER)
+  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.BRANCH_ADMIN, UserRole.TEACHER, UserRole.CLASS_TEACHER)
   @ApiOperation({ summary: 'Uyga vazifani yangilash' })
   update(@Param('id') id: string, @Body() dto: UpdateHomeworkDto, @CurrentUser() user: JwtPayload) {
     return this.homeworkService.update(id, dto, user);
   }
 
   @Delete(':id')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.TEACHER, UserRole.CLASS_TEACHER)
+  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.BRANCH_ADMIN, UserRole.TEACHER, UserRole.CLASS_TEACHER)
   @ApiOperation({ summary: 'Uyga vazifani o\'chirish' })
   remove(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
     return this.homeworkService.remove(id, user);
@@ -78,7 +78,7 @@ export class HomeworkController {
   }
 
   @Put(':id/submissions/:submissionId/grade')
-  @Roles(UserRole.TEACHER, UserRole.CLASS_TEACHER, UserRole.VICE_PRINCIPAL, UserRole.SCHOOL_ADMIN)
+  @Roles(UserRole.TEACHER, UserRole.CLASS_TEACHER, UserRole.VICE_PRINCIPAL, UserRole.SCHOOL_ADMIN, UserRole.BRANCH_ADMIN)
   @ApiOperation({ summary: 'Topshiriqni baholash' })
   grade(
     @Param('id') homeworkId: string,
@@ -92,7 +92,11 @@ export class HomeworkController {
   @Get(':id/my-submission')
   @Roles(UserRole.STUDENT)
   @ApiOperation({ summary: 'Mening topshirig\'im' })
-  getMySubmission(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
-    return this.homeworkService.getMySubmission(id, user);
+  getMySubmission(
+    @Param('id') id: string,
+    @CurrentUser() user: JwtPayload,
+    @BranchContext() branchCtx: string | null,
+  ) {
+    return this.homeworkService.getMySubmission(id, user, branchCtx);
   }
 }

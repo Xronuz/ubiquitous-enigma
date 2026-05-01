@@ -6,12 +6,13 @@ import { RolesGuard } from '@/common/guards/roles.guard';
 import { ReportsService } from './reports.service';
 import { AnalyticsService } from './analytics.service';
 import { CurrentUser } from '@/common/decorators/current-user.decorator';
+import { BranchContext } from '@/common/decorators/branch-context.decorator';
 import { Roles } from '@/common/decorators/roles.decorator';
 import { JwtPayload, UserRole } from '@eduplatform/types';
 
 // Roles that can see cross-branch analytics
 const ANALYTICS_ROLES = [
-  UserRole.DIRECTOR, UserRole.SCHOOL_ADMIN, UserRole.VICE_PRINCIPAL, UserRole.ACCOUNTANT,
+  UserRole.DIRECTOR, UserRole.SCHOOL_ADMIN, UserRole.VICE_PRINCIPAL, UserRole.BRANCH_ADMIN, UserRole.ACCOUNTANT,
 ];
 
 @ApiTags('reports')
@@ -29,8 +30,11 @@ export class ReportsController {
   @Get('analytics/pulse')
   @Roles(...ANALYTICS_ROLES)
   @ApiOperation({ summary: 'Maktab bugungi real-vaqt ko\'rsatkichlari (Pulse)' })
-  getSchoolPulse(@CurrentUser() user: JwtPayload) {
-    return this.analyticsService.getSchoolPulse(user);
+  getSchoolPulse(
+    @CurrentUser() user: JwtPayload,
+    @BranchContext() branchCtx: string | null,
+  ) {
+    return this.analyticsService.getSchoolPulse(user, branchCtx);
   }
 
   @Get('analytics/finance')
@@ -67,8 +71,11 @@ export class ReportsController {
   @Get('analytics/alerts')
   @Roles(...ANALYTICS_ROLES)
   @ApiOperation({ summary: 'Smart Alerts — avto ogohlantirishlar' })
-  getSmartAlerts(@CurrentUser() user: JwtPayload) {
-    return this.analyticsService.getSmartAlerts(user);
+  getSmartAlerts(
+    @CurrentUser() user: JwtPayload,
+    @BranchContext() branchCtx: string | null,
+  ) {
+    return this.analyticsService.getSmartAlerts(user, branchCtx);
   }
 
   @Get('analytics/at-risk')
@@ -79,6 +86,7 @@ export class ReportsController {
   @ApiQuery({ name: 'classId',             required: false })
   getAtRiskStudents(
     @CurrentUser() user: JwtPayload,
+    @BranchContext() branchCtx: string | null,
     @Query('attendanceThreshold') att?:     string,
     @Query('gradeThreshold')      grade?:   string,
     @Query('classId')             classId?: string,
@@ -88,6 +96,7 @@ export class ReportsController {
       att   ? Number(att)   : 75,
       grade ? Number(grade) : 60,
       classId,
+      branchCtx,
     );
   }
 
@@ -130,10 +139,11 @@ export class ReportsController {
   @ApiQuery({ name: 'month',   required: false, description: 'YYYY-MM format' })
   getAttendanceSummary(
     @CurrentUser() user: JwtPayload,
+    @BranchContext() branchCtx: string | null,
     @Query('classId') classId?: string,
     @Query('month')   month?: string,
   ) {
-    return this.reportsService.getAttendanceSummary(user, classId, month);
+    return this.reportsService.getAttendanceSummary(user, classId, month, branchCtx);
   }
 
   @Get('grades')
@@ -143,17 +153,21 @@ export class ReportsController {
   @ApiQuery({ name: 'subjectId', required: false })
   getGradesSummary(
     @CurrentUser() user: JwtPayload,
+    @BranchContext() branchCtx: string | null,
     @Query('classId')   classId?: string,
     @Query('subjectId') subjectId?: string,
   ) {
-    return this.reportsService.getGradesSummary(user, classId, subjectId);
+    return this.reportsService.getGradesSummary(user, classId, subjectId, branchCtx);
   }
 
   @Get('finance')
   @Roles(UserRole.SCHOOL_ADMIN, UserRole.ACCOUNTANT)
   @ApiOperation({ summary: 'Moliyaviy xulosa (JSON)' })
-  getFinanceSummary(@CurrentUser() user: JwtPayload) {
-    return this.reportsService.getFinanceSummary(user);
+  getFinanceSummary(
+    @CurrentUser() user: JwtPayload,
+    @BranchContext() branchCtx: string | null,
+  ) {
+    return this.reportsService.getFinanceSummary(user, branchCtx);
   }
 
   // ─── PDF endpoints ─────────────────────────────────────────────────────
@@ -168,10 +182,11 @@ export class ReportsController {
   async downloadAttendancePdf(
     @CurrentUser() user: JwtPayload,
     @Res() res: Response,
+    @BranchContext() branchCtx: string | null,
     @Query('classId') classId?: string,
     @Query('month')   month?: string,
   ) {
-    const pdf = await this.reportsService.generateAttendancePdf(user, classId, month);
+    const pdf = await this.reportsService.generateAttendancePdf(user, classId, month, branchCtx);
     const filename = `davomat-${month ?? new Date().toISOString().slice(0, 7)}.pdf`;
     res.set({
       'Content-Type': 'application/pdf',
@@ -191,10 +206,11 @@ export class ReportsController {
   async downloadGradesPdf(
     @CurrentUser() user: JwtPayload,
     @Res() res: Response,
+    @BranchContext() branchCtx: string | null,
     @Query('classId')   classId?: string,
     @Query('subjectId') subjectId?: string,
   ) {
-    const pdf = await this.reportsService.generateGradesPdf(user, classId, subjectId);
+    const pdf = await this.reportsService.generateGradesPdf(user, classId, subjectId, branchCtx);
     const filename = `baholar-${new Date().toISOString().slice(0, 10)}.pdf`;
     res.set({
       'Content-Type': 'application/pdf',
@@ -213,10 +229,11 @@ export class ReportsController {
   async downloadReportCard(
     @CurrentUser() user: JwtPayload,
     @Res() res: Response,
+    @BranchContext() branchCtx: string | null,
     @Param('studentId') studentId: string,
     @Query('quarter') quarter = '1',
   ) {
-    const pdf = await this.reportsService.generateReportCard(user, studentId, Number(quarter));
+    const pdf = await this.reportsService.generateReportCard(user, studentId, Number(quarter), branchCtx);
     const filename = `guvohnoma-${quarter}-chorak-${new Date().toISOString().slice(0, 10)}.pdf`;
     res.set({
       'Content-Type': 'application/pdf',
@@ -234,8 +251,9 @@ export class ReportsController {
   async downloadFinancePdf(
     @CurrentUser() user: JwtPayload,
     @Res() res: Response,
+    @BranchContext() branchCtx: string | null,
   ) {
-    const pdf = await this.reportsService.generateFinancePdf(user);
+    const pdf = await this.reportsService.generateFinancePdf(user, branchCtx);
     const filename = `moliya-${new Date().toISOString().slice(0, 10)}.pdf`;
     res.set({
       'Content-Type': 'application/pdf',

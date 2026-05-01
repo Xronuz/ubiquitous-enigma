@@ -19,6 +19,56 @@ export class UsersService {
     private readonly auditService: AuditService,
   ) {}
 
+  /**
+   * ROLE_CREATION_MATRIX — qaysi rol qaysi rollarni yaratishi mumkin.
+   * Bu yerda "hierarhiyaga" mos ravishda ruxsatlar berilgan.
+   */
+  private readonly ROLE_CREATION_MATRIX: Record<UserRole, UserRole[]> = {
+    [UserRole.SUPER_ADMIN]: Object.values(UserRole),
+    [UserRole.DIRECTOR]: [
+      UserRole.SCHOOL_ADMIN, UserRole.VICE_PRINCIPAL, UserRole.BRANCH_ADMIN,
+      UserRole.TEACHER, UserRole.CLASS_TEACHER, UserRole.ACCOUNTANT,
+      UserRole.LIBRARIAN, UserRole.STUDENT, UserRole.PARENT,
+    ],
+    [UserRole.SCHOOL_ADMIN]: [
+      UserRole.VICE_PRINCIPAL, UserRole.BRANCH_ADMIN, UserRole.TEACHER,
+      UserRole.CLASS_TEACHER, UserRole.ACCOUNTANT, UserRole.LIBRARIAN,
+      UserRole.STUDENT, UserRole.PARENT,
+    ],
+    [UserRole.VICE_PRINCIPAL]: [
+      UserRole.BRANCH_ADMIN, UserRole.TEACHER, UserRole.CLASS_TEACHER,
+      UserRole.ACCOUNTANT, UserRole.LIBRARIAN, UserRole.STUDENT, UserRole.PARENT,
+    ],
+    [UserRole.BRANCH_ADMIN]: [
+      UserRole.TEACHER, UserRole.CLASS_TEACHER, UserRole.ACCOUNTANT,
+      UserRole.LIBRARIAN, UserRole.STUDENT, UserRole.PARENT,
+    ],
+    // Quyidagilar foydalanuvchi yaratish huquqiga ega emas
+    [UserRole.TEACHER]: [],
+    [UserRole.CLASS_TEACHER]: [],
+    [UserRole.ACCOUNTANT]: [],
+    [UserRole.LIBRARIAN]: [],
+    [UserRole.STUDENT]: [],
+    [UserRole.PARENT]: [],
+  };
+
+  /** Branch-scope talab qiluvchi rollar */
+  private readonly BRANCH_SCOPED_ROLES = new Set<UserRole>([
+    UserRole.BRANCH_ADMIN, UserRole.VICE_PRINCIPAL,
+    UserRole.TEACHER, UserRole.CLASS_TEACHER,
+    UserRole.ACCOUNTANT, UserRole.LIBRARIAN,
+    UserRole.STUDENT, UserRole.PARENT,
+  ]);
+
+  private validateRoleCreation(creatorRole: UserRole, targetRole: UserRole): void {
+    const allowed = this.ROLE_CREATION_MATRIX[creatorRole] ?? [];
+    if (!allowed.includes(targetRole)) {
+      throw new ForbiddenException(
+        `Siz "${targetRole}" rolidagi foydalanuvchi yaratish huquqiga ega emassiz`,
+      );
+    }
+  }
+
   async findAll(
     currentUser: JwtPayload,
     branchCtx: string | null = null,
@@ -76,10 +126,33 @@ export class UsersService {
     const existing = await this.prisma.user.findUnique({ where: { email: dto.email } });
     if (existing) throw new ConflictException('Bu email allaqachon ro\'yxatdan o\'tgan');
 
-    // Non-super-admin can only create users for their school
+    // 1. Role authorization check
+    this.validateRoleCreation(currentUser.role as UserRole, dto.role);
+
+    // 2. Non-super-admin can only create users for their school
     const schoolId = currentUser.isSuperAdmin
       ? (dto.schoolId ?? null)
       : currentUser.schoolId;
+
+    // 3. BranchId validation for branch-scoped roles
+    let branchId: string | null = null;
+    if (this.BRANCH_SCOPED_ROLES.has(dto.role)) {
+      if (!dto.branchId && !currentUser.branchId) {
+        throw new BadRequestException(
+          `${dto.role} rolidagi foydalanuvchi uchun branchId majburiy`,
+        );
+      }
+      // Explicit branchId or fallback to creator's branch
+      branchId = dto.branchId ?? currentUser.branchId ?? null;
+
+      // Branch admins can only create users in their own branch
+      if (currentUser.role === UserRole.BRANCH_ADMIN && branchId !== currentUser.branchId) {
+        throw new ForbiddenException('Faqat o\'z filialingiz uchun foydalanuvchi yaratish mumkin');
+      }
+    } else {
+      // School-wide roles (director, school_admin) must have null branchId
+      branchId = null;
+    }
 
     const passwordHash = await bcrypt.hash(dto.password, 12);
     const user = await this.prisma.user.create({
@@ -88,8 +161,9 @@ export class UsersService {
         lastName: dto.lastName,
         email: dto.email,
         phone: dto.phone,
-        role: dto.role as any,
+        role: dto.role,
         schoolId,
+        branchId,
         passwordHash,
       },
       select: this.userSelectFields(),
@@ -110,9 +184,29 @@ export class UsersService {
 
   async update(id: string, dto: UpdateUserDto, currentUser: JwtPayload) {
     const before = await this.findOne(id, currentUser);
+
+    // Prevent mass assignment of sensitive / security-critical fields
+    const { role, schoolId, branchId, password, ...safeDto } = dto as any;
+
+    const updateData: Record<string, any> = {};
+    if (safeDto.firstName !== undefined) updateData.firstName = safeDto.firstName;
+    if (safeDto.lastName !== undefined) updateData.lastName = safeDto.lastName;
+    if (safeDto.email !== undefined) updateData.email = safeDto.email;
+    if (safeDto.phone !== undefined) updateData.phone = safeDto.phone;
+    if (safeDto.isActive !== undefined) updateData.isActive = safeDto.isActive;
+    if (safeDto.avatarUrl !== undefined) updateData.avatarUrl = safeDto.avatarUrl;
+    if (safeDto.language !== undefined) updateData.language = safeDto.language;
+
+    // Role changes are NOT allowed via generic update — use a dedicated admin endpoint
+    if (role !== undefined) {
+      throw new ForbiddenException(
+        'Rol o\'zgartirish alohida admin endpoint orqali amalga oshiriladi',
+      );
+    }
+
     const updated = await this.prisma.user.update({
       where: { id },
-      data: dto as any,
+      data: updateData,
       select: this.userSelectFields(),
     });
 
@@ -123,8 +217,8 @@ export class UsersService {
       action: 'update',
       entity: 'User',
       entityId: id,
-      oldData: { firstName: before.firstName, lastName: before.lastName },
-      newData: dto as any,
+      oldData: { firstName: before.firstName, lastName: before.lastName, email: before.email, phone: before.phone },
+      newData: updateData,
     });
 
     return updated;
@@ -218,10 +312,14 @@ export class UsersService {
   async importFromCsv(
     csvBuffer: Buffer,
     currentUser: JwtPayload,
+    branchCtx: string | null = null,
   ): Promise<{ created: number; skipped: number; errors: string[] }> {
     if (!currentUser.schoolId) {
       throw new ForbiddenException('Maktab ID si topilmadi');
     }
+
+    // CSV import qilingan o'quvchilar uchun branchId
+    const importBranchId = branchCtx ?? currentUser.branchId ?? null;
 
     let rows: Record<string, string>[];
     try {
@@ -257,6 +355,8 @@ export class UsersService {
       const password = row['password']?.trim() || row['Parol']?.trim() || 'Edu@1234';
       const phone = row['phone']?.trim() || row['Telefon']?.trim();
       const classId = row['classId']?.trim() || row['SinfID']?.trim();
+      const rowBranchId = row['branchId']?.trim() || row['FilialID']?.trim();
+      const branchId = rowBranchId ?? importBranchId;
 
       // Majburiy maydonlar tekshirish
       if (!firstName || !lastName || !email) {
@@ -305,6 +405,7 @@ export class UsersService {
             phone: phone || null,
             role: UserRole.STUDENT,
             schoolId: currentUser.schoolId!,
+            branchId,
             isActive: true,
           },
         });

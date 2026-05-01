@@ -121,8 +121,9 @@ export default function SystemHealthPage() {
   const { data: health, isLoading: healthLoading, refetch: refetchHealth } = useQuery({
     queryKey: ['health'],
     queryFn: (): Promise<HealthStatus> =>
-      fetch(`${process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '') ?? 'http://localhost:3001'}/api/v1/health`)
-        .then(r => r.json()),
+      fetch(`${process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '') ?? 'http://localhost:3001'}/api/health`)
+        .then(r => r.json())
+        .then(body => body.data),
     refetchInterval: 30_000,
     retry: 1,
   });

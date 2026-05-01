@@ -93,7 +93,7 @@ export class ClassesService {
       data: {
         ...dto,
         schoolId: currentUser.schoolId!,
-        branchId: branchCtx ?? currentUser.branchId ?? undefined,
+        branchId: dto.branchId ?? branchCtx ?? currentUser.branchId ?? undefined,
       },
     });
     await this.invalidate(currentUser.schoolId!);
@@ -102,6 +102,39 @@ export class ClassesService {
 
   async update(id: string, dto: Partial<CreateClassDto>, currentUser: JwtPayload, branchCtx: string | null = null) {
     await this.findOne(id, currentUser, branchCtx);
+
+    // If branchId changed, backfill denormalized branchId on related models
+    if (dto.branchId !== undefined) {
+      const oldClass = await this.prisma.class.findUnique({
+        where: { id },
+        select: { branchId: true },
+      });
+      if (oldClass && oldClass.branchId !== dto.branchId) {
+        await this.prisma.$transaction([
+          this.prisma.attendance.updateMany({
+            where: { classId: id },
+            data: { branchId: dto.branchId },
+          }),
+          this.prisma.grade.updateMany({
+            where: { classId: id },
+            data: { branchId: dto.branchId },
+          }),
+          this.prisma.schedule.updateMany({
+            where: { classId: id },
+            data: { branchId: dto.branchId },
+          }),
+          this.prisma.exam.updateMany({
+            where: { classId: id },
+            data: { branchId: dto.branchId },
+          }),
+          this.prisma.homework.updateMany({
+            where: { classId: id },
+            data: { branchId: dto.branchId },
+          }),
+        ]);
+      }
+    }
+
     const result = await this.prisma.class.update({ where: { id }, data: dto });
     await this.invalidate(currentUser.schoolId!);
     return result;
@@ -143,6 +176,19 @@ export class ClassesService {
 
   async addStudent(classId: string, studentId: string, currentUser: JwtPayload, branchCtx: string | null = null) {
     await this.findOne(classId, currentUser, branchCtx);
+
+    // Verify the target user is actually a student
+    const student = await this.prisma.user.findFirst({
+      where: { id: studentId, schoolId: currentUser.schoolId! },
+      select: { role: true, firstName: true, lastName: true },
+    });
+    if (!student) throw new NotFoundException('O\'quvchi topilmadi');
+    if (student.role !== 'student') {
+      throw new BadRequestException(
+        `${student.firstName} ${student.lastName} o'quvchi emas. Uning roli: ${student.role}`,
+      );
+    }
+
     const existing = await this.prisma.classStudent.findFirst({
       where: { studentId, class: { schoolId: currentUser.schoolId! } },
       select: { classId: true, class: { select: { name: true } } },

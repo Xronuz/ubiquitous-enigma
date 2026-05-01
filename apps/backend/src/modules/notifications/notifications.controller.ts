@@ -5,6 +5,7 @@ import { RolesGuard } from '@/common/guards/roles.guard';
 import { NotificationsService, SendNotificationDto } from './notifications.service';
 import { NotificationQueueService } from './notification-queue.service';
 import { CurrentUser } from '@/common/decorators/current-user.decorator';
+import { BranchContext } from '@/common/decorators/branch-context.decorator';
 import { Roles } from '@/common/decorators/roles.decorator';
 import { JwtPayload, UserRole } from '@eduplatform/types';
 
@@ -21,8 +22,8 @@ export class NotificationsController {
   @Post()
   @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.CLASS_TEACHER, UserRole.TEACHER)
   @ApiOperation({ summary: 'Bildirishnoma yuborish (yakka)' })
-  send(@Body() dto: SendNotificationDto, @CurrentUser() user: JwtPayload) {
-    return this.notificationsService.send(dto, user);
+  send(@Body() dto: SendNotificationDto, @CurrentUser() user: JwtPayload, @BranchContext() branchCtx: string | null) {
+    return this.notificationsService.send(dto, user, branchCtx);
   }
 
   @Post('broadcast')
@@ -31,18 +32,20 @@ export class NotificationsController {
   broadcast(
     @Body() dto: { targetGroup: string; title: string; body: string },
     @CurrentUser() user: JwtPayload,
+    @BranchContext() branchCtx: string | null,
   ) {
-    return this.notificationsService.broadcast(dto, user);
+    return this.notificationsService.broadcast(dto, user, branchCtx);
   }
 
   @Get()
   @ApiOperation({ summary: 'O\'z bildirishnomalar' })
   getMyNotifications(
     @CurrentUser('sub') userId: string,
+    @BranchContext() branchCtx: string | null,
     @Query('page') page = 1,
     @Query('limit') limit = 20,
   ) {
-    return this.notificationsService.getMyNotifications(userId, +page, +limit);
+    return this.notificationsService.getMyNotifications(userId, +page, +limit, branchCtx);
   }
 
   @Put(':id/read')

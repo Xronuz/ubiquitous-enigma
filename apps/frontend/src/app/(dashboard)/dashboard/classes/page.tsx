@@ -20,6 +20,7 @@ import Link from 'next/link';
 import { PageShell, PageHeader, PCard, EmptyCard, Btn, DS } from '@/components/ui/page-ui';
 import { classesApi } from '@/lib/api/classes';
 import { usersApi } from '@/lib/api/users';
+import { branchesApi } from '@/lib/api/branches';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuthStore } from '@/store/auth.store';
 
@@ -27,7 +28,7 @@ const GRADES = Array.from({ length: 12 }, (_, i) => i + 1);
 const currentYear = new Date().getFullYear();
 const ACADEMIC_YEARS = [`${currentYear}-${currentYear + 1}`, `${currentYear - 1}-${currentYear}`];
 
-const EMPTY = { name: '', gradeLevel: '', academicYear: ACADEMIC_YEARS[0], classTeacherId: '' };
+const EMPTY = { name: '', gradeLevel: '', academicYear: ACADEMIC_YEARS[0], classTeacherId: '', branchId: '' };
 
 export default function ClassesPage() {
   const { user , activeBranchId } = useAuthStore();
@@ -50,6 +51,12 @@ export default function ClassesPage() {
     queryFn: () => usersApi.getAll({ page: 1, limit: 100 }),
     enabled: open,
   });
+  const { data: branchesData } = useQuery({
+    queryKey: ['branches', user?.schoolId],
+    queryFn: () => branchesApi.getAll(),
+    enabled: open && !!user?.schoolId && ['super_admin', 'school_admin', 'director'].includes(user?.role ?? ''),
+  });
+  const branchesList = Array.isArray(branchesData) ? branchesData : (branchesData as any)?.data ?? [];
   const teachers = (usersData?.data ?? []).filter((u: any) =>
     ['teacher', 'class_teacher'].includes(u.role),
   );
@@ -112,6 +119,7 @@ export default function ClassesPage() {
           name: form.name.trim(),
           gradeLevel: Number(form.gradeLevel),
           classTeacherId: teacherId,
+          branchId: form.branchId?.trim() || undefined,
         },
       });
     } else {
@@ -120,6 +128,7 @@ export default function ClassesPage() {
         gradeLevel: Number(form.gradeLevel),
         academicYear: form.academicYear.trim(),
         classTeacherId: teacherId as any,
+        branchId: form.branchId?.trim() || undefined,
       } as any);
     }
   };
@@ -192,7 +201,7 @@ export default function ClassesPage() {
                         <DropdownMenuItem onClick={(e) => {
                           e.stopPropagation();
                           setEditClass(cls);
-                          setForm({ name: cls.name, gradeLevel: String(cls.gradeLevel), academicYear: cls.academicYear, classTeacherId: cls.classTeacherId ?? '' });
+                          setForm({ name: cls.name, gradeLevel: String(cls.gradeLevel), academicYear: cls.academicYear, classTeacherId: cls.classTeacherId ?? '', branchId: cls.branchId ?? '' });
                           setErrors({}); setOpen(true);
                         }}>
                           <Pencil className="mr-2 h-4 w-4" /> Tahrirlash
@@ -278,6 +287,21 @@ export default function ClassesPage() {
                 </SelectContent>
               </Select>
             </div>
+
+            {branchesList.length > 0 && (
+              <div className="space-y-1.5">
+                <Label>Filial</Label>
+                <Select value={form.branchId} onValueChange={sel('branchId')}>
+                  <SelectTrigger><SelectValue placeholder="Filial tanlang..." /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Joriy filial (avtomatik)</SelectItem>
+                    {branchesList.map((b: any) => (
+                      <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
 
           <div className="flex justify-end gap-2">

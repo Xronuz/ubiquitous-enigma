@@ -24,7 +24,7 @@ const REFRESH_TOKEN_PREFIX = 'refresh:';
 const PASSWORD_RESET_PREFIX = 'pwd_reset:';
 const MAX_LOGIN_ATTEMPTS = 5;
 const LOGIN_BLOCK_TTL = 15 * 60; // 15 minutes in seconds
-const ACCESS_TOKEN_TTL = 15 * 60; // 15 minutes
+const ACCESS_TOKEN_TTL = 24 * 60 * 60; // 24 hours
 const REFRESH_TOKEN_TTL = 7 * 24 * 60 * 60; // 7 days
 const PASSWORD_RESET_TTL = 30 * 60; // 30 minutes
 

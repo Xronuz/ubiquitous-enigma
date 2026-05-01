@@ -105,7 +105,11 @@ export default function NewSchoolPage() {
     e.preventDefault();
     const e2 = validate();
     if (Object.keys(e2).length > 0) { setErrors(e2); return; }
-    mutation.mutate(form);
+    // Remove empty strings so backend @IsOptional() works correctly
+    const payload = Object.fromEntries(
+      Object.entries(form).filter(([, v]) => v !== '')
+    ) as typeof form;
+    mutation.mutate(payload);
   };
 
   return (

@@ -40,13 +40,7 @@ export class RolesGuard implements CanActivate {
     // endpoint is school-scoped (i.e. its @Roles list contains school-level roles).
     // Without schoolId the service layer would receive undefined and crash with 500.
     if (user.role === UserRole.SUPER_ADMIN) {
-      const isSchoolScoped = requiredRoles.some((r) => SCHOOL_ROLES.has(r));
-      if (isSchoolScoped && !user.schoolId) {
-        throw new BadRequestException(
-          "Super admin maktab kontekstini talab qiladigan bu endpointni ishlatish uchun " +
-          "maktabga biriktirilgan token bilan kiring yoki maktab admini rolidan foydalaning.",
-        );
-      }
+      // Super admin can access any endpoint; service layer handles isSuperAdmin branching
       return true;
     }
 

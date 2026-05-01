@@ -7,6 +7,7 @@ import {
 import { PrismaService } from '@/common/prisma/prisma.service';
 import { JwtPayload, UserRole } from '@eduplatform/types';
 import { CoinsService, COIN_RULES } from '@/modules/coins/coins.service';
+import { branchFilter } from '@/common/utils/branch-filter.util';
 
 // ─── Enums (mirror schema) ────────────────────────────────────────────────────
 
@@ -58,6 +59,7 @@ export class DisciplineService {
 
   async findAll(
     currentUser: JwtPayload,
+    branchCtx?: string | null,
     opts?: {
       studentId?: string;
       classId?: string;
@@ -72,7 +74,7 @@ export class DisciplineService {
     const limit = Math.min(100, opts?.limit ?? 20);
     const skip  = (page - 1) * limit;
 
-    const where: any = { schoolId };
+    const where: any = { ...branchFilter(currentUser, branchCtx) };
     if (opts?.studentId) where.studentId = opts.studentId;
     if (opts?.from || opts?.to) {
       where.date = {};
@@ -120,9 +122,9 @@ export class DisciplineService {
     };
   }
 
-  async getStudentHistory(studentId: string, currentUser: JwtPayload) {
+  async getStudentHistory(studentId: string, currentUser: JwtPayload, branchCtx?: string | null) {
     return this.prisma.disciplineIncident.findMany({
-      where: { studentId, schoolId: currentUser.schoolId! },
+      where: { studentId, ...branchFilter(currentUser, branchCtx) },
       include: {
         reportedBy: { select: { id: true, firstName: true, lastName: true } },
       },
@@ -130,18 +132,19 @@ export class DisciplineService {
     });
   }
 
-  async create(dto: CreateDisciplineDto, currentUser: JwtPayload) {
+  async create(dto: CreateDisciplineDto, currentUser: JwtPayload, branchCtx?: string | null) {
     const schoolId = currentUser.schoolId!;
 
-    // Verify student belongs to this school
+    // Verify student belongs to this school/branch
     const student = await this.prisma.user.findFirst({
-      where: { id: dto.studentId, schoolId, role: UserRole.STUDENT as any },
+      where: { id: dto.studentId, ...branchFilter(currentUser, branchCtx), role: UserRole.STUDENT },
     });
     if (!student) throw new NotFoundException('O\'quvchi topilmadi');
 
     const incident = await this.prisma.disciplineIncident.create({
       data: {
         schoolId,
+        branchId:     student.branchId,
         studentId:    dto.studentId,
         reportedById: currentUser.sub,
         type:         (dto.type     ?? 'other')   as any,
@@ -174,9 +177,9 @@ export class DisciplineService {
     return incident;
   }
 
-  async resolve(id: string, dto: ResolveDto, currentUser: JwtPayload) {
+  async resolve(id: string, dto: ResolveDto, currentUser: JwtPayload, branchCtx?: string | null) {
     const incident = await this.prisma.disciplineIncident.findFirst({
-      where: { id, schoolId: currentUser.schoolId! },
+      where: { id, ...branchFilter(currentUser, branchCtx) },
     });
     if (!incident) throw new NotFoundException('Intizom hodisasi topilmadi');
     if (incident.resolved) throw new ForbiddenException('Allaqachon hal qilingan');
@@ -195,9 +198,9 @@ export class DisciplineService {
     });
   }
 
-  async remove(id: string, currentUser: JwtPayload) {
+  async remove(id: string, currentUser: JwtPayload, branchCtx?: string | null) {
     const incident = await this.prisma.disciplineIncident.findFirst({
-      where: { id, schoolId: currentUser.schoolId! },
+      where: { id, ...branchFilter(currentUser, branchCtx) },
     });
     if (!incident) throw new NotFoundException('Intizom hodisasi topilmadi');
 
@@ -212,23 +215,23 @@ export class DisciplineService {
     return { message: 'O\'chirildi' };
   }
 
-  async getStats(currentUser: JwtPayload) {
-    const schoolId = currentUser.schoolId!;
+  async getStats(currentUser: JwtPayload, branchCtx?: string | null) {
+    const filter = branchFilter(currentUser, branchCtx);
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
     const [total, thisMonth, unresolved, bySeverity, byType] = await Promise.all([
-      this.prisma.disciplineIncident.count({ where: { schoolId } }),
-      this.prisma.disciplineIncident.count({ where: { schoolId, date: { gte: monthStart } } }),
-      this.prisma.disciplineIncident.count({ where: { schoolId, resolved: false } }),
+      this.prisma.disciplineIncident.count({ where: { ...filter } }),
+      this.prisma.disciplineIncident.count({ where: { ...filter, date: { gte: monthStart } } }),
+      this.prisma.disciplineIncident.count({ where: { ...filter, resolved: false } }),
       this.prisma.disciplineIncident.groupBy({
         by: ['severity'],
-        where: { schoolId },
+        where: { ...filter },
         _count: true,
       }),
       this.prisma.disciplineIncident.groupBy({
         by: ['type'],
-        where: { schoolId },
+        where: { ...filter },
         _count: true,
       }),
     ]);

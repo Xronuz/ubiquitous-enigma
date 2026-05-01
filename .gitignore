@@ -47,3 +47,7 @@ apps/backend/prisma/generated/
 # Docker volumes
 postgres-data/
 redis-data/
+
+# Claude Code worktrees
+.claude/worktrees/
+.claire/

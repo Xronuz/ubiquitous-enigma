@@ -17,7 +17,7 @@ class UpdateConfigDto implements Partial<SystemConfigMap> {
 }
 
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Controller('system-config')
+@Controller({ path: 'system-config', version: '1' })
 export class SystemConfigController {
   constructor(private readonly service: SystemConfigService) {}
 

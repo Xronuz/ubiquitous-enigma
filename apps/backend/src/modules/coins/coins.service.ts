@@ -230,9 +230,14 @@ export class CoinsService {
   async awardManual(studentId: string, amount: number, currentUser: JwtPayload) {
     const student = await this.prisma.user.findFirst({
       where:  { id: studentId, schoolId: currentUser.schoolId! },
-      select: { id: true, firstName: true, lastName: true },
+      select: { id: true, firstName: true, lastName: true, role: true },
     });
     if (!student) throw new NotFoundException('O\'quvchi topilmadi');
+    if (student.role !== 'student') {
+      throw new BadRequestException(
+        `${student.firstName} ${student.lastName} o'quvchi emas. Coin faqat o'quvchilarga berilishi mumkin`,
+      );
+    }
 
     if (amount > 0) {
       await this.earnCoins(studentId, currentUser.schoolId!, amount, 'manual_award', {

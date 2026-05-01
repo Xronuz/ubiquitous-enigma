@@ -3,6 +3,7 @@ import { PrismaService } from '@/common/prisma/prisma.service';
 import { JwtPayload } from '@eduplatform/types';
 import { EventsGateway } from '@/modules/gateway/events.gateway';
 import { NotificationQueueService } from './notification-queue.service';
+import { branchFilter } from '@/common/utils/branch-filter.util';
 
 export class SendNotificationDto {
   recipientId: string;
@@ -22,10 +23,18 @@ export class NotificationsService {
     @Optional() private readonly notificationQueue: NotificationQueueService,
   ) {}
 
-  async send(dto: SendNotificationDto, currentUser: JwtPayload) {
+  async send(dto: SendNotificationDto, currentUser: JwtPayload, branchCtx?: string | null) {
+    // Recipient branch for denormalization
+    const recipient = await this.prisma.user.findUnique({
+      where: { id: dto.recipientId },
+      select: { branchId: true },
+    });
+    const branchId = branchCtx ?? recipient?.branchId ?? null;
+
     const notification = await this.prisma.notification.create({
       data: {
         schoolId: currentUser.schoolId!,
+        branchId,
         recipientId: dto.recipientId,
         title: dto.title,
         body: dto.body,
@@ -63,17 +72,31 @@ export class NotificationsService {
     return notification;
   }
 
-  async getMyNotifications(userId: string, page = 1, limit = 20) {
+  async getMyNotifications(userId: string, page = 1, limit = 20, branchCtx?: string | null) {
     const skip = (page - 1) * limit;
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { schoolId: true, branchId: true, role: true },
+    });
+    const where: any = { recipientId: userId };
+    // For non-school-wide roles, filter notifications by branch
+    if (branchCtx) {
+      where.branchId = branchCtx;
+    } else if (user?.branchId && !['super_admin', 'school_admin', 'director'].includes(user.role)) {
+      where.OR = [
+        { branchId: user.branchId },
+        { branchId: null }, // school-wide notifications
+      ];
+    }
     const [notifications, total, unreadCount] = await this.prisma.$transaction([
       this.prisma.notification.findMany({
-        where: { recipientId: userId },
+        where,
         orderBy: { createdAt: 'desc' },
         skip,
         take: limit,
       }),
-      this.prisma.notification.count({ where: { recipientId: userId } }),
-      this.prisma.notification.count({ where: { recipientId: userId, isRead: false } }),
+      this.prisma.notification.count({ where }),
+      this.prisma.notification.count({ where: { ...where, isRead: false } }),
     ]);
     return { data: notifications, meta: { total, page, limit, unreadCount } };
   }
@@ -140,8 +163,10 @@ export class NotificationsService {
   async broadcast(
     payload: { targetGroup: string; title: string; body: string },
     currentUser: JwtPayload,
+    branchCtx?: string | null,
   ) {
     const schoolId = currentUser.schoolId!;
+    const filter = branchFilter(currentUser, branchCtx);
 
     // Maqsadli foydalanuvchilarni aniqlash
     const roleMap: Record<string, string[]> = {
@@ -156,19 +181,21 @@ export class NotificationsService {
       ? roleMap[payload.targetGroup]
       : [payload.targetGroup]; // to'g'ridan-to'g'ri rol nomi berilgan bo'lsa
 
+    const { schoolId: _, ...restFilter } = filter as any;
     const recipients = await this.prisma.user.findMany({
-      where: { schoolId, role: { in: roles as any }, isActive: true },
-      select: { id: true },
+      where: { role: { in: roles as any }, isActive: true, ...restFilter, schoolId },
+      select: { id: true, branchId: true },
     });
 
     if (recipients.length === 0) {
       return { sent: 0, message: 'Maqsadli foydalanuvchilar topilmadi' };
     }
 
-    // Toplu notification yaratish
+    // Toplu notification yaratish (denormalized branchId)
     await this.prisma.notification.createMany({
       data: recipients.map(r => ({
         schoolId,
+        branchId: r.branchId ?? null,
         recipientId: r.id,
         title: payload.title,
         body: payload.body,
@@ -194,10 +221,12 @@ export class NotificationsService {
     body: string;
     type: any;
     metadata?: any;
+    branchId?: string | null;
   }) {
     const notification = await this.prisma.notification.create({
       data: {
         schoolId: data.schoolId,
+        branchId: data.branchId ?? null,
         recipientId: data.recipientId,
         title: data.title,
         body: data.body,

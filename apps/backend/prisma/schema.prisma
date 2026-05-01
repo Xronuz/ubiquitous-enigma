@@ -14,7 +14,7 @@ enum UserRole {
   super_admin
   school_admin
   director
-  branch_admin      // Filial boshqaruvchisi — faqat o'z filialini ko'radi
+  branch_admin // Filial boshqaruvchisi — faqat o'z filialini ko'radi
   vice_principal
   teacher
   class_teacher
@@ -29,6 +29,7 @@ enum SubscriptionPlan {
   basic
   standard
   premium
+  enterprise
 }
 
 enum BillingCycle {
@@ -86,48 +87,48 @@ enum ClubRequestStatus {
 
 // ─── Course Scope (O'quv kurs ko'rinishi) ─────────────────────────────────
 enum CourseScope {
-  GLOBAL  // Barcha filiallar uchun ko'rinadigan markaziy kurs
-  LOCAL   // Faqat yaratilgan filial uchun
+  GLOBAL // Barcha filiallar uchun ko'rinadigan markaziy kurs
+  LOCAL // Faqat yaratilgan filial uchun
 }
 
 // ─── Finance Type (Maktab moliya rejimi) ──────────────────────────────────
 enum FinanceType {
-  CENTRALIZED    // Barcha filiallar bitta markaziy g'azna orqali
-  DECENTRALIZED  // Har bir filial mustaqil g'azna boshqaradi
+  CENTRALIZED // Barcha filiallar bitta markaziy g'azna orqali
+  DECENTRALIZED // Har bir filial mustaqil g'azna boshqaradi
 }
 
 // ─── Treasury Type ────────────────────────────────────────────────────────
 enum TreasuryType {
-  CASH   // Naqd pul kassasi
-  BANK   // Bank hisob raqami
+  CASH // Naqd pul kassasi
+  BANK // Bank hisob raqami
 }
 
 // ─── Financial Shift Status ───────────────────────────────────────────────
 enum ShiftStatus {
-  OPEN    // Smena ochiq (to'lovlar qabul qilinmoqda)
-  CLOSED  // Smena yopilgan (kunlik hisob-kitob tugagan)
+  OPEN // Smena ochiq (to'lovlar qabul qilinmoqda)
+  CLOSED // Smena yopilgan (kunlik hisob-kitob tugagan)
 }
 
 // ─── CRM: Lead manba (qayerdan keldi) ─────────────────────────────────────
 enum LeadSource {
-  INSTAGRAM    // Instagram reklama / DM
-  TELEGRAM     // Telegram kanal / bot
-  FACEBOOK     // Facebook reklama
-  WEBSITE      // Rasmiy sayt orqali
-  REFERRAL     // Do'st/tanish tavsiyasi
-  CALL         // Telefon qo'ng'irog'i
-  WALK_IN      // To'g'ridan-to'g'ri kelib
-  OTHER        // Boshqa manba
+  INSTAGRAM // Instagram reklama / DM
+  TELEGRAM // Telegram kanal / bot
+  FACEBOOK // Facebook reklama
+  WEBSITE // Rasmiy sayt orqali
+  REFERRAL // Do'st/tanish tavsiyasi
+  CALL // Telefon qo'ng'irog'i
+  WALK_IN // To'g'ridan-to'g'ri kelib
+  OTHER // Boshqa manba
 }
 
 // ─── CRM: Lead holati (voronka bosqichi) ───────────────────────────────────
 enum LeadStatus {
-  NEW              // Yangi lead — hali bog'lanilmagan
-  CONTACTED        // Bog'lanildi — muloqot boshlandi
-  TEST_LESSON      // Sinov darsiga keldi
-  WAITING_PAYMENT  // To'lov kutilmoqda (deyarli tayyor)
-  CONVERTED        // O'quvchiga aylantirildi ✅
-  CLOSED           // Yopildi (rad etdi / aloqa yo'q)
+  NEW // Yangi lead — hali bog'lanilmagan
+  CONTACTED // Bog'lanildi — muloqot boshlandi
+  TEST_LESSON // Sinov darsiga keldi
+  WAITING_PAYMENT // To'lov kutilmoqda (deyarli tayyor)
+  CONVERTED // O'quvchiga aylantirildi ✅
+  CLOSED // Yopildi (rad etdi / aloqa yo'q)
 }
 
 enum AttendanceStatus {
@@ -212,54 +213,54 @@ model School {
   logoUrl          String?
   isActive         Boolean          @default(true)
   subscriptionTier SubscriptionPlan @default(free)
-  financeType      FinanceType      @default(CENTRALIZED)   // Moliya rejimi
+  financeType      FinanceType      @default(CENTRALIZED) // Moliya rejimi
   timezone         String           @default("Asia/Tashkent") // IANA timezone — UTC saqlash uchun
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
 
-  users         User[]
-  classes       Class[]
-  subjects      Subject[]
-  schedules     Schedule[]
-  attendance    Attendance[]
-  grades        Grade[]
-  exams         Exam[]
-  payments      Payment[]
-  modules       SchoolModule[]
-  notifications Notification[]
-  messages      Message[]
-  conversations Conversation[]
-  auditLogs     AuditLog[]
-  subscription  Subscription?
-  feeStructures FeeStructure[]
-  menuDays      MenuDay[]
-  libraryBooks  LibraryBook[]
-  libraryLoans  LibraryLoan[]
-  homeworks        Homework[]
-  leaveRequests    LeaveRequest[]
-  staffSalaries    StaffSalary[]
-  salaryAdvances   SalaryAdvance[]
-  monthlyPayrolls  MonthlyPayroll[]
-  payrollItems     PayrollItem[]
-  academicEvents   AcademicEvent[]
+  users               User[]
+  classes             Class[]
+  subjects            Subject[]
+  schedules           Schedule[]
+  attendance          Attendance[]
+  grades              Grade[]
+  exams               Exam[]
+  payments            Payment[]
+  modules             SchoolModule[]
+  notifications       Notification[]
+  messages            Message[]
+  conversations       Conversation[]
+  auditLogs           AuditLog[]
+  subscription        Subscription?
+  feeStructures       FeeStructure[]
+  menuDays            MenuDay[]
+  libraryBooks        LibraryBook[]
+  libraryLoans        LibraryLoan[]
+  homeworks           Homework[]
+  leaveRequests       LeaveRequest[]
+  staffSalaries       StaffSalary[]
+  salaryAdvances      SalaryAdvance[]
+  monthlyPayrolls     MonthlyPayroll[]
+  payrollItems        PayrollItem[]
+  academicEvents      AcademicEvent[]
   disciplineIncidents DisciplineIncident[]
-  parentMeetings   ParentMeeting[]
-  examSessions     ExamSession[]
-  transportRoutes  TransportRoute[]
-  transportStudents TransportStudent[]
-  courses          Course[]
-  courseEnrollments CourseEnrollment[]
-  systemConfigs    SystemConfig[]
-  clubs            Club[]
-  branches         Branch[]          // Multi-branch support
-  treasuries       Treasury[]        // G'azna kassalari
-  financialShifts  FinancialShift[]  // Smena jurnali
-  rooms            Room[]            // Xonalar (filial bo'yicha)
-  courseMaterials  CourseMaterial[]  // Markaziy o'quv materiallari
-  leads            Lead[]            // CRM leadlar
-  leadComments     LeadComment[]
-  coinTransactions CoinTransaction[]
-  coinShopItems    CoinShopItem[]
+  parentMeetings      ParentMeeting[]
+  examSessions        ExamSession[]
+  transportRoutes     TransportRoute[]
+  transportStudents   TransportStudent[]
+  courses             Course[]
+  courseEnrollments   CourseEnrollment[]
+  systemConfigs       SystemConfig[]
+  clubs               Club[]
+  branches            Branch[] // Multi-branch support
+  treasuries          Treasury[] // G'azna kassalari
+  financialShifts     FinancialShift[] // Smena jurnali
+  rooms               Room[] // Xonalar (filial bo'yicha)
+  courseMaterials     CourseMaterial[] // Markaziy o'quv materiallari
+  leads               Lead[] // CRM leadlar
+  leadComments        LeadComment[]
+  coinTransactions    CoinTransaction[]
+  coinShopItems       CoinShopItem[]
 
   @@map("schools")
 }
@@ -267,35 +268,41 @@ model School {
 // ─── Branches ─────────────────────────────────────────────────────────────
 
 model Branch {
-  id          String   @id @default(uuid())
-  schoolId    String
-  name        String                    // "Chilonzor filiali", "Yunusobod filiali"
-  code        String?                   // Qisqa kod: "CHI", "YUN" (ixtiyoriy)
-  address     String?
-  phone       String?
-  email       String?
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(uuid())
+  schoolId  String
+  name      String // "Chilonzor filiali", "Yunusobod filiali"
+  code      String? // Qisqa kod: "CHI", "YUN" (ixtiyoriy)
+  address   String?
+  phone     String?
+  email     String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  school      School         @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  users       User[]
-  classes     Class[]
-  attendance  Attendance[]
-  grades      Grade[]
-  payments    Payment[]
-  leaveRequests LeaveRequest[]
-  staffSalaries StaffSalary[]
-  courses     Course[]
-  clubs       Club[]
-  transportRoutes TransportRoute[]
-  modules         BranchModule[]
-  userAssignments UserBranchAssignment[]
-  treasuries      Treasury[]
-  financialShifts FinancialShift[]
-  rooms           Room[]
-  schedules       Schedule[]
-  leads           Lead[]        // CRM leadlar (filial kesimi)
+  school              School                 @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  users               User[]
+  classes             Class[]
+  attendance          Attendance[]
+  grades              Grade[]
+  payments            Payment[]
+  leaveRequests       LeaveRequest[]
+  staffSalaries       StaffSalary[]
+  courses             Course[]
+  clubs               Club[]
+  transportRoutes     TransportRoute[]
+  modules             BranchModule[]
+  userAssignments     UserBranchAssignment[]
+  treasuries          Treasury[]
+  financialShifts     FinancialShift[]
+  rooms               Room[]
+  schedules           Schedule[]
+  leads               Lead[] // CRM leadlar (filial kesimi)
+  subjects            Subject[]
+  exams               Exam[]
+  homework            Homework[]
+  feeStructures       FeeStructure[]
+  notifications       Notification[]
+  disciplineIncidents DisciplineIncident[]
 
   @@unique([schoolId, name])
   @@index([schoolId])
@@ -309,7 +316,7 @@ model BranchModule {
   branchId   String
   moduleName ModuleName
   isEnabled  Boolean    @default(false)
-  configJson Json?                       // Filialga xos konfiguratsiya
+  configJson Json? // Filialga xos konfiguratsiya
   updatedAt  DateTime   @updatedAt
   updatedBy  String?
 
@@ -345,15 +352,15 @@ model UserBranchAssignment {
 // ─── Subscriptions ────────────────────────────────────────────────────────
 
 model Subscription {
-  id          String             @id @default(uuid())
-  schoolId    String             @unique
-  plan        SubscriptionPlan   @default(basic)
-  billingCycle BillingCycle      @default(monthly)
-  status      SubscriptionStatus @default(trial)
-  nextBilling DateTime?
-  trialEndsAt DateTime?
-  createdAt   DateTime           @default(now())
-  updatedAt   DateTime           @updatedAt
+  id           String             @id @default(uuid())
+  schoolId     String             @unique
+  plan         SubscriptionPlan   @default(basic)
+  billingCycle BillingCycle       @default(monthly)
+  status       SubscriptionStatus @default(trial)
+  nextBilling  DateTime?
+  trialEndsAt  DateTime?
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
 
   school School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
 
@@ -381,7 +388,7 @@ model SchoolModule {
 model User {
   id           String   @id @default(uuid())
   schoolId     String?
-  branchId     String?  // NULL = barcha filiallarga tegishli (director, school_admin)
+  branchId     String? // NULL = barcha filiallarga tegishli (director, school_admin)
   role         UserRole
   email        String   @unique
   phone        String?
@@ -391,61 +398,61 @@ model User {
   avatarUrl    String?
   language     Language @default(uz)
   isActive     Boolean  @default(true)
-  coins        Int      @default(0)  // Gamification: student reward coins
+  coins        Int      @default(0) // Gamification: student reward coins
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  school  School?  @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  branch  Branch?  @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  school School? @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  branch Branch? @relation(fields: [branchId], references: [id], onDelete: SetNull)
 
   // Teacher relations
-  taughtSubjects   Subject[]    @relation("TeacherSubjects")
-  classTeacherOf   Class[]      @relation("ClassTeacher")
-  scheduleSlots    Schedule[]   @relation("ScheduleTeacher")
+  taughtSubjects Subject[]  @relation("TeacherSubjects")
+  classTeacherOf Class[]    @relation("ClassTeacher")
+  scheduleSlots  Schedule[] @relation("ScheduleTeacher")
 
   // Student relations
-  studentClasses   ClassStudent[]
-  attendance       Attendance[]
-  grades           Grade[]
-  payments         Payment[]
+  studentClasses    ClassStudent[]
+  attendance        Attendance[]
+  grades            Grade[]
+  payments          Payment[]
   submittedHomework HomeworkSubmission[]
-  parentStudents   ParentStudent[] @relation("ParentUser")
-  childParents     ParentStudent[] @relation("StudentUser")
+  parentStudents    ParentStudent[]      @relation("ParentUser")
+  childParents      ParentStudent[]      @relation("StudentUser")
 
   // Common
-  sentMessages     Message[]    @relation("MessageSender")
-  receivedMessages Message[]    @relation("MessageReceiver")
-  notifications    Notification[]
-  conversationsCreated    Conversation[]              @relation("ConversationCreator")
+  sentMessages             Message[]                 @relation("MessageSender")
+  receivedMessages         Message[]                 @relation("MessageReceiver")
+  notifications            Notification[]
+  conversationsCreated     Conversation[]            @relation("ConversationCreator")
   conversationParticipants ConversationParticipant[]
-  groupMessages           GroupMessage[]              @relation("GroupMessageSender")
-  refreshTokens    RefreshToken[]
-  auditLogs        AuditLog[]
+  groupMessages            GroupMessage[]            @relation("GroupMessageSender")
+  refreshTokens            RefreshToken[]
+  auditLogs                AuditLog[]
 
   // Leave requests
   leaveRequests  LeaveRequest[]  @relation("LeaveRequests")
   leaveApprovals LeaveApproval[] @relation("LeaveApprovals")
 
   // Online exam sessions
-  examSessions   ExamSession[]   @relation("ExamSessions")
+  examSessions ExamSession[] @relation("ExamSessions")
 
   // Payroll
-  staffSalary      StaffSalary?    @relation("StaffSalary")
-  advanceRequests  SalaryAdvance[] @relation("AdvanceRequests")
-  advanceApprovals SalaryAdvance[] @relation("AdvanceApprovals")
+  staffSalary      StaffSalary?     @relation("StaffSalary")
+  advanceRequests  SalaryAdvance[]  @relation("AdvanceRequests")
+  advanceApprovals SalaryAdvance[]  @relation("AdvanceApprovals")
   payrollCreated   MonthlyPayroll[] @relation("PayrollCreator")
   payrollApproved  MonthlyPayroll[] @relation("PayrollApprover")
-  payrollItems     PayrollItem[]   @relation("PayrollItems")
-  createdEvents    AcademicEvent[] @relation("AcademicEventCreator")
+  payrollItems     PayrollItem[]    @relation("PayrollItems")
+  createdEvents    AcademicEvent[]  @relation("AcademicEventCreator")
 
   // Discipline
-  disciplineAsStudent  DisciplineIncident[] @relation("DisciplineStudent")
-  disciplineReported   DisciplineIncident[] @relation("DisciplineReporter")
+  disciplineAsStudent DisciplineIncident[] @relation("DisciplineStudent")
+  disciplineReported  DisciplineIncident[] @relation("DisciplineReporter")
 
   // Parent-Teacher Meetings
-  meetingsAsTeacher  ParentMeeting[] @relation("MeetingTeacher")
-  meetingsAsParent   ParentMeeting[] @relation("MeetingParent")
-  meetingsAsStudent  ParentMeeting[] @relation("MeetingStudent")
+  meetingsAsTeacher ParentMeeting[] @relation("MeetingTeacher")
+  meetingsAsParent  ParentMeeting[] @relation("MeetingParent")
+  meetingsAsStudent ParentMeeting[] @relation("MeetingStudent")
 
   // Transport
   transportAssignments TransportStudent[] @relation("TransportStudent")
@@ -473,13 +480,16 @@ model User {
   courseMaterials CourseMaterial[] @relation("CourseMaterialCreator")
 
   // CRM leads
-  assignedLeads   Lead[]        @relation("LeadAssignee")
-  createdLeads    Lead[]        @relation("LeadCreator")
-  leadComments    LeadComment[] @relation("LeadCommentAuthor")
+  assignedLeads Lead[]        @relation("LeadAssignee")
+  createdLeads  Lead[]        @relation("LeadCreator")
+  leadComments  LeadComment[] @relation("LeadCommentAuthor")
 
   // Gamification
   coinTransactions CoinTransaction[]
 
+  @@index([schoolId, branchId])
+  @@index([branchId])
+  @@index([schoolId, role, isActive])
   @@map("users")
 }
 
@@ -513,7 +523,7 @@ model ParentStudent {
 model Class {
   id             String   @id @default(uuid())
   schoolId       String
-  branchId       String?  // NULL = maktab umumiy sinfi (filial yo'q rejim)
+  branchId       String? // NULL = maktab umumiy sinfi (filial yo'q rejim)
   name           String
   gradeLevel     Int
   academicYear   String
@@ -532,6 +542,8 @@ model Class {
   exams        Exam[]
   homeworks    Homework[]
 
+  @@index([schoolId, branchId])
+  @@index([branchId])
   @@map("classes")
 }
 
@@ -553,12 +565,14 @@ model ClassStudent {
 model Subject {
   id        String   @id @default(uuid())
   schoolId  String
+  branchId  String? // Sinfning filiali (denormalized)
   classId   String
   name      String
   teacherId String
   createdAt DateTime @default(now())
 
   school    School     @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  branch    Branch?    @relation(fields: [branchId], references: [id], onDelete: SetNull)
   class     Class      @relation(fields: [classId], references: [id], onDelete: Cascade)
   teacher   User       @relation("TeacherSubjects", fields: [teacherId], references: [id])
   schedules Schedule[]
@@ -566,30 +580,32 @@ model Subject {
   exams     Exam[]
   homeworks Homework[]
 
+  @@index([schoolId, branchId])
+  @@index([branchId])
   @@map("subjects")
 }
 
 // ─── Schedule ─────────────────────────────────────────────────────────────
 
 model Schedule {
-  id         String    @id @default(uuid())
-  schoolId   String
-  branchId   String?   // Sinfning filiali (denormalized, konflikt tekshirish uchun)
-  classId    String
-  subjectId  String
-  teacherId  String
-  roomNumber String?   // Legacy: string xona raqami
-  roomId     String?   // FK → Room (yangi: Room modeli bo'yicha)
-  dayOfWeek  DayOfWeek
-  timeSlot   Int
-  startTime  String    // "HH:MM" — mahalliy vaqt (school.timezone)
-  endTime    String    // "HH:MM" — mahalliy vaqt (school.timezone)
+  id             String    @id @default(uuid())
+  schoolId       String
+  branchId       String? // Sinfning filiali (denormalized, konflikt tekshirish uchun)
+  classId        String
+  subjectId      String
+  teacherId      String
+  roomNumber     String? // Legacy: string xona raqami
+  roomId         String? // FK → Room (yangi: Room modeli bo'yicha)
+  dayOfWeek      DayOfWeek
+  timeSlot       Int
+  startTime      String // "HH:MM" — mahalliy vaqt (school.timezone)
+  endTime        String // "HH:MM" — mahalliy vaqt (school.timezone)
   // UTC minute offsets for cross-branch conflict detection
   // startDayMinUtc = dayOfWeek_index * 1440 + (startHour * 60 + startMin) - tzOffsetMinutes
-  startDayMinUtc Int?  // Haftaning boshidan UTC minutlar soni
-  endDayMinUtc   Int?  // Haftaning boshidan UTC minutlar soni
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
+  startDayMinUtc Int? // Haftaning boshidan UTC minutlar soni
+  endDayMinUtc   Int? // Haftaning boshidan UTC minutlar soni
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   school     School       @relation(fields: [schoolId], references: [id], onDelete: Cascade)
   branch     Branch?      @relation(fields: [branchId], references: [id], onDelete: SetNull)
@@ -610,7 +626,7 @@ model Schedule {
 model Attendance {
   id         String           @id @default(uuid())
   schoolId   String
-  branchId   String?          // Denormalized from class — tezkor filtr uchun
+  branchId   String? // Denormalized from class — tezkor filtr uchun
   classId    String
   studentId  String
   scheduleId String?
@@ -629,8 +645,9 @@ model Attendance {
   @@unique([studentId, scheduleId, date])
   @@index([classId, date])
   @@index([schoolId, date])
-  @@index([studentId])              // D-3: talaba tarixi O(1)
-  @@index([schoolId, status])       // D-3: status bo'yicha filtr O(1)
+  @@index([studentId]) // D-3: talaba tarixi O(1)
+  @@index([studentId, date])
+  @@index([schoolId, status]) // D-3: status bo'yicha filtr O(1)
   @@map("attendance")
 }
 
@@ -639,7 +656,7 @@ model Attendance {
 model Grade {
   id        String    @id @default(uuid())
   schoolId  String
-  branchId  String?   // Denormalized from class — tezkor filtr uchun
+  branchId  String? // Denormalized from class — tezkor filtr uchun
   classId   String
   studentId String
   subjectId String
@@ -659,32 +676,38 @@ model Grade {
 
   @@index([studentId, subjectId])
   @@index([classId, type])
-  @@index([schoolId, date])         // D-3: chorak/sana filtr O(1)
+  @@index([classId, date])
+  @@index([studentId, date])
+  @@index([schoolId, date]) // D-3: chorak/sana filtr O(1)
   @@map("grades")
 }
 
 // ─── Exams (Phase 2 stub) ─────────────────────────────────────────────────
 
 model Exam {
-  id           String        @id @default(uuid())
-  schoolId     String
-  classId      String
-  subjectId    String
-  title        String
-  frequency    ExamFrequency @default(on_demand)
-  maxScore     Float         @default(100)
-  scheduledAt  DateTime?
-  duration     Int?
-  isPublished  Boolean       @default(false)
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  id          String        @id @default(uuid())
+  schoolId    String
+  branchId    String? // Sinfning filiali (denormalized)
+  classId     String
+  subjectId   String
+  title       String
+  frequency   ExamFrequency @default(on_demand)
+  maxScore    Float         @default(100)
+  scheduledAt DateTime?
+  duration    Int?
+  isPublished Boolean       @default(false)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
 
   school    School         @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  branch    Branch?        @relation(fields: [branchId], references: [id], onDelete: SetNull)
   class     Class          @relation(fields: [classId], references: [id], onDelete: Cascade)
   subject   Subject        @relation(fields: [subjectId], references: [id], onDelete: Cascade)
   questions ExamQuestion[]
   sessions  ExamSession[]
 
+  @@index([schoolId, branchId])
+  @@index([branchId])
   @@map("exams")
 }
 
@@ -693,6 +716,7 @@ model Exam {
 model Homework {
   id          String   @id @default(uuid())
   schoolId    String
+  branchId    String? // Sinfning filiali (denormalized)
   classId     String
   subjectId   String
   title       String
@@ -701,10 +725,13 @@ model Homework {
   createdAt   DateTime @default(now())
 
   school      School               @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  branch      Branch?              @relation(fields: [branchId], references: [id], onDelete: SetNull)
   class       Class                @relation(fields: [classId], references: [id], onDelete: Cascade)
   subject     Subject              @relation(fields: [subjectId], references: [id], onDelete: Cascade)
   submissions HomeworkSubmission[]
 
+  @@index([schoolId, branchId])
+  @@index([branchId])
   @@map("homeworks")
 }
 
@@ -729,10 +756,10 @@ model HomeworkSubmission {
 model Payment {
   id              String          @id @default(uuid())
   schoolId        String
-  branchId        String?         // Filialga tegishli to'lov izolyatsiyasi
+  branchId        String? // Filialga tegishli to'lov izolyatsiyasi
   studentId       String
-  treasuryId      String?         // To'lov tushgan g'azna (Treasury)
-  shiftId         String?         // Qaysi smena ichida qabul qilingan
+  treasuryId      String? // To'lov tushgan g'azna (Treasury)
+  shiftId         String? // Qaysi smena ichida qabul qilingan
   amount          Float
   currency        String          @default("UZS")
   status          PaymentStatus   @default(pending)
@@ -762,6 +789,7 @@ model Payment {
 model FeeStructure {
   id           String   @id @default(uuid())
   schoolId     String
+  branchId     String? // Filialga tegishli to'lov shakli
   name         String   @db.VarChar(200)
   description  String?
   amount       Float
@@ -773,8 +801,11 @@ model FeeStructure {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  school School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  school School  @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  branch Branch? @relation(fields: [branchId], references: [id], onDelete: SetNull)
 
+  @@index([schoolId, branchId])
+  @@index([branchId])
   @@map("fee_structures")
 }
 
@@ -783,6 +814,7 @@ model FeeStructure {
 model Notification {
   id          String              @id @default(uuid())
   schoolId    String
+  branchId    String? // Filialga tegishli xabar
   recipientId String
   title       String
   body        String
@@ -791,9 +823,12 @@ model Notification {
   metadata    Json?
   createdAt   DateTime            @default(now())
 
-  school    School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  recipient User   @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+  school    School  @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  branch    Branch? @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  recipient User    @relation(fields: [recipientId], references: [id], onDelete: Cascade)
 
+  @@index([schoolId, branchId])
+  @@index([branchId])
   @@map("notifications")
 }
 
@@ -820,7 +855,7 @@ model Message {
 model Conversation {
   id          String   @id @default(uuid())
   schoolId    String
-  name        String   // Group name (required for groups)
+  name        String // Group name (required for groups)
   description String?
   createdById String
   createdAt   DateTime @default(now())
@@ -915,17 +950,17 @@ model LibraryLoan {
 // ─── Audit Log ────────────────────────────────────────────────────────────
 
 model AuditLog {
-  id         String      @id @default(uuid())
-  schoolId   String?
-  userId     String?
-  action     AuditAction
-  entity     String
-  entityId   String?
-  oldData    Json?
-  newData    Json?
-  ipAddress  String?
-  userAgent  String?
-  createdAt  DateTime    @default(now())
+  id        String      @id @default(uuid())
+  schoolId  String?
+  userId    String?
+  action    AuditAction
+  entity    String
+  entityId  String?
+  oldData   Json?
+  newData   Json?
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime    @default(now())
 
   school School? @relation(fields: [schoolId], references: [id], onDelete: SetNull)
   user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
@@ -947,7 +982,7 @@ enum LeaveStatus {
 model LeaveRequest {
   id          String      @id @default(uuid())
   schoolId    String
-  branchId    String?     // Ta'til so'rovchisi qaysi filialda
+  branchId    String? // Ta'til so'rovchisi qaysi filialda
   requesterId String
   reason      String
   startDate   DateTime    @db.Date
@@ -956,14 +991,14 @@ model LeaveRequest {
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 
-  school    School  @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  branch    Branch? @relation(fields: [branchId], references: [id], onDelete: SetNull)
-  requester User    @relation("LeaveRequests", fields: [requesterId], references: [id], onDelete: Cascade)
+  school    School          @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  branch    Branch?         @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  requester User            @relation("LeaveRequests", fields: [requesterId], references: [id], onDelete: Cascade)
   approvals LeaveApproval[]
 
-  @@index([schoolId, status])       // D-2: status filtr O(1)
-  @@index([requesterId])            // D-2: talaba/xodim so'rovlari O(1)
-  @@index([schoolId, startDate])    // D-2: sana oralig'i qidirish
+  @@index([schoolId, status]) // D-2: status filtr O(1)
+  @@index([requesterId]) // D-2: talaba/xodim so'rovlari O(1)
+  @@index([schoolId, startDate]) // D-2: sana oralig'i qidirish
   @@map("leave_requests")
 }
 
@@ -995,27 +1030,27 @@ enum AdvanceStatus {
 // ─── Tarifikatsiya Enums ───────────────────────────────────────────────────
 
 enum CalculationType {
-  fixed           // Aniq belgilangan oylik
-  tariff_based    // UZ tarif jadvaliga asoslangan
+  fixed // Aniq belgilangan oylik
+  tariff_based // UZ tarif jadvaliga asoslangan
 }
 
 enum TeacherGrade {
-  none            // Toifasiz
-  second          // 2-toifa
-  first           // 1-toifa
-  highest         // Oliy toifa
+  none // Toifasiz
+  second // 2-toifa
+  first // 1-toifa
+  highest // Oliy toifa
 }
 
 enum AcademicDegree {
   none
-  candidate       // Fan nomzodi (PhD)
-  doctor          // Fan doktori
+  candidate // Fan nomzodi (PhD)
+  doctor // Fan doktori
 }
 
 enum HonorificTitle {
   none
-  methodist               // Metodist
-  teacher_of_teachers     // O'qituvchilar o'qituvchisi
+  methodist // Metodist
+  teacher_of_teachers // O'qituvchilar o'qituvchisi
 }
 
 enum PayrollStatus {
@@ -1027,32 +1062,32 @@ enum PayrollStatus {
 model StaffSalary {
   id                   String          @id @default(uuid())
   schoolId             String
-  branchId             String?         // Maosh qaysi filial byujetidan
+  branchId             String? // Maosh qaysi filial byujetidan
   userId               String          @unique
   // ─ Hisoblash turi ─
   calculationType      CalculationType @default(fixed)
   // ─ Asosiy maosh ─
   baseSalary           Float
-  hourlyRate           Float           @default(0)  // Asosiy dars soati narxi
-  extraCurricularRate  Float           @default(0)  // To'garak soati narxi
-  degreeAllowance      Float           @default(0)  // Ilmiy daraja qo'shimchasi (oylik)
-  certificateAllowance Float           @default(0)  // Til sertifikati qo'shimchasi (oylik)
+  hourlyRate           Float           @default(0) // Asosiy dars soati narxi
+  extraCurricularRate  Float           @default(0) // To'garak soati narxi
+  degreeAllowance      Float           @default(0) // Ilmiy daraja qo'shimchasi (oylik)
+  certificateAllowance Float           @default(0) // Til sertifikati qo'shimchasi (oylik)
   currency             String          @default("UZS")
   position             String?
   startDate            DateTime        @db.Date
   isActive             Boolean         @default(true)
   // ─ Tarifikatsiya ma'lumotlari (UZ standartlari) ─
   qualificationGrade   TeacherGrade    @default(none)
-  educationLevel       String?         // secondary_specialized | higher | master | doctoral
+  educationLevel       String? // secondary_specialized | higher | master | doctoral
   workExperienceYears  Int             @default(0)
   academicDegree       AcademicDegree  @default(none)
   honorificTitle       HonorificTitle  @default(none)
-  languageCerts        Json?           // [{type: "IELTS", score: "6.5", level: "C1", expiry: "2027-01-01"}]
+  languageCerts        Json? // [{type: "IELTS", score: "6.5", level: "C1", expiry: "2027-01-01"}]
   weeklyLessonHours    Int             @default(18) // Standart 18 soat/hafta
   // ─ Hisoblangan qiymatlar (tariff_based rejimida auto-fill) ─
   computedBaseSalary   Float?
   computedHourlyRate   Float?
-  tariffBreakdownJson  Json?           // Hisob-kitob tafsilotlari
+  tariffBreakdownJson  Json? // Hisob-kitob tafsilotlari
   createdAt            DateTime        @default(now())
   updatedAt            DateTime        @updatedAt
 
@@ -1090,25 +1125,25 @@ model SalaryAdvance {
 }
 
 model MonthlyPayroll {
-  id          String        @id @default(uuid())
-  schoolId    String
-  month       Int
-  year        Int
-  status      PayrollStatus @default(draft)
-  totalGross  Float         @default(0)
-  totalNet    Float         @default(0)
-  createdById String
+  id           String        @id @default(uuid())
+  schoolId     String
+  month        Int
+  year         Int
+  status       PayrollStatus @default(draft)
+  totalGross   Float         @default(0)
+  totalNet     Float         @default(0)
+  createdById  String
   approvedById String?
-  approvedAt  DateTime?
-  paidAt      DateTime?
-  note        String?
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  approvedAt   DateTime?
+  paidAt       DateTime?
+  note         String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
 
-  school      School        @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  createdBy   User          @relation("PayrollCreator", fields: [createdById], references: [id], onDelete: Cascade)
-  approvedBy  User?         @relation("PayrollApprover", fields: [approvedById], references: [id], onDelete: SetNull)
-  items       PayrollItem[]
+  school     School        @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  createdBy  User          @relation("PayrollCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  approvedBy User?         @relation("PayrollApprover", fields: [approvedById], references: [id], onDelete: SetNull)
+  items      PayrollItem[]
 
   @@unique([schoolId, month, year])
   @@map("monthly_payrolls")
@@ -1121,8 +1156,8 @@ model PayrollItem {
   staffSalaryId         String
   userId                String
   baseSalary            Float
-  degreeAllowance       Float    @default(0)  // Snapshot from StaffSalary
-  certificateAllowance  Float    @default(0)  // Snapshot from StaffSalary
+  degreeAllowance       Float    @default(0) // Snapshot from StaffSalary
+  certificateAllowance  Float    @default(0) // Snapshot from StaffSalary
   scheduledHours        Int      @default(0)
   completedHours        Int      @default(0)
   hourlyAmount          Float    @default(0)
@@ -1149,10 +1184,10 @@ model PayrollItem {
 // ─── Online Exam Platform ────────────────────────────────────────────────────
 
 enum QuestionType {
-  multiple_choice   // Ko'p tanlovli (A, B, C, D)
-  true_false        // To'g'ri / Noto'g'ri
-  short_answer      // Qisqa javob (matn)
-  essay             // Insho / Keng javob
+  multiple_choice // Ko'p tanlovli (A, B, C, D)
+  true_false // To'g'ri / Noto'g'ri
+  short_answer // Qisqa javob (matn)
+  essay // Insho / Keng javob
 }
 
 enum SessionStatus {
@@ -1167,15 +1202,15 @@ model ExamQuestion {
   id          String       @id @default(uuid())
   examId      String
   type        QuestionType @default(multiple_choice)
-  text        String       // Savol matni
+  text        String // Savol matni
   points      Float        @default(1)
   order       Int          @default(0)
-  mediaUrl    String?      // Rasm/audio URL (ixtiyoriy)
-  explanation String?      // To'g'ri javob izohi
+  mediaUrl    String? // Rasm/audio URL (ixtiyoriy)
+  explanation String? // To'g'ri javob izohi
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 
-  exam    Exam           @relation(fields: [examId], references: [id], onDelete: Cascade)
+  exam    Exam            @relation(fields: [examId], references: [id], onDelete: Cascade)
   options ExamOption[]
   answers StudentAnswer[]
 
@@ -1184,13 +1219,13 @@ model ExamQuestion {
 }
 
 model ExamOption {
-  id         String   @id @default(uuid())
+  id         String  @id @default(uuid())
   questionId String
   text       String
-  isCorrect  Boolean  @default(false)
-  order      Int      @default(0)
+  isCorrect  Boolean @default(false)
+  order      Int     @default(0)
 
-  question ExamQuestion   @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  question ExamQuestion    @relation(fields: [questionId], references: [id], onDelete: Cascade)
   answers  StudentAnswer[]
 
   @@index([questionId])
@@ -1206,14 +1241,14 @@ model ExamSession {
   submittedAt DateTime?
   timedOutAt  DateTime?
   status      SessionStatus @default(in_progress)
-  score       Float?        // Umumiy to'plangan ball
-  percentage  Float?        // Foizda
+  score       Float? // Umumiy to'plangan ball
+  percentage  Float? // Foizda
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
-  exam    Exam          @relation(fields: [examId], references: [id], onDelete: Cascade)
-  student User          @relation("ExamSessions", fields: [studentId], references: [id], onDelete: Cascade)
-  school  School        @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  exam    Exam            @relation(fields: [examId], references: [id], onDelete: Cascade)
+  student User            @relation("ExamSessions", fields: [studentId], references: [id], onDelete: Cascade)
+  school  School          @relation(fields: [schoolId], references: [id], onDelete: Cascade)
   answers StudentAnswer[]
 
   @@unique([examId, studentId])
@@ -1225,8 +1260,8 @@ model StudentAnswer {
   id               String   @id @default(uuid())
   sessionId        String
   questionId       String
-  selectedOptionId String?  // Ko'p tanlovli va true/false uchun
-  textAnswer       String?  // Qisqa javob va insho uchun
+  selectedOptionId String? // Ko'p tanlovli va true/false uchun
+  textAnswer       String? // Qisqa javob va insho uchun
   isCorrect        Boolean?
   pointsEarned     Float    @default(0)
   createdAt        DateTime @default(now())
@@ -1261,28 +1296,28 @@ model SystemConfig {
 // ─── Academic Calendar ───────────────────────────────────────────────────────
 
 enum AcademicEventType {
-  holiday         // Ta'til
-  exam_week       // Imtihon haftasi
-  quarter_start   // Chorak boshlanishi
-  quarter_end     // Chorak tugashi
-  school_event    // Maktab tadbirи
-  meeting         // Yig'ilish
+  holiday // Ta'til
+  exam_week // Imtihon haftasi
+  quarter_start // Chorak boshlanishi
+  quarter_end // Chorak tugashi
+  school_event // Maktab tadbirи
+  meeting // Yig'ilish
   other
 }
 
 model AcademicEvent {
-  id          String             @id @default(uuid())
+  id          String            @id @default(uuid())
   schoolId    String
   title       String
   description String?
-  type        AcademicEventType  @default(other)
+  type        AcademicEventType @default(other)
   startDate   DateTime
   endDate     DateTime
-  allDay      Boolean            @default(true)
-  color       String?            // hex color for frontend calendar
+  allDay      Boolean           @default(true)
+  color       String? // hex color for frontend calendar
   createdById String
-  createdAt   DateTime           @default(now())
-  updatedAt   DateTime           @updatedAt
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
 
   school    School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
   createdBy User   @relation("AcademicEventCreator", fields: [createdById], references: [id])
@@ -1319,6 +1354,7 @@ enum DisciplineAction {
 model DisciplineIncident {
   id           String             @id @default(uuid())
   schoolId     String
+  branchId     String? // O'quvchining filiali (denormalized)
   studentId    String
   reportedById String
   type         DisciplineType     @default(other)
@@ -1332,11 +1368,14 @@ model DisciplineIncident {
   createdAt    DateTime           @default(now())
   updatedAt    DateTime           @updatedAt
 
-  school     School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  student    User   @relation("DisciplineStudent", fields: [studentId], references: [id], onDelete: Cascade)
-  reportedBy User   @relation("DisciplineReporter", fields: [reportedById], references: [id], onDelete: Cascade)
+  school     School  @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  branch     Branch? @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  student    User    @relation("DisciplineStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  reportedBy User    @relation("DisciplineReporter", fields: [reportedById], references: [id], onDelete: Cascade)
 
   @@index([schoolId, date])
+  @@index([schoolId, branchId])
+  @@index([branchId])
   @@index([studentId])
   @@map("discipline_incidents")
 }
@@ -1362,7 +1401,7 @@ model ParentMeeting {
   parentId    String
   studentId   String
   scheduledAt DateTime
-  duration    Int           @default(30)  // minutes
+  duration    Int           @default(30) // minutes
   medium      MeetingMedium @default(in_person)
   status      MeetingStatus @default(scheduled)
   agenda      String?
@@ -1384,25 +1423,25 @@ model ParentMeeting {
 // ─── Transport ───────────────────────────────────────────────────────────────
 
 model TransportRoute {
-  id             String   @id @default(uuid())
-  schoolId       String
-  branchId       String?  // Transport qaysi filialga xizmat qiladi
-  name           String
-  description    String?
-  stops          Json     @default("[]") // string[]
-  departureTime  String   // "07:30"
-  arrivalTime    String   // "08:15"
-  driverName     String?
-  driverPhone    String?
-  vehicleNumber  String?
-  capacity       Int      @default(30)
-  isActive       Boolean  @default(true)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id            String   @id @default(uuid())
+  schoolId      String
+  branchId      String? // Transport qaysi filialga xizmat qiladi
+  name          String
+  description   String?
+  stops         Json     @default("[]") // string[]
+  departureTime String // "07:30"
+  arrivalTime   String // "08:15"
+  driverName    String?
+  driverPhone   String?
+  vehicleNumber String?
+  capacity      Int      @default(30)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  school       School             @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  branch       Branch?            @relation(fields: [branchId], references: [id], onDelete: SetNull)
-  assignments  TransportStudent[]
+  school      School             @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  branch      Branch?            @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  assignments TransportStudent[]
 
   @@unique([schoolId, name])
   @@index([schoolId])
@@ -1433,12 +1472,12 @@ model TransportStudent {
 model Course {
   id          String      @id @default(uuid())
   schoolId    String
-  branchId    String?     // Qaysi filialda o'qitiladi (LOCAL uchun talab qilinadi)
-  scope       CourseScope @default(GLOBAL)  // GLOBAL = barcha filiallar, LOCAL = faqat shu filial
+  branchId    String? // Qaysi filialda o'qitiladi (LOCAL uchun talab qilinadi)
+  scope       CourseScope @default(GLOBAL) // GLOBAL = barcha filiallar, LOCAL = faqat shu filial
   name        String
   description String?
   teacherId   String?
-  duration    Int?        // weeks
+  duration    Int? // weeks
   price       Float?
   maxStudents Int         @default(30)
   isActive    Boolean     @default(true)
@@ -1447,9 +1486,9 @@ model Course {
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 
-  school      School            @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  branch      Branch?           @relation(fields: [branchId], references: [id], onDelete: SetNull)
-  teacher     User?             @relation("CourseTeacher", fields: [teacherId], references: [id])
+  school      School             @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  branch      Branch?            @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  teacher     User?              @relation("CourseTeacher", fields: [teacherId], references: [id])
   enrollments CourseEnrollment[]
   materials   CourseMaterial[]
 
@@ -1464,21 +1503,21 @@ model Course {
 
 model CourseMaterial {
   id          String   @id @default(uuid())
-  schoolId    String   // schoolId-ga bog'liq — filialga emas. Barcha filial o'qituvchilari ko'ra oladi.
+  schoolId    String // schoolId-ga bog'liq — filialga emas. Barcha filial o'qituvchilari ko'ra oladi.
   courseId    String
   title       String
   description String?
   fileUrl     String?
-  type        String   @default("document")  // document | video | link | pdf | audio
+  type        String   @default("document") // document | video | link | pdf | audio
   isPublic    Boolean  @default(true)
   sortOrder   Int      @default(0)
-  createdById String?  // Qaysi o'qituvchi qo'shgan
+  createdById String? // Qaysi o'qituvchi qo'shgan
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  school     School  @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  course     Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  createdBy  User?   @relation("CourseMaterialCreator", fields: [createdById], references: [id])
+  school    School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  course    Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  createdBy User?  @relation("CourseMaterialCreator", fields: [createdById], references: [id])
 
   @@index([schoolId])
   @@index([courseId])
@@ -1510,15 +1549,15 @@ model CourseEnrollment {
 model Club {
   id                String       @id @default(uuid())
   schoolId          String
-  branchId          String?      // Qaysi filialda ishlaydi
+  branchId          String? // Qaysi filialda ishlaydi
   name              String
   description       String?
   category          ClubCategory @default(other)
   leaderId          String
-  schedule          String?      // Display string e.g. "Chorshanba 15:00-16:00"
-  scheduleDays      DayOfWeek[]  // Structured: days of week club meets
-  scheduleStartTime String?      // "15:00"
-  scheduleEndTime   String?      // "16:00"
+  schedule          String? // Display string e.g. "Chorshanba 15:00-16:00"
+  scheduleDays      DayOfWeek[] // Structured: days of week club meets
+  scheduleStartTime String? // "15:00"
+  scheduleEndTime   String? // "16:00"
   maxMembers        Int?
   isActive          Boolean      @default(true)
   createdAt         DateTime     @default(now())
@@ -1574,17 +1613,17 @@ model ClubJoinRequest {
 model Treasury {
   id        String       @id @default(uuid())
   schoolId  String
-  branchId  String?      // null = markaziy (CENTRALIZED), SET = filial kassasi
-  name      String                     // "Asosiy kassa", "Chilonzor naqd"
+  branchId  String? // null = markaziy (CENTRALIZED), SET = filial kassasi
+  name      String // "Asosiy kassa", "Chilonzor naqd"
   type      TreasuryType @default(CASH)
-  balance   Float        @default(0)   // Hozirgi balans (UZS)
+  balance   Float        @default(0) // Hozirgi balans (UZS)
   currency  String       @default("UZS")
   isActive  Boolean      @default(true)
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt
 
-  school   School  @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  branch   Branch? @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  school School  @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  branch Branch? @relation(fields: [branchId], references: [id], onDelete: SetNull)
 
   payments        Payment[]
   financialShifts FinancialShift[]
@@ -1599,22 +1638,22 @@ model Treasury {
 // To'lov qabul qilish uchun ochiq smena bo'lishi shart.
 
 model FinancialShift {
-  id               String      @id @default(uuid())
-  schoolId         String
-  branchId         String?
-  treasuryId       String
-  openerId         String                        // Smenani ochgan xodim
-  closerId         String?                       // Smenani yopgan xodim
-  startTime        DateTime    @default(now())
-  endTime          DateTime?
-  startingBalance  Float       @default(0)       // Smena boshidagi balans
-  expectedBalance  Float?      // Hisoblangan kutilgan balans (startingBalance + to'lovlar)
-  actualBalance    Float?      // Kassir hisoblagan haqiqiy balans
-  discrepancy      Float?      // expectedBalance - actualBalance (farq)
-  status           ShiftStatus @default(OPEN)
-  notes            String?     // Kassir izohi
-  createdAt        DateTime    @default(now())
-  updatedAt        DateTime    @updatedAt
+  id              String      @id @default(uuid())
+  schoolId        String
+  branchId        String?
+  treasuryId      String
+  openerId        String // Smenani ochgan xodim
+  closerId        String? // Smenani yopgan xodim
+  startTime       DateTime    @default(now())
+  endTime         DateTime?
+  startingBalance Float       @default(0) // Smena boshidagi balans
+  expectedBalance Float? // Hisoblangan kutilgan balans (startingBalance + to'lovlar)
+  actualBalance   Float? // Kassir hisoblagan haqiqiy balans
+  discrepancy     Float? // expectedBalance - actualBalance (farq)
+  status          ShiftStatus @default(OPEN)
+  notes           String? // Kassir izohi
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
 
   school   School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
   branch   Branch?  @relation(fields: [branchId], references: [id], onDelete: SetNull)
@@ -1637,11 +1676,11 @@ model FinancialShift {
 model Room {
   id        String   @id @default(uuid())
   schoolId  String
-  branchId  String   // Required — xona har doim bitta filialga tegishli
-  name      String   // "201-xona", "Fizika lab", "Sport zal"
+  branchId  String // Required — xona har doim bitta filialga tegishli
+  name      String // "201-xona", "Fizika lab", "Sport zal"
   capacity  Int      @default(30)
-  floor     Int?     // Qavat raqami
-  type      String   @default("classroom")  // classroom | lab | hall | gym | other
+  floor     Int? // Qavat raqami
+  type      String   @default("classroom") // classroom | lab | hall | gym | other
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1671,25 +1710,25 @@ model Room {
 model Lead {
   id                 String     @id @default(uuid())
   schoolId           String
-  branchId           String?    // Qaysi filialgaa tegishli (NULL = umumiy / filial aniqlanmagan)
+  branchId           String? // Qaysi filialgaa tegishli (NULL = umumiy / filial aniqlanmagan)
   firstName          String
   lastName           String
-  phone              String     // Asosiy identifikator (duplicate tekshirish uchun)
+  phone              String // Asosiy identifikator (duplicate tekshirish uchun)
   source             LeadSource @default(OTHER)
   status             LeadStatus @default(NEW)
-  note               String?    // Qo'shimcha izoh
-  assignedToId       String?    // Mas'ul xodim (manager, reception, teacher)
-  createdById        String?    // Kimn tomonidan yaratilgan
-  convertedStudentId String?    // convertToStudent() dan keyin to'ldiriladi
-  expectedClassId    String?    // Qaysi sinfga/guruhga mo'ljallangan
-  nextContactDate    DateTime?  // Keyingi bog'lanish sanasi (reminder uchun)
+  note               String? // Qo'shimcha izoh
+  assignedToId       String? // Mas'ul xodim (manager, reception, teacher)
+  createdById        String? // Kimn tomonidan yaratilgan
+  convertedStudentId String? // convertToStudent() dan keyin to'ldiriladi
+  expectedClassId    String? // Qaysi sinfga/guruhga mo'ljallangan
+  nextContactDate    DateTime? // Keyingi bog'lanish sanasi (reminder uchun)
   createdAt          DateTime   @default(now())
   updatedAt          DateTime   @updatedAt
 
-  school     School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  branch     Branch?  @relation(fields: [branchId], references: [id], onDelete: SetNull)
-  assignedTo User?    @relation("LeadAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
-  createdBy  User?    @relation("LeadCreator",  fields: [createdById], references: [id],  onDelete: SetNull)
+  school     School  @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  branch     Branch? @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  assignedTo User?   @relation("LeadAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+  createdBy  User?   @relation("LeadCreator", fields: [createdById], references: [id], onDelete: SetNull)
 
   comments LeadComment[]
 
@@ -1708,11 +1747,11 @@ model LeadComment {
   id        String   @id @default(uuid())
   leadId    String
   schoolId  String
-  authorId  String?  // Izoh yozgan xodim
+  authorId  String? // Izoh yozgan xodim
   text      String
   createdAt DateTime @default(now())
 
-  lead   Lead   @relation(fields: [leadId],   references: [id], onDelete: Cascade)
+  lead   Lead   @relation(fields: [leadId], references: [id], onDelete: Cascade)
   school School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
   author User?  @relation("LeadCommentAuthor", fields: [authorId], references: [id], onDelete: SetNull)
 
@@ -1728,13 +1767,13 @@ model CoinTransaction {
   userId    String
   schoolId  String
   amount    Int
-  type      String   // 'earn' | 'deduct'
-  reason    String   // 'grade_excellent' | 'attendance_weekly' | 'discipline_praise' | 'manual_award' | 'discipline_warning' | 'shop_purchase'
-  balance   Int      // Tranzaksiyadan keyingi balans
+  type      String // 'earn' | 'deduct'
+  reason    String // 'grade_excellent' | 'attendance_weekly' | 'discipline_praise' | 'manual_award' | 'discipline_warning' | 'shop_purchase'
+  balance   Int // Tranzaksiyadan keyingi balans
   metadata  Json?
   createdAt DateTime @default(now())
 
-  user   User   @relation(fields: [userId],   references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   school School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
 
   @@index([userId])
@@ -1750,7 +1789,7 @@ model CoinShopItem {
   description String?
   cost        Int
   emoji       String?
-  stock       Int?     // null = cheksiz
+  stock       Int? // null = cheksiz
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

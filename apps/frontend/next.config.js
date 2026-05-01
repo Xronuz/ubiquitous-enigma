@@ -11,12 +11,20 @@ const nextConfig = {
     domains: ['localhost'],
   },
   async rewrites() {
-    return [
-      {
-        source: '/api/:path*',
-        destination: `${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api'}/:path*`,
-      },
-    ];
+    return {
+      beforeFiles: [
+        {
+          source: '/api/health',
+          destination: 'http://localhost:3001/api/health',
+        },
+      ],
+      afterFiles: [
+        {
+          source: '/api/:path*',
+          destination: `${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api/v1'}/:path*`,
+        },
+      ],
+    };
   },
 };
 

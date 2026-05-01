@@ -4,10 +4,12 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard, BookOpen, Users, TrendingUp,
-  Briefcase, Package, MessageSquare,
-  ChevronLeft, ChevronRight,
-  Calendar, GraduationCap, ClipboardList, BookMarked,
-  CalendarCheck, UserCircle, BookCheck,
+  Briefcase, Package, MessageSquare, ClipboardCheck,
+  ChevronLeft, ChevronRight, Calendar, GraduationCap,
+  ClipboardList, BookMarked, CalendarCheck, UserCircle,
+  BookCheck, School, Settings, Shield, CreditCard,
+  Wallet, BarChart3, ShoppingBag, Coins, FileText,
+  Building2, Bell, Award, Library, Bus,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -16,22 +18,18 @@ import { useAuthStore } from '@/store/auth.store';
 
 // ── Section map: child route → parent nav item ────────────────────────────────
 const SECTION_MAP: Record<string, string> = {
+  // Education
   '/dashboard/education':         '/dashboard/education',
   '/dashboard/classes':           '/dashboard/education',
   '/dashboard/schedule':          '/dashboard/schedule',
   '/dashboard/academic-calendar': '/dashboard/education',
   '/dashboard/subjects':          '/dashboard/education',
-  '/dashboard/my-class':          '/dashboard/education',
+  '/dashboard/my-class':          '/dashboard/my-class',
+
+  // Students
   '/dashboard/students':          '/dashboard/students',
-  '/dashboard/attendance':        '/dashboard/attendance',
-  '/dashboard/grades':            '/dashboard/grades',
-  '/dashboard/exams':             '/dashboard/exams',
-  '/dashboard/homework':          '/dashboard/homework',
-  '/dashboard/finance':           '/dashboard/finance',
-  '/dashboard/payments':          '/dashboard/finance',
-  '/dashboard/fee-structures':    '/dashboard/finance',
-  '/dashboard/payroll':           '/dashboard/finance',
-  '/dashboard/reports':           '/dashboard/finance',
+
+  // Staff
   '/dashboard/staff':             '/dashboard/staff',
   '/dashboard/users':             '/dashboard/staff',
   '/dashboard/branches':          '/dashboard/staff',
@@ -39,18 +37,46 @@ const SECTION_MAP: Record<string, string> = {
   '/dashboard/leave-requests':    '/dashboard/staff',
   '/dashboard/discipline':        '/dashboard/staff',
   '/dashboard/meetings':          '/dashboard/staff',
+
+  // Finance
+  '/dashboard/finance':           '/dashboard/finance',
+  '/dashboard/payments':          '/dashboard/finance',
+  '/dashboard/fee-structures':    '/dashboard/finance',
+  '/dashboard/payroll':           '/dashboard/finance',
+  '/dashboard/reports':           '/dashboard/finance',
+
+  // Resources
   '/dashboard/resources':         '/dashboard/resources',
   '/dashboard/library':           '/dashboard/resources',
   '/dashboard/learning-center':   '/dashboard/resources',
   '/dashboard/clubs':             '/dashboard/resources',
-  '/dashboard/coins':             '/dashboard/resources',
+  '/dashboard/coins':             '/dashboard/coins',
   '/dashboard/canteen':           '/dashboard/resources',
   '/dashboard/transport':         '/dashboard/resources',
+  '/dashboard/student/shop':      '/dashboard/student/shop',
+
+  // Comms
   '/dashboard/comms':             '/dashboard/comms',
   '/dashboard/messages':          '/dashboard/comms',
   '/dashboard/notifications':     '/dashboard/comms',
   '/dashboard/announcements':     '/dashboard/comms',
+
+  // Parent / Student portals
   '/dashboard/parent':            '/dashboard/parent',
+  '/dashboard/student':           '/dashboard/student',
+
+  // Super admin
+  '/dashboard/schools':           '/dashboard/schools',
+  '/dashboard/modules':           '/dashboard/schools',
+  '/dashboard/subscriptions':     '/dashboard/schools',
+  '/dashboard/audit-log':         '/dashboard/audit-log',
+  '/dashboard/settings':          '/dashboard/settings',
+
+  // Attendance / Grades / Exams / Homework (individual)
+  '/dashboard/attendance':        '/dashboard/attendance',
+  '/dashboard/grades':            '/dashboard/grades',
+  '/dashboard/exams':             '/dashboard/exams',
+  '/dashboard/homework':          '/dashboard/homework',
 };
 
 // ── Nav item type ─────────────────────────────────────────────────────────────
@@ -59,83 +85,194 @@ type NavItem = {
   href: string;
   icon: LucideIcon;
   exact?: boolean;
-  section: 'main' | 'system';
+  section: 'main' | 'system' | 'portal';
   roles?: string[]; // undefined = all roles
 };
 
 // ── Navigation config ─────────────────────────────────────────────────────────
 const NAV: NavItem[] = [
-  // ── All roles ──
+  // ═════════════════════════════════════════════════════════════════════════════
+  // ALL ROLES — Dashboard (landing varies by role, but link is always /dashboard)
+  // ═════════════════════════════════════════════════════════════════════════════
   {
     label: 'Dashboard', href: '/dashboard',
     icon: LayoutDashboard, exact: true, section: 'main',
   },
 
-  // ── Admin / Teachers ──
+  // ═════════════════════════════════════════════════════════════════════════════
+  // SUPER ADMIN — Platform-wide management
+  // ═════════════════════════════════════════════════════════════════════════════
+  {
+    label: 'Maktablar', href: '/dashboard/schools',
+    icon: School, section: 'main',
+    roles: ['super_admin'],
+  },
+  {
+    label: 'Foydalanuvchilar', href: '/dashboard/users',
+    icon: Users, section: 'main',
+    roles: ['super_admin'],
+  },
+  {
+    label: 'Audit log', href: '/dashboard/audit-log',
+    icon: Shield, section: 'main',
+    roles: ['super_admin'],
+  },
+
+  // ═════════════════════════════════════════════════════════════════════════════
+  // SCHOOL ADMIN / DIRECTOR — Full school management
+  // ═════════════════════════════════════════════════════════════════════════════
   {
     label: "Ta'lim", href: '/dashboard/education',
     icon: BookOpen, section: 'main',
-    roles: ['school_admin', 'vice_principal', 'super_admin', 'teacher', 'class_teacher'],
+    roles: ['school_admin', 'director', 'vice_principal', 'branch_admin'],
   },
   {
     label: "O'quvchilar", href: '/dashboard/students',
     icon: Users, section: 'main',
-    roles: ['school_admin', 'vice_principal', 'super_admin', 'teacher', 'class_teacher'],
+    roles: ['school_admin', 'director', 'vice_principal', 'branch_admin', 'teacher', 'class_teacher'],
+  },
+  {
+    label: 'Xodimlar', href: '/dashboard/staff',
+    icon: Briefcase, section: 'main',
+    roles: ['school_admin', 'director', 'vice_principal'],
   },
   {
     label: 'Moliya', href: '/dashboard/finance',
     icon: TrendingUp, section: 'main',
-    roles: ['school_admin', 'vice_principal', 'super_admin', 'accountant'],
+    roles: ['school_admin', 'director', 'accountant'],
   },
 
-  // ── Student-specific ──
+  // ═════════════════════════════════════════════════════════════════════════════
+  // VICE PRINCIPAL — Academic & discipline oversight
+  // ═════════════════════════════════════════════════════════════════════════════
+  {
+    label: "Ta'til so'rovlar", href: '/dashboard/leave-requests',
+    icon: FileText, section: 'main',
+    roles: ['vice_principal', 'school_admin', 'director'],
+  },
+  {
+    label: 'Intizom', href: '/dashboard/discipline',
+    icon: Shield, section: 'main',
+    roles: ['vice_principal', 'school_admin', 'director', 'branch_admin'],
+  },
+
+  // ═════════════════════════════════════════════════════════════════════════════
+  // TEACHER / CLASS_TEACHER — Academic tasks
+  // ═════════════════════════════════════════════════════════════════════════════
   {
     label: 'Dars jadvali', href: '/dashboard/schedule',
     icon: Calendar, section: 'main',
-    roles: ['student'],
+    roles: ['teacher', 'class_teacher', 'student', 'parent'],
   },
   {
     label: 'Baholar', href: '/dashboard/grades',
     icon: GraduationCap, section: 'main',
-    roles: ['student'],
+    roles: ['teacher', 'class_teacher', 'student', 'parent'],
   },
   {
     label: 'Imtihonlar', href: '/dashboard/exams',
     icon: ClipboardList, section: 'main',
-    roles: ['student'],
+    roles: ['teacher', 'class_teacher', 'student', 'parent', 'school_admin', 'director', 'vice_principal', 'branch_admin'],
   },
   {
     label: 'Uy vazifalari', href: '/dashboard/homework',
     icon: BookMarked, section: 'main',
-    roles: ['student'],
+    roles: ['teacher', 'class_teacher', 'student', 'parent', 'school_admin', 'director', 'vice_principal', 'branch_admin'],
   },
   {
     label: 'Davomat', href: '/dashboard/attendance',
     icon: CalendarCheck, section: 'main',
+    roles: ['teacher', 'class_teacher', 'student', 'parent', 'school_admin', 'director', 'vice_principal', 'branch_admin'],
+  },
+  {
+    label: 'Mening sinfim', href: '/dashboard/my-class',
+    icon: BookCheck, section: 'main',
+    roles: ['class_teacher'],
+  },
+
+  // ═════════════════════════════════════════════════════════════════════════════
+  // ACCOUNTANT — Finance only
+  // ═════════════════════════════════════════════════════════════════════════════
+  {
+    label: "To'lovlar", href: '/dashboard/payments',
+    icon: CreditCard, section: 'main',
+    roles: ['accountant', 'school_admin', 'director'],
+  },
+  {
+    label: 'Tariflar', href: '/dashboard/fee-structures',
+    icon: Wallet, section: 'main',
+    roles: ['accountant', 'school_admin', 'director'],
+  },
+  {
+    label: 'Ish haqi', href: '/dashboard/payroll',
+    icon: Award, section: 'main',
+    roles: ['accountant', 'school_admin', 'director'],
+  },
+  {
+    label: 'Hisobotlar', href: '/dashboard/reports',
+    icon: BarChart3, section: 'main',
+    roles: ['accountant', 'school_admin', 'director', 'vice_principal'],
+  },
+
+  // ═════════════════════════════════════════════════════════════════════════════
+  // STUDENT — Student portal
+  // ═════════════════════════════════════════════════════════════════════════════
+  {
+    label: "O'quvchi portal", href: '/dashboard/student',
+    icon: UserCircle, section: 'portal',
+    roles: ['student'],
+  },
+  {
+    label: 'Do\'kon', href: '/dashboard/student/shop',
+    icon: ShoppingBag, section: 'portal',
+    roles: ['student'],
+  },
+  {
+    label: 'EduCoin', href: '/dashboard/coins',
+    icon: Coins, section: 'portal',
     roles: ['student'],
   },
 
-  // ── Parent-specific ──
+  // ═════════════════════════════════════════════════════════════════════════════
+  // PARENT — Parent portal
+  // ═════════════════════════════════════════════════════════════════════════════
   {
     label: 'Farzand', href: '/dashboard/parent',
-    icon: UserCircle, section: 'main',
+    icon: UserCircle, section: 'portal',
+    roles: ['parent'],
+  },
+  {
+    label: "O'quvchi to'lovlari", href: '/dashboard/payments',
+    icon: CreditCard, section: 'portal',
     roles: ['parent'],
   },
 
-  // ── System section ──
+  // ═════════════════════════════════════════════════════════════════════════════
+  // BRANCH ADMIN — Branch-scoped management
+  // ═════════════════════════════════════════════════════════════════════════════
   {
-    label: 'Xodimlar', href: '/dashboard/staff',
-    icon: Briefcase, section: 'system',
-    roles: ['school_admin', 'vice_principal', 'super_admin'],
+    label: 'Filial xodimlari', href: '/dashboard/staff',
+    icon: Briefcase, section: 'main',
+    roles: ['branch_admin'],
   },
+
+  // ═════════════════════════════════════════════════════════════════════════════
+  // SYSTEM section — Shared resources & comms
+  // ═════════════════════════════════════════════════════════════════════════════
   {
     label: 'Resurslar', href: '/dashboard/resources',
     icon: Package, section: 'system',
-    roles: ['school_admin', 'vice_principal', 'super_admin', 'teacher', 'class_teacher', 'student', 'librarian'],
+    roles: ['school_admin', 'director', 'vice_principal', 'teacher', 'class_teacher', 'branch_admin', 'librarian'],
   },
   {
     label: 'Kommunikatsiya', href: '/dashboard/comms',
     icon: MessageSquare, section: 'system',
+    roles: ['school_admin', 'director', 'vice_principal', 'teacher', 'class_teacher', 'accountant', 'branch_admin', 'student', 'parent'],
+  },
+  {
+    label: 'Sozlamalar', href: '/dashboard/settings',
+    icon: Settings, section: 'system',
+    roles: ['school_admin', 'director', 'super_admin'],
   },
 ];
 
@@ -221,6 +358,7 @@ export function Sidebar() {
   );
 
   const MAIN_ITEMS   = visibleNav.filter(n => n.section === 'main');
+  const PORTAL_ITEMS = visibleNav.filter(n => n.section === 'portal');
   const SYSTEM_ITEMS = visibleNav.filter(n => n.section === 'system');
 
   return (
@@ -266,14 +404,33 @@ export function Sidebar() {
 
       {/* Nav */}
       <nav className="flex flex-1 flex-col overflow-y-auto overflow-x-hidden px-2.5 pb-2">
-        <SectionLabel label="Asosiy" expanded={expanded} />
-        <div className="flex flex-col gap-0.5">
-          {MAIN_ITEMS.map((item) => {
-            const active = item.exact ? pathname === item.href : activeSection === item.href;
-            return <NavLink key={item.href} item={item} active={active} expanded={expanded} />;
-          })}
-        </div>
+        {/* Main section */}
+        {MAIN_ITEMS.length > 0 && (
+          <>
+            <SectionLabel label="Asosiy" expanded={expanded} />
+            <div className="flex flex-col gap-0.5">
+              {MAIN_ITEMS.map((item) => {
+                const active = item.exact ? pathname === item.href : activeSection === item.href;
+                return <NavLink key={item.href} item={item} active={active} expanded={expanded} />;
+              })}
+            </div>
+          </>
+        )}
 
+        {/* Portal section (student / parent) */}
+        {PORTAL_ITEMS.length > 0 && (
+          <>
+            <SectionLabel label="Mening bo'limim" expanded={expanded} />
+            <div className="flex flex-col gap-0.5">
+              {PORTAL_ITEMS.map((item) => {
+                const active = item.exact ? pathname === item.href : activeSection === item.href;
+                return <NavLink key={item.href} item={item} active={active} expanded={expanded} />;
+              })}
+            </div>
+          </>
+        )}
+
+        {/* System section */}
         {SYSTEM_ITEMS.length > 0 && (
           <>
             <SectionLabel label="Tizim" expanded={expanded} />

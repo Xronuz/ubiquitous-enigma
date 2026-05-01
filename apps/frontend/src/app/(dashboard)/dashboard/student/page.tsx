@@ -21,6 +21,8 @@ import {
   Award,
   Target,
   Download,
+  Coins,
+  ShoppingBag,
 } from 'lucide-react';
 import {
   Card,
@@ -45,6 +47,7 @@ import {
 import { useAuthStore } from '@/store/auth.store';
 import { apiClient } from '@/lib/api/client';
 import { examsApi } from '@/lib/api/exams';
+import { coinsApi } from '@/lib/api/coins';
 import { UserRole, GradeType, AttendanceStatus, DayOfWeek } from '@eduplatform/types';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -883,6 +886,12 @@ export default function StudentPortalPage() {
   const studentId = user?.id ?? '';
 
   // Fetch all data for stat cards
+  const { data: coinsData, isLoading: coinsLoading } = useQuery({
+    queryKey: ['coins', 'balance', studentId],
+    queryFn: () => coinsApi.getBalance(),
+    enabled: !!studentId,
+  });
+
   const { data: gradesData, isLoading: gradesLoading } = useQuery<GradesResponse>({
     queryKey: ['grades', 'student', studentId],
     queryFn: async () => {
@@ -946,7 +955,7 @@ export default function StudentPortalPage() {
     homeworkData?.filter((hw) => !hw.submission && !isPastDue(hw.dueDate)).length ?? 0;
 
   const isStatsLoading =
-    gradesLoading || scheduleLoading || homeworkLoading || attendanceLoading;
+    gradesLoading || scheduleLoading || homeworkLoading || attendanceLoading || coinsLoading;
 
   // Don't render if not a student
   if (user && user.role !== UserRole.STUDENT) {
@@ -971,6 +980,14 @@ export default function StudentPortalPage() {
           <Button
             variant="outline"
             size="sm"
+            onClick={() => router.push('/dashboard/student/shop')}
+            className="hidden sm:flex"
+          >
+            <ShoppingBag className="mr-1.5 h-4 w-4" /> Do'kon
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
             onClick={handleDownloadReportCard}
             disabled={downloadingPdf}
             className="hidden sm:flex"
@@ -989,7 +1006,7 @@ export default function StudentPortalPage() {
       </div>
 
       {/* Stat cards */}
-      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
         {/* Today's lessons */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -1085,6 +1102,31 @@ export default function StudentPortalPage() {
               <>
                 <div className="text-2xl font-bold">{unpaidHomework}</div>
                 <p className="text-xs text-muted-foreground mt-0.5">ta topshirish kerak</p>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* EduCoin balance */}
+        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => router.push('/dashboard/student/shop')}>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              EduCoin balans
+            </CardTitle>
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-yellow-100">
+              <Coins className="h-4 w-4 text-yellow-600" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            {isStatsLoading ? (
+              <>
+                <Skeleton className="h-8 w-14 mb-1" />
+                <Skeleton className="h-3 w-20" />
+              </>
+            ) : (
+              <>
+                <div className="text-2xl font-bold">{coinsData?.coins ?? 0}</div>
+                <p className="text-xs text-muted-foreground mt-0.5">Do'konga o'tish →</p>
               </>
             )}
           </CardContent>

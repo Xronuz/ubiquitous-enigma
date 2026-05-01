@@ -6,6 +6,7 @@ import { JwtPayload } from '@eduplatform/types';
 import { CreateExamDto, UpdateExamDto } from './dto/create-exam.dto';
 import { AuditService } from '@/common/audit/audit.service';
 import { EventsGateway } from '@/modules/gateway/events.gateway';
+import { branchFilter } from '@/common/utils/branch-filter.util';
 
 export class BulkResultItemDto {
   @IsUUID()
@@ -56,8 +57,8 @@ export class ExamsService {
     @Optional() private readonly eventsGateway: EventsGateway,
   ) {}
 
-  async findAll(currentUser: JwtPayload, classId?: string, subjectId?: string) {
-    const where: any = { schoolId: currentUser.schoolId! };
+  async findAll(currentUser: JwtPayload, classId?: string, subjectId?: string, branchCtx?: string | null) {
+    const where: any = { ...branchFilter(currentUser, branchCtx) };
     if (classId) where.classId = classId;
     if (subjectId) where.subjectId = subjectId;
 
@@ -71,9 +72,9 @@ export class ExamsService {
     });
   }
 
-  async findOne(id: string, currentUser: JwtPayload) {
+  async findOne(id: string, currentUser: JwtPayload, branchCtx?: string | null) {
     const exam = await this.prisma.exam.findFirst({
-      where: { id, schoolId: currentUser.schoolId! },
+      where: { id, ...branchFilter(currentUser, branchCtx) },
       include: {
         class: { select: { id: true, name: true } },
         subject: { select: { id: true, name: true } },
@@ -84,12 +85,18 @@ export class ExamsService {
   }
 
   async create(dto: CreateExamDto, currentUser: JwtPayload) {
+    // Derive branchId from the selected class
+    const cls = await this.prisma.class.findFirst({
+      where: { id: dto.classId, schoolId: currentUser.schoolId! },
+      select: { branchId: true },
+    });
     const exam = await this.prisma.exam.create({
       data: {
         ...dto,
         scheduledAt: new Date(dto.scheduledAt),
         frequency: dto.frequency as any,
         schoolId: currentUser.schoolId!,
+        branchId: cls?.branchId ?? null,
         isPublished: false,
       },
       include: {
@@ -111,7 +118,7 @@ export class ExamsService {
   }
 
   async update(id: string, dto: UpdateExamDto, currentUser: JwtPayload) {
-    const exam = await this.prisma.exam.findFirst({ where: { id, schoolId: currentUser.schoolId! } });
+    const exam = await this.prisma.exam.findFirst({ where: { id, ...branchFilter(currentUser) } });
     if (!exam) throw new NotFoundException('Imtihon topilmadi');
 
     const updated = await this.prisma.exam.update({
@@ -141,7 +148,7 @@ export class ExamsService {
   }
 
   async remove(id: string, currentUser: JwtPayload) {
-    const exam = await this.prisma.exam.findFirst({ where: { id, schoolId: currentUser.schoolId! } });
+    const exam = await this.prisma.exam.findFirst({ where: { id, ...branchFilter(currentUser) } });
     if (!exam) throw new NotFoundException('Imtihon topilmadi');
     await this.prisma.exam.delete({ where: { id } });
 
@@ -158,7 +165,7 @@ export class ExamsService {
   }
 
   async publish(id: string, currentUser: JwtPayload) {
-    const exam = await this.prisma.exam.findFirst({ where: { id, schoolId: currentUser.schoolId! } });
+    const exam = await this.prisma.exam.findFirst({ where: { id, ...branchFilter(currentUser) } });
     if (!exam) throw new NotFoundException('Imtihon topilmadi');
 
     return this.prisma.exam.update({

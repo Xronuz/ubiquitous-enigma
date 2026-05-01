@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Building2, Plus, Search, MoreVertical, Settings,
-  Users, CheckCircle2, XCircle, Globe, Layers,
+  Users, CheckCircle2, XCircle, Globe, Layers, AlertTriangle,
 } from 'lucide-react';
 import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
@@ -36,7 +36,7 @@ export default function SchoolsPage() {
 
   const queryClient = useQueryClient();
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey: ['schools', page, search],
     queryFn: () => superAdminApi.getSchools({ page, limit: 15, search: search || undefined }),
   });
@@ -109,6 +109,21 @@ export default function SchoolsPage() {
         <div className="space-y-3">
           {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-20 rounded-xl" />)}
         </div>
+      ) : error ? (
+        <Card>
+          <CardContent className="py-16 text-center">
+            <AlertTriangle className="mx-auto mb-3 h-12 w-12 text-destructive/40" />
+            <p className="text-muted-foreground">Ma\'lumotlarni yuklashda xatolik yuz berdi</p>
+            <p className="text-sm text-destructive mt-1">{(error as any)?.response?.data?.message ?? (error as Error)?.message}</p>
+            <Button
+              variant="outline"
+              className="mt-4"
+              onClick={() => queryClient.invalidateQueries({ queryKey: ['schools'] })}
+            >
+              Qayta yuklash
+            </Button>
+          </CardContent>
+        </Card>
       ) : schools.length === 0 ? (
         <Card>
           <CardContent className="py-16 text-center">

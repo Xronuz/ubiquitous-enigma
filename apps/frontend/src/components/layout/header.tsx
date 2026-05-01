@@ -24,6 +24,7 @@ import { HeaderActionsSlot } from '@/lib/header-actions-context';
 const ROLE_COLORS: Record<string, string> = {
   director:       'ring-violet-400',
   school_admin:   'ring-blue-400',
+  branch_admin:   'ring-orange-400',
   vice_principal: 'ring-indigo-400',
   teacher:        'ring-emerald-400',
   class_teacher:  'ring-emerald-400',
@@ -38,12 +39,13 @@ export function Header() {
   const router = useRouter();
   const { toast } = useToast();
   const { theme, setTheme } = useTheme();
-  const { user, logout, refreshToken } = useAuthStore();
+  const { user, logout } = useAuthStore();
 
   const handleLogout = async () => {
-    try { if (refreshToken) await authApi.logout(refreshToken); } catch { /* ignore */ }
+    try { await authApi.logout(); } catch { /* ignore */ }
     logout();
-    router.push('/login');
+    // Full page reload so middleware runs and clears any stale cookie state
+    window.location.href = '/login';
   };
 
   const ringColor = user ? (ROLE_COLORS[user.role] ?? 'ring-emerald-500') : 'ring-emerald-500';
