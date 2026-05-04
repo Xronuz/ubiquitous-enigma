@@ -176,8 +176,18 @@ export class AuthService {
    */
   async switchBranch(dto: SwitchBranchDto, currentUser: JwtPayload): Promise<TokenPair> {
     const targetBranchId = dto.branchId;
+
+    // School-wide view: faqat director va super_admin uchun ruxsat
     if (!targetBranchId) {
-      throw new BadRequestException('Filial ID majburiy');
+      if (currentUser.role !== UserRole.SUPER_ADMIN && currentUser.role !== UserRole.DIRECTOR) {
+        throw new ForbiddenException('Barcha filiallarni ko\'rish huquqi faqat director/super_admin uchun');
+      }
+      const user = await this.prisma.user.findUnique({
+        where: { id: currentUser.sub, isActive: true },
+        select: { id: true, email: true, role: true, schoolId: true, branchId: true },
+      });
+      if (!user) throw new UnauthorizedException('Foydalanuvchi topilmadi');
+      return this.generateTokens({ ...user, branchId: null });
     }
 
     const branch = await this.prisma.branch.findUnique({
