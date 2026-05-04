@@ -192,7 +192,7 @@ export class NotificationsService {
     await this.prisma.notification.createMany({
       data: recipients.map(r => ({
         schoolId,
-        branchId: r.branchId ?? null,
+        branchId: r.branchId || currentUser.branchId!,
         recipientId: r.id,
         title: payload.title,
         body: payload.body,

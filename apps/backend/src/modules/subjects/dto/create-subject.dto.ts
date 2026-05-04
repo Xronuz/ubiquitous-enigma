@@ -1,4 +1,4 @@
-import { IsString, IsUUID, IsOptional, MaxLength } from 'class-validator';
+import { IsString, IsUUID, IsOptional, MaxLength, IsArray } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateSubjectDto {
@@ -7,9 +7,16 @@ export class CreateSubjectDto {
   @MaxLength(100)
   name: string;
 
-  @ApiProperty()
+  @ApiPropertyOptional()
+  @IsOptional()
   @IsUUID()
-  classId: string;
+  classId?: string;
+
+  @ApiPropertyOptional({ type: [String], description: 'Bir nechta sinf IDlari (classId bilan birga ishlatilmaydi)' })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  classIds?: string[];
 
   @ApiProperty()
   @IsUUID()

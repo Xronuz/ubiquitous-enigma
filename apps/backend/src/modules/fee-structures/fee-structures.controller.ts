@@ -15,7 +15,7 @@ export class FeeStructuresController {
   constructor(private readonly feeStructuresService: FeeStructuresService) {}
 
   @Get()
-  @Roles(UserRole.DIRECTOR, UserRole.ACCOUNTANT, UserRole.VICE_PRINCIPAL)
+  @Roles(UserRole.DIRECTOR, UserRole.ACCOUNTANT, UserRole.VICE_PRINCIPAL, UserRole.BRANCH_ADMIN)
   @ApiOperation({ summary: 'To\'lov tartiblari ro\'yxati' })
   findAll(
     @CurrentUser() user: JwtPayload,
@@ -25,7 +25,7 @@ export class FeeStructuresController {
   }
 
   @Get(':id')
-  @Roles(UserRole.DIRECTOR, UserRole.ACCOUNTANT, UserRole.VICE_PRINCIPAL)
+  @Roles(UserRole.DIRECTOR, UserRole.ACCOUNTANT, UserRole.VICE_PRINCIPAL, UserRole.BRANCH_ADMIN)
   @ApiOperation({ summary: 'To\'lov tartibi ma\'lumoti' })
   findOne(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
     return this.feeStructuresService.findOne(id, user);

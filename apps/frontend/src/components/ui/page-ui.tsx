@@ -135,7 +135,7 @@ interface BtnProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   asChild?: boolean;
 }
 export function Btn({
-  variant = 'secondary', size = 'md', icon, loading, children, className, disabled, ...rest
+  variant = 'secondary', size = 'md', icon, loading, children, className, disabled, asChild: _asChild, ...rest
 }: BtnProps) {
   const base = 'inline-flex items-center justify-center gap-2 font-semibold rounded-[14px] transition-all duration-150 select-none';
   const sizes = { sm: 'h-8 px-3 text-[12px]', md: 'h-[42px] px-4 text-[13px]', lg: 'h-12 px-6 text-[14px]' };

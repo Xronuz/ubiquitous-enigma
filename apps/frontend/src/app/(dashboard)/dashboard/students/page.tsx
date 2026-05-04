@@ -14,10 +14,10 @@ import ExamsPage      from '../exams/page';
 import HomeworkPage   from '../homework/page';
 
 const TABS = [
-  { id: 'attendance', label: 'Davomat',      roles: ['director', 'vice_principal', 'teacher', 'class_teacher'] },
-  { id: 'grades',     label: 'Baholar',      roles: ['director', 'vice_principal', 'teacher', 'class_teacher'] },
-  { id: 'exams',      label: 'Imtihonlar',   roles: ['director', 'vice_principal', 'teacher', 'class_teacher'] },
-  { id: 'homework',   label: 'Uy vazifalari',roles: ['director', 'vice_principal', 'teacher', 'class_teacher'] },
+  { id: 'attendance', label: 'Davomat',      roles: ['director', 'vice_principal', 'teacher', 'class_teacher', 'branch_admin'] },
+  { id: 'grades',     label: 'Baholar',      roles: ['director', 'vice_principal', 'teacher', 'class_teacher', 'branch_admin'] },
+  { id: 'exams',      label: 'Imtihonlar',   roles: ['director', 'vice_principal', 'teacher', 'class_teacher', 'branch_admin'] },
+  { id: 'homework',   label: 'Uy vazifalari',roles: ['director', 'vice_principal', 'teacher', 'class_teacher', 'branch_admin'] },
 ];
 
 const TAB_ACTIONS: Record<string, React.ReactNode> = {

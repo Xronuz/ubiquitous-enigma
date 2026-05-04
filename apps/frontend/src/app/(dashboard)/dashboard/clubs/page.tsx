@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/store/auth.store';
 import { clubsApi, ClubCategory, ClubJoinRequest } from '@/lib/api/clubs';
+import { subjectsApi } from '@/lib/api/subjects';
 import { useConfirm } from '@/store/confirm.store';
 import { usersApi } from '@/lib/api/users';
 import {
@@ -57,7 +58,12 @@ function getCatConfig(cat: ClubCategory) {
 
 const EMPTY_FORM = {
   name: '', description: '', category: 'other' as ClubCategory,
-  leaderId: '', schedule: '', maxMembers: '',
+  leaderId: '', subjectId: '', schedule: '', scheduleDays: [] as string[],
+  scheduleStartTime: '', scheduleEndTime: '', maxMembers: '',
+};
+
+const DAY_LABELS: Record<string, string> = {
+  monday: 'Du', tuesday: 'Se', wednesday: 'Ch', thursday: 'Pa', friday: 'Ju', saturday: 'Sh', sunday: 'Ya',
 };
 
 function ClubFormDialog({ open, onClose, editData }: { open: boolean; onClose: () => void; editData?: any }) {
@@ -65,7 +71,18 @@ function ClubFormDialog({ open, onClose, editData }: { open: boolean; onClose: (
   const qc = useQueryClient();
 
   const [form, setForm] = useState(() => editData
-    ? { name: editData.name, description: editData.description ?? '', category: editData.category as ClubCategory, leaderId: editData.leaderId, schedule: editData.schedule ?? '', maxMembers: editData.maxMembers?.toString() ?? '' }
+    ? {
+        name: editData.name,
+        description: editData.description ?? '',
+        category: editData.category as ClubCategory,
+        leaderId: editData.leaderId,
+        subjectId: editData.subjectId ?? '',
+        schedule: editData.schedule ?? '',
+        scheduleDays: editData.scheduleDays ?? [],
+        scheduleStartTime: editData.scheduleStartTime ?? '',
+        scheduleEndTime: editData.scheduleEndTime ?? '',
+        maxMembers: editData.maxMembers?.toString() ?? '',
+      }
     : EMPTY_FORM,
   );
 
@@ -77,10 +94,35 @@ function ClubFormDialog({ open, onClose, editData }: { open: boolean; onClose: (
   });
   const teachers = (usersData?.data ?? []).filter((u: any) => ['teacher', 'class_teacher'].includes(u.role));
 
+  const { data: subjectsData } = useQuery({
+    queryKey: ['subjects'],
+    queryFn: () => subjectsApi.getAll(),
+    enabled: open,
+    staleTime: 5 * 60_000,
+  });
+  const subjects = Array.isArray(subjectsData) ? subjectsData : (subjectsData as any)?.data ?? [];
+
   const mutation = useMutation({
     mutationFn: () => {
-      const payload = { ...form, maxMembers: form.maxMembers ? Number(form.maxMembers) : undefined };
-      return editData ? clubsApi.update(editData.id, payload) : clubsApi.create(payload as any);
+      const scheduleDays = form.scheduleDays.length > 0 ? form.scheduleDays : undefined;
+      const scheduleStartTime = form.scheduleStartTime || undefined;
+      const scheduleEndTime = form.scheduleEndTime || undefined;
+      const schedule = scheduleDays && scheduleStartTime && scheduleEndTime
+        ? `${scheduleDays.map((d: string) => DAY_LABELS[d] ?? d).join(', ')} ${scheduleStartTime}-${scheduleEndTime}`
+        : form.schedule || undefined;
+      const payload: any = {
+        name: form.name,
+        description: form.description || undefined,
+        category: form.category,
+        leaderId: form.leaderId,
+        subjectId: form.subjectId || undefined,
+        schedule,
+        ...(scheduleDays ? { scheduleDays } : {}),
+        ...(scheduleStartTime ? { scheduleStartTime } : {}),
+        ...(scheduleEndTime ? { scheduleEndTime } : {}),
+        maxMembers: form.maxMembers ? Number(form.maxMembers) : undefined,
+      };
+      return editData ? clubsApi.update(editData.id, payload) : clubsApi.create(payload);
     },
     onSuccess: () => {
       toast({ title: editData ? 'To\'garak yangilandi ✓' : 'To\'garak yaratildi ✓' });
@@ -93,7 +135,24 @@ function ClubFormDialog({ open, onClose, editData }: { open: boolean; onClose: (
     },
   });
 
-  const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }));
+  const set = (k: string, v: string | string[]) => setForm(f => ({ ...f, [k]: v }));
+  const toggleDay = (day: string) => {
+    setForm(f => ({
+      ...f,
+      scheduleDays: f.scheduleDays.includes(day)
+        ? f.scheduleDays.filter((d: string) => d !== day)
+        : [...f.scheduleDays, day],
+    }));
+  };
+
+  const handleSubjectChange = (subjectId: string) => {
+    const subject = subjects.find((s: any) => s.id === subjectId);
+    setForm(f => ({
+      ...f,
+      subjectId,
+      leaderId: subject?.teacher?.id ?? f.leaderId,
+    }));
+  };
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -128,6 +187,17 @@ function ClubFormDialog({ open, onClose, editData }: { open: boolean; onClose: (
             </div>
           </div>
           <div className="space-y-1">
+            <Label>Fan (ixtiyoriy)</Label>
+            <Select value={form.subjectId} onValueChange={handleSubjectChange}>
+              <SelectTrigger><SelectValue placeholder="Fan tanlang..." /></SelectTrigger>
+              <SelectContent>
+                {subjects.map((s: any) => (
+                  <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1">
             <Label>Rahbar o'qituvchi *</Label>
             <Select value={form.leaderId} onValueChange={v => set('leaderId', v)}>
               <SelectTrigger><SelectValue placeholder="O'qituvchini tanlang" /></SelectTrigger>
@@ -138,9 +208,44 @@ function ClubFormDialog({ open, onClose, editData }: { open: boolean; onClose: (
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-1">
-            <Label>Dars vaqti</Label>
-            <Input value={form.schedule} onChange={e => set('schedule', e.target.value)} placeholder="Masalan: Chorshanba 15:00-16:00" />
+
+          {/* Structured schedule */}
+          <div className="space-y-2 rounded-lg border p-3">
+            <Label className="text-sm font-medium">Dars jadvali</Label>
+            <div className="flex flex-wrap gap-1.5">
+              {Object.entries(DAY_LABELS).map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => toggleDay(value)}
+                  className={`h-8 w-8 rounded-md text-xs font-medium transition-colors ${
+                    form.scheduleDays.includes(value)
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-muted text-muted-foreground hover:bg-accent'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs">Boshlanish</Label>
+                <Input
+                  type="time"
+                  value={form.scheduleStartTime}
+                  onChange={e => set('scheduleStartTime', e.target.value)}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Tugash</Label>
+                <Input
+                  type="time"
+                  value={form.scheduleEndTime}
+                  onChange={e => set('scheduleEndTime', e.target.value)}
+                />
+              </div>
+            </div>
           </div>
         </div>
         <DialogFooter>
@@ -470,7 +575,7 @@ export default function ClubsPage() {
   const [joinTarget, setJoinTarget] = useState<any>(null); // club pending join dialog
   const [actioningId, setActioningId] = useState<string | null>(null);
 
-  const isAdmin   = ['director', 'vice_principal'].includes(user?.role ?? '');
+  const isAdmin   = ['vice_principal'].includes(user?.role ?? '');
   const isStudent = user?.role === 'student';
   const isTeacher = ['teacher', 'class_teacher'].includes(user?.role ?? '');
 

@@ -20,8 +20,8 @@ const TABS = [
   { id: 'users',      label: 'Foydalanuvchilar', roles: ['director'] },
   { id: 'branches',   label: 'Filiallar',         roles: ['director'] },
   { id: 'crm',        label: 'CRM — Leadlar',     roles: ['director', 'branch_admin', 'vice_principal'] },
-  { id: 'leave',      label: "Ta'til so'rovlari", roles: ['director', 'vice_principal', 'teacher', 'class_teacher', 'accountant', 'librarian'] },
-  { id: 'discipline', label: 'Intizom jurnali',   roles: ['director', 'vice_principal', 'teacher', 'class_teacher'] },
+  { id: 'leave',      label: "Ta'til so'rovlari", roles: ['director', 'vice_principal', 'branch_admin', 'teacher', 'class_teacher', 'accountant', 'librarian'] },
+  { id: 'discipline', label: 'Intizom jurnali',   roles: ['director', 'vice_principal', 'branch_admin', 'teacher', 'class_teacher'] },
   { id: 'meetings',   label: 'Uchrashuvlar',      roles: ['director', 'vice_principal', 'class_teacher'] },
 ];
 

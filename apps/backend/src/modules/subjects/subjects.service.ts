@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '@/common/prisma/prisma.service';
 import { JwtPayload } from '@eduplatform/types';
 import { CreateSubjectDto, UpdateSubjectDto } from './dto/create-subject.dto';
@@ -32,10 +32,26 @@ export class SubjectsService {
   }
 
   async create(dto: CreateSubjectDto, currentUser: JwtPayload) {
-    return this.prisma.subject.create({
-      data: { ...dto, schoolId: currentUser.schoolId!, branchId: currentUser.branchId! },
-      include: { teacher: { select: { id: true, firstName: true, lastName: true } } },
-    });
+    const classIds = dto.classIds?.length ? dto.classIds : dto.classId ? [dto.classId] : [];
+    if (classIds.length === 0) {
+      throw new BadRequestException('Kamida 1 ta sinf tanlanishi kerak');
+    }
+
+    const results: any[] = [];
+    for (const classId of classIds) {
+      const subject = await this.prisma.subject.create({
+        data: {
+          name: dto.name,
+          classId,
+          teacherId: dto.teacherId,
+          schoolId: currentUser.schoolId!,
+          branchId: currentUser.branchId!,
+        },
+        include: { teacher: { select: { id: true, firstName: true, lastName: true } } },
+      });
+      results.push(subject);
+    }
+    return results.length === 1 ? results[0] : results;
   }
 
   async update(id: string, dto: UpdateSubjectDto, currentUser: JwtPayload) {

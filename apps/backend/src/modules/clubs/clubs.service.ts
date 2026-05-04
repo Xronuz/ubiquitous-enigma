@@ -10,6 +10,7 @@ import { buildTenantWhere } from '@/common/utils/tenant-scope.util';
 
 const CLUB_INCLUDE = {
   leader: { select: { id: true, firstName: true, lastName: true, avatarUrl: true } },
+  subject: { select: { id: true, name: true, teacherId: true } },
   _count: { select: { members: true } },
 } as const;
 

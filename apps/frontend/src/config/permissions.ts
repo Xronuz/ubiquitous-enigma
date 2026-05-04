@@ -33,7 +33,7 @@ export const ROUTE_PERMISSIONS: Record<string, UserRole[]> = {
   '/dashboard/branches':       ['super_admin', 'director', 'vice_principal'],
   '/dashboard/crm':            ['super_admin', 'director', 'vice_principal', 'branch_admin'],
   '/dashboard/meetings':       ['super_admin', 'director', 'vice_principal'],
-  '/dashboard/leave-requests': ['super_admin', 'director', 'vice_principal'],
+  '/dashboard/leave-requests': ['super_admin', 'director', 'vice_principal', 'branch_admin'],
 
   // ── Discipline ────────────────────────────────────────────────────────────────
   '/dashboard/discipline':     ['super_admin', 'director', 'vice_principal', 'class_teacher', 'branch_admin'],
@@ -42,7 +42,7 @@ export const ROUTE_PERMISSIONS: Record<string, UserRole[]> = {
   '/dashboard/finance':        ['super_admin', 'director', 'accountant', 'branch_admin'],
   '/dashboard/payments':       ['super_admin', 'director', 'accountant', 'branch_admin'],
   '/dashboard/payroll':        ['super_admin', 'director', 'accountant'],
-  '/dashboard/fee-structures': ['super_admin', 'director', 'accountant'],
+  '/dashboard/fee-structures': ['super_admin', 'director', 'accountant', 'branch_admin'],
 
   // ── Reports ───────────────────────────────────────────────────────────────────
   '/dashboard/reports':        ['super_admin', 'director', 'vice_principal', 'accountant', 'teacher', 'class_teacher'],

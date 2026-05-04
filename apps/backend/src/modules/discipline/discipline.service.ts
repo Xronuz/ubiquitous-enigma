@@ -143,7 +143,7 @@ export class DisciplineService {
     const incident = await this.prisma.disciplineIncident.create({
       data: {
         schoolId,
-        branchId:     student.branchId,
+        branchId:     student.branchId || currentUser.branchId!,
         studentId:    dto.studentId,
         reportedById: currentUser.sub,
         type:         (dto.type     ?? 'other')   as any,

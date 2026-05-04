@@ -232,7 +232,7 @@ export default function FeeStructuresPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const canManage = ['director', 'vice_principal', 'accountant'].includes(user?.role ?? '');
+  const canManage = ['accountant'].includes(user?.role ?? '');
 
   const [yearFilter, setYearFilter] = useState(ACADEMIC_YEARS[1]);
   const [formOpen, setFormOpen] = useState(false);

@@ -36,14 +36,14 @@ export class SubjectsController {
   }
 
   @Post()
-  @Roles(UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL)
+  @Roles(UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.BRANCH_ADMIN)
   @ApiOperation({ summary: 'Fan qo\'shish' })
   create(@Body() dto: CreateSubjectDto, @CurrentUser() user: JwtPayload) {
     return this.subjectsService.create(dto, user);
   }
 
   @Put(':id')
-  @Roles(UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL)
+  @Roles(UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.BRANCH_ADMIN)
   @ApiOperation({ summary: 'Fanni yangilash' })
   update(@Param('id') id: string, @Body() dto: UpdateSubjectDto, @CurrentUser() user: JwtPayload) {
     return this.subjectsService.update(id, dto, user);

@@ -57,6 +57,7 @@ export const kpiApi = {
     unit?: string;
     period?: string;
     branchId?: string | null;
+    isActive?: boolean;
   }) => apiClient.post<KpiMetric>('/kpi/metrics', payload).then(r => r.data),
 
   updateMetric: (id: string, payload: Partial<KpiMetric>) =>

@@ -6,7 +6,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Plus, Search, Users, Loader2, Eye, EyeOff, UserCheck, GraduationCap, Heart, Ban, RotateCcw, Link2, Upload, FileText, AlertTriangle } from 'lucide-react';
+import { Plus, Search, Users, Loader2, Eye, EyeOff, UserCheck, GraduationCap, Heart, Ban, RotateCcw, Link2, Upload, FileText, AlertTriangle, BookOpen, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,6 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { usersApi } from '@/lib/api/users';
 import { classesApi } from '@/lib/api/classes';
 import { branchesApi } from '@/lib/api/branches';
+import { subjectsApi } from '@/lib/api/subjects';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuthStore } from '@/store/auth.store';
 import { getInitials, getRoleLabel } from '@/lib/utils';
@@ -49,6 +50,7 @@ function useSuperAdminGuard() {
 
 const ROLES = [
   { value: 'vice_principal', label: "O'quv ishlari bo'yicha direktor" },
+  { value: 'branch_admin', label: 'Filial admin' },
   { value: 'teacher', label: "O'qituvchi" },
   { value: 'class_teacher', label: 'Sinf rahbari' },
   { value: 'accountant', label: 'Buxgalter' },
@@ -71,6 +73,8 @@ export default function UsersPage() {
   const [confirmDelete, setConfirmDelete] = useState<any>(null);
   const [csvResult, setCsvResult] = useState<{ created: number; skipped: number; errors: string[] } | null>(null);
   const csvInputRef = useRef<HTMLInputElement>(null);
+  const [teacherSubjects, setTeacherSubjects] = useState<{ name: string; classId: string }[]>([]);
+  const [subjectWarning, setSubjectWarning] = useState<string>('');
 
   // ── React Hook Form ──────────────────────────────────────────────────────────
   const {
@@ -92,7 +96,7 @@ export default function UsersPage() {
   const { data: branchesData } = useQuery({
     queryKey: ['branches', user?.schoolId],
     queryFn: () => branchesApi.getAll(),
-    enabled: open && !!user?.schoolId && ['super_admin', 'director'].includes(user?.role ?? ''),
+    enabled: open && !!user?.schoolId && ['super_admin', 'director', 'vice_principal'].includes(user?.role ?? ''),
   });
   const branchesList = Array.isArray(branchesData) ? branchesData : (branchesData as any)?.data ?? [];
 
@@ -137,6 +141,14 @@ export default function UsersPage() {
     enabled: open && watchedRole === 'parent',
   });
   const studentsList = (allStudentsData?.data ?? []).filter((u: any) => u.role === 'student');
+
+  // Load existing subjects when teacher role selected
+  const { data: existingSubjectsData } = useQuery({
+    queryKey: ['subjects', activeBranchId],
+    queryFn: () => subjectsApi.getAll(),
+    enabled: open && watchedRole === 'teacher',
+  });
+  const existingSubjects = Array.isArray(existingSubjectsData) ? existingSubjectsData : (existingSubjectsData as any)?.data ?? [];
 
   const deleteMutation = useMutation({
     mutationFn: ({ id, restore }: { id: string; restore?: boolean }) =>
@@ -183,8 +195,28 @@ export default function UsersPage() {
         }
       }
 
-      toast({ title: "✅ Foydalanuvchi qo'shildi" });
+      // 4. Teacher → create subjects if specified
+      if (values.role === 'teacher' && teacherSubjects.length > 0) {
+        try {
+          for (const subj of teacherSubjects) {
+            if (subj.name.trim() && subj.classId) {
+              await subjectsApi.create({
+                name: subj.name.trim(),
+                classIds: [subj.classId],
+                teacherId: created.id,
+              });
+            }
+          }
+          toast({ title: `✅ Foydalanuvchi va ${teacherSubjects.length} ta fan qo'shildi` });
+        } catch {
+          toast({ variant: 'destructive', title: "Fan qo'shishda xato", description: "O'qituvchi yaratildi, lekin ba'zi fanlar qo'shilmadi" });
+        }
+      } else {
+        toast({ title: "✅ Foydalanuvchi qo'shildi" });
+      }
+
       queryClient.invalidateQueries({ queryKey: ['users'] });
+      setTeacherSubjects([]);
       setOpen(false);
       reset();
     } catch (err: any) {
@@ -344,7 +376,7 @@ export default function UsersPage() {
       </Dialog>
 
       {/* Create user modal */}
-      <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) reset(); }}>
+      <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { reset(); setTeacherSubjects([]); setSubjectWarning(''); } }}>
         <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Yangi foydalanuvchi qo'shish</DialogTitle>
@@ -406,12 +438,11 @@ export default function UsersPage() {
                   name="branchId"
                   control={control}
                   render={({ field }) => (
-                    <Select value={field.value ?? ''} onValueChange={field.onChange}>
+                    <Select value={field.value || undefined} onValueChange={field.onChange}>
                       <SelectTrigger>
                         <SelectValue placeholder="Filial tanlang..." />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Barcha filiallar (maktab bo'yicha)</SelectItem>
                         {branchesList.map((b: any) => (
                           <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
                         ))}
@@ -420,6 +451,116 @@ export default function UsersPage() {
                   )}
                 />
                 <p className="text-xs text-muted-foreground">Agar tanlanmasa, foydalanuvchi joriy filialga biriktiriladi</p>
+              </div>
+            )}
+
+            {/* O'qituvchi → Fan yaratish */}
+            {watchedRole === 'teacher' && (
+              <div className="rounded-lg border border-violet-200 bg-violet-50 dark:bg-violet-950/20 dark:border-violet-800 p-3 space-y-3">
+                <div className="flex items-center gap-2 text-sm font-medium text-violet-700 dark:text-violet-400">
+                  <BookOpen className="h-4 w-4" /> O'qituvchi fanlari
+                </div>
+
+                {/* Mavjud fanlar ro'yxati */}
+                {existingSubjects.length > 0 && (
+                  <div>
+                    <p className="text-xs text-violet-600 dark:text-violet-400 mb-1.5 font-medium">Mavjud fanlar:</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {existingSubjects.map((s: any) => (
+                        <span key={s.id} className="inline-flex items-center gap-1 rounded-md bg-white dark:bg-background border px-2 py-0.5 text-xs">
+                          <span className="font-medium">{s.name}</span>
+                          <span className="text-muted-foreground">({s.class?.name})</span>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Yangi qo'shilayotgan fanlar */}
+                {teacherSubjects.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-xs text-violet-600 dark:text-violet-400 font-medium">Yangi qo'shiladi:</p>
+                    {teacherSubjects.map((subj, idx) => (
+                      <div key={idx} className="flex items-center gap-2 bg-white dark:bg-background rounded-md p-2 border">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{subj.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {(classesData ?? []).find((c: any) => c.id === subj.classId)?.name ?? subj.classId}
+                          </p>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 shrink-0"
+                          onClick={() => setTeacherSubjects(prev => prev.filter((_, i) => i !== idx))}
+                        >
+                          <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Yangi fan qo'shish */}
+                <div className="space-y-2">
+                  <p className="text-xs text-violet-600 dark:text-violet-400 font-medium">Yangi fan qo'shish:</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Input
+                      id="subject-name"
+                      placeholder="Fan nomi"
+                      className="bg-white dark:bg-background"
+                      onChange={(e) => {
+                        const name = e.target.value.trim();
+                        if (!name) { setSubjectWarning(''); return; }
+                        const dup = existingSubjects.find((s: any) => s.name.toLowerCase() === name.toLowerCase());
+                        if (dup) {
+                          setSubjectWarning(`"${dup.name}" fani allaqachon mavjud (${dup.class?.name})`);
+                        } else {
+                          setSubjectWarning('');
+                        }
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') e.preventDefault();
+                      }}
+                    />
+                    <Select
+                      value=""
+                      onValueChange={(v) => {
+                        const nameInput = document.getElementById('subject-name') as HTMLInputElement;
+                        const name = nameInput?.value.trim();
+                        if (name && v) {
+                          const className = (classesData ?? []).find((c: any) => c.id === v)?.name ?? v;
+                          const alreadyInList = teacherSubjects.some(
+                            (s) => s.name.toLowerCase() === name.toLowerCase() && s.classId === v
+                          );
+                          if (alreadyInList) {
+                            toast({ variant: 'destructive', title: 'Bu fan allaqachon ro\'yxatda' });
+                            return;
+                          }
+                          setTeacherSubjects(prev => [...prev, { name, classId: v }]);
+                          nameInput.value = '';
+                          setSubjectWarning('');
+                        }
+                      }}
+                    >
+                      <SelectTrigger className="bg-white dark:bg-background">
+                        <SelectValue placeholder="Sinf tanlang" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(classesData ?? []).map((c: any) => (
+                          <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {subjectWarning && (
+                    <p className="text-xs text-amber-600 dark:text-amber-400 font-medium">⚠️ {subjectWarning}</p>
+                  )}
+                  <p className="text-xs text-violet-600 dark:text-violet-400 opacity-70">
+                    Fan nomini yozib, sinf tanlang. Har bir fan alohida sinfga biriktiriladi.
+                  </p>
+                </div>
               </div>
             )}
 

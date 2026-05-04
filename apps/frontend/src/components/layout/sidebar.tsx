@@ -270,15 +270,6 @@ const NAV: NavItem[] = [
   },
 
   // ═════════════════════════════════════════════════════════════════════════════
-  // BRANCH ADMIN — Branch-scoped management
-  // ═════════════════════════════════════════════════════════════════════════════
-  {
-    label: 'Filial xodimlari', href: '/dashboard/staff',
-    icon: Briefcase, section: 'main',
-    roles: ROUTE_PERMISSIONS['/dashboard/staff'],
-  },
-
-  // ═════════════════════════════════════════════════════════════════════════════
   // SYSTEM section — Shared resources & comms
   // ═════════════════════════════════════════════════════════════════════════════
   {

@@ -8,6 +8,7 @@ export interface CreateClubPayload {
   description?: string;
   category: ClubCategory;
   leaderId: string;
+  subjectId?: string;
   schedule?: string;
   scheduleDays?: string[];
   scheduleStartTime?: string;

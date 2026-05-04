@@ -34,7 +34,8 @@ export default function ClassesPage() {
   const { user , activeBranchId } = useAuthStore();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const canManage = ['director', 'vice_principal'].includes(user?.role ?? '');
+  const canManage = ['director', 'vice_principal', 'branch_admin'].includes(user?.role ?? '');
+  const canDelete = ['director'].includes(user?.role ?? '');
 
   const [open, setOpen] = useState(false);
   const [editClass, setEditClass] = useState<any | null>(null);
@@ -206,10 +207,12 @@ export default function ClassesPage() {
                         }}>
                           <Pencil className="mr-2 h-4 w-4" /> Tahrirlash
                         </DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive focus:text-destructive"
-                          onClick={e => { e.stopPropagation(); deleteMutation.mutate(cls.id); }}>
-                          <Trash2 className="mr-2 h-4 w-4" /> O&apos;chirish
-                        </DropdownMenuItem>
+                        {canDelete && (
+                          <DropdownMenuItem className="text-destructive focus:text-destructive"
+                            onClick={e => { e.stopPropagation(); deleteMutation.mutate(cls.id); }}>
+                            <Trash2 className="mr-2 h-4 w-4" /> O&apos;chirish
+                          </DropdownMenuItem>
+                        )}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   )}

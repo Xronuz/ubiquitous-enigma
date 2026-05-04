@@ -105,7 +105,7 @@ export default function KpiDashboardPage() {
   const router = useRouter();
   const { user } = useAuthStore();
   const queryClient = useQueryClient();
-  const canManage = ['director', 'vice_principal', 'super_admin'].includes(user?.role ?? '');
+  const canManage = ['vice_principal', 'super_admin'].includes(user?.role ?? '');
 
   const { data, isLoading } = useQuery({
     queryKey: ['kpi', 'dashboard'],

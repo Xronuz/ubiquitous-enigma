@@ -26,7 +26,8 @@ export default function SubjectsPage() {
   const { user, activeBranchId } = useAuthStore();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const canManage = ['director', 'vice_principal'].includes(user?.role ?? '');
+  const canManage = ['vice_principal', 'branch_admin'].includes(user?.role ?? '');
+  const canDelete = ['director'].includes(user?.role ?? '');
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(EMPTY);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -123,7 +124,7 @@ export default function SubjectsPage() {
                 <div className="flex items-start justify-between">
                   <h3 className="font-semibold text-base">{subject.name}</h3>
                   <div className="flex items-center gap-1">
-                    {canManage && (
+                    {canDelete && (
                       <Button
                         variant="ghost"
                         size="icon"

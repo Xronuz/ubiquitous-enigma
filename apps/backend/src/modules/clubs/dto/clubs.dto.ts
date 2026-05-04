@@ -44,6 +44,11 @@ export class CreateClubDto {
   @IsUUID()
   leaderId: string;
 
+  @ApiPropertyOptional({ description: 'Fan ID (ixtiyoriy)' })
+  @IsOptional()
+  @IsUUID()
+  subjectId?: string;
+
   @ApiPropertyOptional({ example: 'Chorshanba 15:00-16:00', description: 'Display string (legacy)' })
   @IsOptional()
   @IsString()

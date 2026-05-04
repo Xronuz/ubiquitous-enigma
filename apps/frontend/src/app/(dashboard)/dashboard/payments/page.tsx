@@ -254,7 +254,7 @@ export default function PaymentsPage() {
   const { user , activeBranchId } = useAuthStore();
   const queryClient = useQueryClient();
 
-  const canCreate = ['director', 'accountant'].includes(user?.role ?? '');
+  const canCreate = ['accountant', 'branch_admin'].includes(user?.role ?? '');
 
   // Filters
   const [filterClassId, setFilterClassId] = useState('all');

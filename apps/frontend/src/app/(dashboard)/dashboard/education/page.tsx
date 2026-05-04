@@ -2,10 +2,8 @@
 
 import { Suspense, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Plus, CalendarDays, BookOpen } from 'lucide-react';
 import { SectionTabs } from '@/components/layout/section-tabs';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Button } from '@/components/ui/button';
 import { usePageActions } from '@/lib/header-actions-context';
 
 import ClassesPage          from '../classes/page';
@@ -14,30 +12,13 @@ import AcademicCalendarPage from '../academic-calendar/page';
 import SubjectsPage         from '../subjects/page';
 
 const TABS = [
-  { id: 'classes',  label: 'Sinflar',          roles: ['director', 'vice_principal', 'teacher', 'class_teacher'] },
-  { id: 'schedule', label: 'Dars jadvali',      roles: ['director', 'vice_principal', 'teacher', 'class_teacher'] },
-  { id: 'calendar', label: 'Akademik kalendar', roles: ['director', 'vice_principal', 'teacher', 'class_teacher'] },
-  { id: 'subjects', label: 'Fanlar',            roles: ['director', 'vice_principal'] },
+  { id: 'classes',  label: 'Sinflar',          roles: ['director', 'vice_principal', 'teacher', 'class_teacher', 'branch_admin'] },
+  { id: 'schedule', label: 'Dars jadvali',      roles: ['director', 'vice_principal', 'teacher', 'class_teacher', 'branch_admin'] },
+  { id: 'calendar', label: 'Akademik kalendar', roles: ['director', 'vice_principal', 'teacher', 'class_teacher', 'branch_admin'] },
+  { id: 'subjects', label: 'Fanlar',            roles: ['director', 'vice_principal', 'branch_admin'] },
 ];
 
-// Per-tab header actions (dispatches custom events — each child page listens)
-const TAB_ACTIONS: Record<string, React.ReactNode> = {
-  classes: (
-    <Button size="sm" onClick={() => document.dispatchEvent(new CustomEvent('classes:open-add'))}>
-      <Plus className="h-4 w-4" /> Sinf qo&apos;shish
-    </Button>
-  ),
-  schedule: (
-    <Button size="sm" variant="outline" onClick={() => document.dispatchEvent(new CustomEvent('schedule:open-add'))}>
-      <CalendarDays className="h-4 w-4" /> Dars qo&apos;shish
-    </Button>
-  ),
-  subjects: (
-    <Button size="sm" onClick={() => document.dispatchEvent(new CustomEvent('subjects:open-add'))}>
-      <BookOpen className="h-4 w-4" /> Fan qo&apos;shish
-    </Button>
-  ),
-};
+// Har bir child page o'z tugmasini o'z ichida ushlab turadi (TAB_ACTIONS olib tashlandi)
 
 function TabFallback() {
   return (
@@ -61,11 +42,10 @@ function EducationContent() {
   const tab            = searchParams.get('tab') ?? 'classes';
   const { setActions } = usePageActions();
 
-  // Inject primary CTA into navbar based on active tab
+  // Header actions har bir child page o'zida
   useEffect(() => {
-    setActions(TAB_ACTIONS[tab] ?? null);
-    return () => setActions(null);
-  }, [tab, setActions]);
+    setActions(null);
+  }, [setActions]);
 
   return (
     <div>

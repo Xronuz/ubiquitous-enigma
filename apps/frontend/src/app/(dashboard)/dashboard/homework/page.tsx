@@ -300,7 +300,7 @@ export default function HomeworkPage() {
   const queryClient = useQueryClient();
 
   const isStudent = user?.role === 'student';
-  const isAdmin = ['director', 'vice_principal'].includes(user?.role ?? '');
+  const isAdmin = ['director', 'vice_principal', 'branch_admin'].includes(user?.role ?? '');
   const isTeacher = ['teacher', 'class_teacher'].includes(user?.role ?? '');
   const canAdd = isTeacher || isAdmin;
 
