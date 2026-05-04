@@ -7,19 +7,92 @@ on:
 jobs:
   deploy:
     runs-on: self-hosted
+    timeout-minutes: 20
+
     steps:
+      # ─── 1. Kodni yangilash ────────────────────────────────────────────────
       - name: Pull latest code
         run: |
+          set -e
           cd /opt/eduplatform
           git fetch origin main
           git reset --hard origin/main
 
-      - name: Rebuild and restart
+      # ─── 2. Docker imagelarnni build qilish ───────────────────────────────
+      # Avval build — agar build xato bo'lsa ishlab turgan servislar to'xtatilmaydi
+      - name: Build images
         run: |
+          set -e
           cd /opt/eduplatform
-          docker compose -f docker-compose.selfhost.yml up -d --build --no-deps backend frontend nginx
+          docker compose -f docker-compose.selfhost.yml build backend frontend
 
-      - name: Status
+      # ─── 3. DB migratsiyalarini qo'llash ──────────────────────────────────
+      # Migrate service: postgres healthy bo'lgunicha kutadi, keyin prisma migrate deploy + seed
+      # --build: builder stage yangi bo'lsa qayta build qiladi (layer cache tufayli tez)
+      # --rm: tugagach konteyner o'chiriladi
+      - name: Apply database migrations
+        run: |
+          set -e
+          cd /opt/eduplatform
+          docker compose -f docker-compose.selfhost.yml run --rm --build migrate
+
+      # ─── 4. Servislarni qayta ishga tushirish ─────────────────────────────
+      # --no-deps YO'Q: Docker depends_on shartlarini (service_healthy,
+      # service_completed_successfully) to'liq tekshiradi.
+      # Tartib: migrate ✓ → backend → frontend → nginx
+      - name: Restart services
+        run: |
+          set -e
+          cd /opt/eduplatform
+          docker compose -f docker-compose.selfhost.yml up -d backend frontend nginx
+
+      # ─── 5. Servislar sog'lom holatini kutish ────────────────────────────
+      - name: Wait for healthy state
         run: |
           cd /opt/eduplatform
+          echo "Backend healthy bo'lishini kutmoqdamiz (max 2 daqiqa)..."
+          for i in $(seq 1 24); do
+            if docker compose -f docker-compose.selfhost.yml exec -T backend \
+                wget -qO- http://localhost:3001/api/health >/dev/null 2>&1; then
+              echo "✅ Backend healthy! (${i}x5s)"
+              break
+            fi
+            if [ "$i" -eq 24 ]; then
+              echo "❌ Backend 2 daqiqada healthy bo'lmadi"
+              exit 1
+            fi
+            echo "  ... kutmoqdamiz ($((i * 5))s)"
+            sleep 5
+          done
+
+          echo "Frontend healthy bo'lishini kutmoqdamiz (max 1 daqiqa)..."
+          for i in $(seq 1 12); do
+            if docker compose -f docker-compose.selfhost.yml exec -T frontend \
+                wget -qO- http://127.0.0.1:3000 >/dev/null 2>&1; then
+              echo "✅ Frontend healthy!"
+              break
+            fi
+            if [ "$i" -eq 12 ]; then
+              echo "❌ Frontend 1 daqiqada healthy bo'lmadi"
+              exit 1
+            fi
+            echo "  ... kutmoqdamiz ($((i * 5))s)"
+            sleep 5
+          done
+
+      # ─── 6. Yakuniy holat (xato bo'lsa ham ko'rsatiladi) ─────────────────
+      - name: Status
+        if: always()
+        run: |
+          cd /opt/eduplatform
+          echo "════════════════ CONTAINERS ════════════════"
           docker compose -f docker-compose.selfhost.yml ps
+          echo ""
+          echo "════════════════ MIGRATE LOGS ══════════════"
+          docker compose -f docker-compose.selfhost.yml logs --tail=50 migrate 2>/dev/null || true
+          echo ""
+          echo "════════════════ BACKEND LOGS ══════════════"
+          docker compose -f docker-compose.selfhost.yml logs --tail=40 backend 2>/dev/null || true
+          echo ""
+          echo "════════════════ FRONTEND LOGS ═════════════"
+          docker compose -f docker-compose.selfhost.yml logs --tail=20 frontend 2>/dev/null || true
