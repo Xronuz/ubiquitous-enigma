@@ -20,25 +20,165 @@ jobs:
 
       # ─── 2. Docker imagelarnni build qilish ───────────────────────────────
       # Avval build — agar build xato bo'lsa ishlab turgan servislar to'xtatilmaydi
+      # migrate ham shu yerda build qilinadi (backend bilan bir xil Dockerfile,
+      # layer cache tufayli deyarli 0s qo'shimcha vaqt oladi)
       - name: Build images
         run: |
           set -e
           cd /opt/eduplatform
-          docker compose -f docker-compose.selfhost.yml build backend frontend
+          docker compose -f docker-compose.selfhost.yml build backend frontend migrate
 
-      # ─── 3. DB migratsiyalarini qo'llash ──────────────────────────────────
-      # Migrate service: postgres healthy bo'lgunicha kutadi, keyin prisma migrate deploy + seed
-      # --build: builder stage yangi bo'lsa qayta build qiladi (layer cache tufayli tez)
-      # --rm: tugagach konteyner o'chiriladi
+      # ─── 3. Postgres ishlab turganligini ta'minlash ───────────────────────
+      - name: Ensure postgres is running
+        run: |
+          cd /opt/eduplatform
+          if ! docker compose -f docker-compose.selfhost.yml ps postgres | grep -q "healthy"; then
+            echo "Postgres ishlamayapti, ishga tushirilmoqda..."
+            docker compose -f docker-compose.selfhost.yml up -d postgres redis
+            echo "Postgres healthy bo'lishini kutmoqdamiz..."
+            for i in $(seq 1 20); do
+              if docker compose -f docker-compose.selfhost.yml ps postgres | grep -q "healthy"; then
+                echo "Postgres tayyor!"
+                break
+              fi
+              [ "$i" -eq 20 ] && echo "Postgres 60s da tayor bo'lmadi" && exit 1
+              sleep 3
+            done
+          fi
+          echo "Postgres healthy."
+
+      # ─── 4. Migratsiyadan oldin ma'lumotlarni tayyorlash ──────────────────
+      # 20260501185854_make_branch_required migratsiyasi:
+      #   - UserRole enum'dan eski rollarni o'chiradi (vice_principal, class_teacher, ...)
+      #   - Ko'p jadvalda branchId NULL bo'lmasligi kerak
+      # Bu SQL ular uchun DB'ni xavfsiz holatga keltiradi.
+      # Idempotent: bir necha marta ishlatish xavfsiz.
+      - name: Pre-migration data safety fix
+        run: |
+          cd /opt/eduplatform
+          set -a && source .env && set +a
+
+          docker compose -f docker-compose.selfhost.yml exec -T postgres \
+            psql -U "${POSTGRES_USER:-eduplatform}" -d "${POSTGRES_DB:-eduplatform_db}" << 'EOSQL'
+
+          DO $$
+          DECLARE
+            v_branch_id TEXT;
+            v_school_id TEXT;
+          BEGIN
+            -- ① Eski UserRole qiymatlari hali DB'da bo'lsa, yangilariga moslashtir.
+            --    20260501185854 migratsiyasi faqat:
+            --    super_admin, director, branch_admin, teacher, student — ni qoldiradi.
+            --    Qolganlarini oldindan map qilib qo'yamiz.
+            IF EXISTS (
+              SELECT 1 FROM pg_enum e
+              JOIN pg_type t ON t.oid = e.enumtypid
+              WHERE t.typname = 'UserRole' AND e.enumlabel = 'vice_principal'
+            ) THEN
+              BEGIN
+                UPDATE users SET role = 'director'
+                WHERE role::text = 'vice_principal';
+              EXCEPTION WHEN others THEN
+                RAISE NOTICE 'users vice_principal fix skip: %', SQLERRM;
+              END;
+
+              BEGIN
+                UPDATE users SET role = 'teacher'
+                WHERE role::text IN ('class_teacher', 'accountant', 'librarian');
+              EXCEPTION WHEN others THEN
+                RAISE NOTICE 'users class_teacher/accountant/librarian fix skip: %', SQLERRM;
+              END;
+
+              BEGIN
+                UPDATE users SET role = 'student'
+                WHERE role::text = 'parent';
+              EXCEPTION WHEN others THEN
+                RAISE NOTICE 'users parent fix skip: %', SQLERRM;
+              END;
+
+              BEGIN
+                UPDATE users SET role = 'branch_admin'
+                WHERE role::text = 'school_admin';
+              EXCEPTION WHEN others THEN
+                RAISE NOTICE 'users school_admin fix skip: %', SQLERRM;
+              END;
+
+              -- user_branch_assignments jadvalidagi rollar
+              BEGIN
+                UPDATE user_branch_assignments SET role = 'director'
+                WHERE role::text = 'vice_principal';
+              EXCEPTION WHEN others THEN NULL; END;
+
+              BEGIN
+                UPDATE user_branch_assignments SET role = 'teacher'
+                WHERE role::text IN ('class_teacher', 'accountant', 'librarian');
+              EXCEPTION WHEN others THEN NULL; END;
+
+              BEGIN
+                UPDATE user_branch_assignments SET role = 'student'
+                WHERE role::text = 'parent';
+              EXCEPTION WHEN others THEN NULL; END;
+
+              BEGIN
+                UPDATE user_branch_assignments SET role = 'branch_admin'
+                WHERE role::text = 'school_admin';
+              EXCEPTION WHEN others THEN NULL; END;
+
+              RAISE NOTICE '✅ UserRole pre-migration fix applied';
+            ELSE
+              RAISE NOTICE 'ℹ️ UserRole fix: not needed (enum already clean)';
+            END IF;
+
+            -- ② NULL branchId/schoolId qiymatlarini tuzatish.
+            --    Birinchi branch/school ID ni default sifatida ishlatamiz.
+            SELECT id INTO v_branch_id FROM branches ORDER BY "createdAt" LIMIT 1;
+            SELECT id INTO v_school_id FROM schools ORDER BY "createdAt" LIMIT 1;
+
+            IF v_branch_id IS NOT NULL THEN
+              BEGIN UPDATE attendance          SET "branchId"=v_branch_id WHERE "branchId" IS NULL; EXCEPTION WHEN others THEN NULL; END;
+              BEGIN UPDATE classes             SET "branchId"=v_branch_id WHERE "branchId" IS NULL; EXCEPTION WHEN others THEN NULL; END;
+              BEGIN UPDATE clubs               SET "branchId"=v_branch_id WHERE "branchId" IS NULL; EXCEPTION WHEN others THEN NULL; END;
+              BEGIN UPDATE courses             SET "branchId"=v_branch_id WHERE "branchId" IS NULL; EXCEPTION WHEN others THEN NULL; END;
+              BEGIN UPDATE discipline_incidents SET "branchId"=v_branch_id WHERE "branchId" IS NULL; EXCEPTION WHEN others THEN NULL; END;
+              BEGIN UPDATE exams               SET "branchId"=v_branch_id WHERE "branchId" IS NULL; EXCEPTION WHEN others THEN NULL; END;
+              BEGIN UPDATE fee_structures      SET "branchId"=v_branch_id WHERE "branchId" IS NULL; EXCEPTION WHEN others THEN NULL; END;
+              BEGIN UPDATE financial_shifts    SET "branchId"=v_branch_id WHERE "branchId" IS NULL; EXCEPTION WHEN others THEN NULL; END;
+              BEGIN UPDATE grades              SET "branchId"=v_branch_id WHERE "branchId" IS NULL; EXCEPTION WHEN others THEN NULL; END;
+              BEGIN UPDATE homeworks           SET "branchId"=v_branch_id WHERE "branchId" IS NULL; EXCEPTION WHEN others THEN NULL; END;
+              BEGIN UPDATE leads               SET "branchId"=v_branch_id WHERE "branchId" IS NULL; EXCEPTION WHEN others THEN NULL; END;
+              BEGIN UPDATE leave_requests      SET "branchId"=v_branch_id WHERE "branchId" IS NULL; EXCEPTION WHEN others THEN NULL; END;
+              BEGIN UPDATE notifications       SET "branchId"=v_branch_id WHERE "branchId" IS NULL; EXCEPTION WHEN others THEN NULL; END;
+              BEGIN UPDATE payments            SET "branchId"=v_branch_id WHERE "branchId" IS NULL; EXCEPTION WHEN others THEN NULL; END;
+              BEGIN UPDATE schedules           SET "branchId"=v_branch_id WHERE "branchId" IS NULL; EXCEPTION WHEN others THEN NULL; END;
+              BEGIN UPDATE staff_salaries      SET "branchId"=v_branch_id WHERE "branchId" IS NULL; EXCEPTION WHEN others THEN NULL; END;
+              BEGIN UPDATE subjects            SET "branchId"=v_branch_id WHERE "branchId" IS NULL; EXCEPTION WHEN others THEN NULL; END;
+              BEGIN UPDATE transport_routes    SET "branchId"=v_branch_id WHERE "branchId" IS NULL; EXCEPTION WHEN others THEN NULL; END;
+              BEGIN UPDATE treasuries          SET "branchId"=v_branch_id WHERE "branchId" IS NULL; EXCEPTION WHEN others THEN NULL; END;
+              BEGIN UPDATE users               SET "branchId"=v_branch_id WHERE "branchId" IS NULL; EXCEPTION WHEN others THEN NULL; END;
+              RAISE NOTICE '✅ NULL branchId fix applied (branch: %)', v_branch_id;
+            ELSE
+              RAISE NOTICE 'ℹ️ NULL branchId fix: no branches found, skipping';
+            END IF;
+
+            IF v_school_id IS NOT NULL THEN
+              BEGIN UPDATE users SET "schoolId"=v_school_id WHERE "schoolId" IS NULL; EXCEPTION WHEN others THEN NULL; END;
+              RAISE NOTICE '✅ NULL schoolId fix applied (school: %)', v_school_id;
+            END IF;
+          END $$;
+
+          EOSQL
+
+      # ─── 5. DB migratsiyalarini qo'llash ──────────────────────────────────
+      # migrate service: depends_on postgres:healthy → prisma migrate deploy → generate → seed
+      # --no-deps YO'Q: postgres healthy bo'lishini kutadi
       - name: Apply database migrations
         run: |
           set -e
           cd /opt/eduplatform
-          docker compose -f docker-compose.selfhost.yml run --rm --build migrate
+          docker compose -f docker-compose.selfhost.yml run --rm --no-build migrate
 
-      # ─── 4. Servislarni qayta ishga tushirish ─────────────────────────────
-      # --no-deps YO'Q: Docker depends_on shartlarini (service_healthy,
-      # service_completed_successfully) to'liq tekshiradi.
+      # ─── 6. Servislarni qayta ishga tushirish ─────────────────────────────
+      # --no-deps YO'Q: Docker depends_on shartlarini to'liq tekshiradi.
       # Tartib: migrate ✓ → backend → frontend → nginx
       - name: Restart services
         run: |
@@ -46,7 +186,7 @@ jobs:
           cd /opt/eduplatform
           docker compose -f docker-compose.selfhost.yml up -d backend frontend nginx
 
-      # ─── 5. Servislar sog'lom holatini kutish ────────────────────────────
+      # ─── 7. Servislar sog'lom holatini kutish ─────────────────────────────
       - name: Wait for healthy state
         run: |
           cd /opt/eduplatform
@@ -80,7 +220,7 @@ jobs:
             sleep 5
           done
 
-      # ─── 6. Yakuniy holat (xato bo'lsa ham ko'rsatiladi) ─────────────────
+      # ─── 8. Yakuniy holat (xato bo'lsa ham ko'rsatiladi) ─────────────────
       - name: Status
         if: always()
         run: |
@@ -89,10 +229,10 @@ jobs:
           docker compose -f docker-compose.selfhost.yml ps
           echo ""
           echo "════════════════ MIGRATE LOGS ══════════════"
-          docker compose -f docker-compose.selfhost.yml logs --tail=50 migrate 2>/dev/null || true
+          docker compose -f docker-compose.selfhost.yml logs --tail=60 migrate 2>/dev/null || true
           echo ""
           echo "════════════════ BACKEND LOGS ══════════════"
-          docker compose -f docker-compose.selfhost.yml logs --tail=40 backend 2>/dev/null || true
+          docker compose -f docker-compose.selfhost.yml logs --tail=50 backend 2>/dev/null || true
           echo ""
           echo "════════════════ FRONTEND LOGS ═════════════"
           docker compose -f docker-compose.selfhost.yml logs --tail=20 frontend 2>/dev/null || true
