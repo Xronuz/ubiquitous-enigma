@@ -1544,7 +1544,7 @@ function DirectorDashboard() {
   const { data: pendingLeaves }= useQuery({ queryKey: ['leave-requests', 'pending', 'school-wide'], queryFn: () => leaveRequestsApi.getAll({ status: 'pending' }) });
   const { data: financeData }  = useQuery({ queryKey: ['finance', 'dashboard', 'school-wide'], queryFn: financeApi.getDashboard });
   const { data: pendingDiscipline } = useQuery({ queryKey: ['discipline', 'unresolved', 'school-wide'], queryFn: () => disciplineApi.getAll().catch(() => ({ data: [] })) });
-  const { data: coinStats } = useQuery({ queryKey: ['coins', 'admin', 'stats'], queryFn: () => coinsApi.getAdminBalances().catch(() => ({ data: [] })), staleTime: 60_000 });
+  const { data: coinStats } = useQuery({ queryKey: ['coins', 'admin', 'stats'], queryFn: () => coinsApi.getStudentBalances().catch(() => ({ data: [] })), staleTime: 60_000 });
 
   const classList: any[]         = Array.isArray(classesData) ? classesData : (classesData as any)?.data ?? [];
   const allUsers: any[]          = (usersData as any)?.data ?? [];

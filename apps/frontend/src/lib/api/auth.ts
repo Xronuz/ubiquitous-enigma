@@ -38,6 +38,7 @@ export const authApi = {
       lastName: string;
       role: string;
       schoolId: string | null;
+      branchId: string | null;
     }>('/users/me');
     return data;
   },

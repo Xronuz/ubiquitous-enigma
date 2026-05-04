@@ -8,8 +8,8 @@ export interface AuthUser {
   firstName: string;
   lastName: string;
   role: string;
-  schoolId: string;
-  branchId: string;  // JWT dan kelgan, har doim majburiy
+  schoolId: string | null;
+  branchId: string | null;
 }
 
 interface AuthState {
@@ -20,10 +20,10 @@ interface AuthState {
   _hasHydrated: boolean;
 
   /**
-   * activeBranchId — faqat UI filtri uchun. Har doim user.branchId ga teng.
-   * "Barcha filiallar" ko'rinishi yo'q.
+   * activeBranchId — faqat UI filtri uchun. user.branchId ga teng.
+   * null = barcha filiallar (school-wide view, masalan director).
    */
-  activeBranchId: string;
+  activeBranchId: string | null;
 
   setAuth: (user: AuthUser, tokens: TokenPair) => void;
   restoreAuth: (user: AuthUser) => void;
@@ -42,7 +42,7 @@ export const useAuthStore = create<AuthState>()(
       refreshToken: null,
       isAuthenticated: false,
       _hasHydrated: false,
-      activeBranchId: '',
+      activeBranchId: null,
 
       setHasHydrated: (state) => set({ _hasHydrated: state }),
 
@@ -55,7 +55,7 @@ export const useAuthStore = create<AuthState>()(
           refreshToken: tokens.refreshToken,
           isAuthenticated: true,
           // Login bo'lganda activeBranchId ni user.branchId ga set qil
-          activeBranchId: user.branchId,
+          activeBranchId: user.branchId ?? null,
         });
       },
 
@@ -63,7 +63,7 @@ export const useAuthStore = create<AuthState>()(
         set({
           user,
           isAuthenticated: true,
-          activeBranchId: user.branchId,
+          activeBranchId: user.branchId ?? null,
         });
       },
 
@@ -78,7 +78,7 @@ export const useAuthStore = create<AuthState>()(
           accessToken: null,
           refreshToken: null,
           isAuthenticated: false,
-          activeBranchId: '',
+          activeBranchId: null,
         });
         if (typeof window !== 'undefined') {
           localStorage.removeItem('auth-storage');

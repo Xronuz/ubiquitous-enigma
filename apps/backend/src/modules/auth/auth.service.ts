@@ -90,6 +90,7 @@ export class AuthService {
         lastName: user.lastName,
         role: user.role,
         schoolId: user.schoolId,
+        branchId: user.branchId,
       },
       tokens,
     };

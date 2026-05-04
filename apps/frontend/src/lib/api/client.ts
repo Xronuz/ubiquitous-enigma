@@ -1,5 +1,6 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { toast } from '@/components/ui/use-toast';
+import { useAuthStore } from '@/store/auth.store';
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api/v1';
 
@@ -10,12 +11,26 @@ export const apiClient = axios.create({
   withCredentials: true,
 });
 
+// ── Request interceptor: Authorization header from auth store ────────────────
+apiClient.interceptors.request.use(
+  (config) => {
+    const token = useAuthStore.getState().accessToken;
+    if (token && !config.headers.Authorization) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error),
+);
 
 // Auto-refresh on 401
 let isRefreshing = false;
 let refreshAttempts = 0;
 const MAX_REFRESH_ATTEMPTS = 3;
 let failedQueue: { resolve: (v: string) => void; reject: (e: unknown) => void }[] = [];
+
+/** Auth endpointlariga 401 kelsa refresh urinmasligi kerak (login, refresh, logout, etc.) */
+const PUBLIC_AUTH_ENDPOINTS = new Set(['/auth/login', '/auth/refresh', '/auth/logout', '/auth/forgot-password', '/auth/reset-password']);
 
 function processQueue(error: unknown, token: string | null) {
   failedQueue.forEach(({ resolve, reject }) => {
@@ -54,6 +69,12 @@ apiClient.interceptors.response.use(
     const original = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
     if (error.response?.status === 401 && !original._retry) {
+      const url = original.url ?? '';
+      // Auth endpointlarida (login, refresh, logout, etc.) 401 kelsa refresh urinmasin
+      if (PUBLIC_AUTH_ENDPOINTS.has(url)) {
+        return Promise.reject(error);
+      }
+
       // Circuit breaker — maksimal 3 ta urinishdan keyin to'xtatish
       if (refreshAttempts >= MAX_REFRESH_ATTEMPTS) {
         processQueue(error, null);
@@ -86,10 +107,17 @@ apiClient.interceptors.response.use(
         const data = (raw && raw.success === true && 'data' in raw) ? raw.data : raw;
         refreshAttempts = 0; // Muvaffaqiyatli — counter reset
         processQueue(null, data.accessToken);
+        // Yangi tokenni keyingi request'larda ishlatish uchun store'ga ham yozamiz
+        if (data.accessToken && typeof window !== 'undefined') {
+          useAuthStore.setState({ accessToken: data.accessToken });
+        }
         return apiClient(original);
       } catch (refreshError) {
         processQueue(refreshError, null);
-        window.location.href = '/login';
+        if (typeof window !== 'undefined') {
+          localStorage.clear();
+          window.location.href = '/login';
+        }
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;

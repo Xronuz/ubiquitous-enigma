@@ -52,8 +52,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           firstName: meData.firstName,
           lastName: meData.lastName,
           role: meData.role,
-          schoolId: meData.schoolId ?? '',
-          branchId: meData.branchId ?? '',
+          schoolId: meData.schoolId,
+          branchId: meData.branchId,
         });
       })
       .catch(() => {

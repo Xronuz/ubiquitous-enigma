@@ -75,7 +75,7 @@ export function useSwitchBranch() {
   const { setActiveBranch, setIsSwitching, isSwitching } = useBranchStore();
 
   const switchBranch = useCallback(
-    async (branchId: string, branchMeta?: BranchMeta | null) => {
+    async (branchId: string | null, branchMeta?: BranchMeta | null) => {
       if (isSwitching) return;
 
       try {
