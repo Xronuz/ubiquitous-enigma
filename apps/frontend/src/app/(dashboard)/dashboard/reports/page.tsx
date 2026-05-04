@@ -1039,8 +1039,8 @@ export default function ReportsPage() {
 
   const { printRef, handlePrint } = usePrint({ title: tabLabels[activeTab] });
 
-  const canSeeFinance    = ['school_admin', 'accountant', 'director', 'vice_principal'].includes(user?.role ?? '');
-  const canSeeAnalytics  = ['school_admin', 'director', 'vice_principal', 'accountant'].includes(user?.role ?? '');
+  const canSeeFinance    = ['accountant', 'director', 'vice_principal'].includes(user?.role ?? '');
+  const canSeeAnalytics  = ['director', 'vice_principal', 'accountant'].includes(user?.role ?? '');
 
   type TabKey = 'analytics' | 'attendance' | 'grades' | 'finance';
   const tabs: { key: TabKey; label: string; icon: React.ElementType; premium?: boolean }[] = [

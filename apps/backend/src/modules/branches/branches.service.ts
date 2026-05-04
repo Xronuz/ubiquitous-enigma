@@ -10,7 +10,6 @@ import { CreateBranchDto, UpdateBranchDto } from './dto/branches.dto';
 
 const SCHOOL_WIDE_ROLES = new Set<string>([
   UserRole.SUPER_ADMIN,
-  UserRole.SCHOOL_ADMIN,
   UserRole.DIRECTOR,
 ]);
 
@@ -97,7 +96,7 @@ export class BranchesService {
     return branch;
   }
 
-  /** Yangi filial yaratish — faqat school_admin / director */
+  /** Yangi filial yaratish — faqat director */
   async create(dto: CreateBranchDto, currentUser: JwtPayload) {
     // Xuddi shu maktabda bir xil nomli filial mavjudligini tekshirish
     const existing = await this.prisma.branch.findUnique({

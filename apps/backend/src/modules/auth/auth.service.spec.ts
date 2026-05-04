@@ -15,7 +15,7 @@ const mockUser = {
   email: 'admin@test.uz',
   firstName: 'Ali',
   lastName: 'Valiyev',
-  role: UserRole.SCHOOL_ADMIN,
+  role: UserRole.DIRECTOR,
   schoolId: 'school-uuid-1',
   passwordHash: '',   // filled in beforeAll
   isActive: true,

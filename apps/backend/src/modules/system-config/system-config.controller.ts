@@ -42,9 +42,9 @@ export class SystemConfigController {
     return this.service.getAll(user.schoolId!);
   }
 
-  /** PATCH /system-config — qiymatlarni yangilash (faqat school_admin) */
+  /** PATCH /system-config — qiymatlarni yangilash (faqat director) */
   @Patch()
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.SUPER_ADMIN)
+  @Roles(UserRole.DIRECTOR, UserRole.SUPER_ADMIN)
   async update(
     @CurrentUser() user: JwtPayload,
     @Body() dto: UpdateConfigDto,

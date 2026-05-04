@@ -115,11 +115,11 @@ export class FinancialShiftsService {
    * Joriy foydalanuvchi branchId yoki schoolId bo'yicha ochiq smenani qaytaradi.
    * To'lov qabul qilishdan oldin bu metod chaqiriladi (shift guard).
    */
-  async getActiveShift(schoolId: string, branchId: string | null | undefined) {
+  async getActiveShift(schoolId: string, branchId: string) {
     return this.prisma.financialShift.findFirst({
       where: {
         schoolId,
-        branchId: branchId ?? null,
+        branchId,
         status: 'OPEN' as any,
       },
       include: {

@@ -62,7 +62,7 @@ export interface JwtPayload {
   email: string;
   role: UserRole;
   schoolId: string | null;
-  branchId: string | null;   // NULL = barcha filiallarga kirish (director, school_admin, super_admin)
+  branchId: string | null;
   isSuperAdmin: boolean;
 }
 

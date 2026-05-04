@@ -7,7 +7,7 @@ import { JwtPayload, UserRole } from '@eduplatform/types';
 const mockUser: JwtPayload = {
   sub: 'user-1',
   email: 'admin@test.com',
-  role: UserRole.SCHOOL_ADMIN,
+  role: UserRole.DIRECTOR,
   schoolId: 'school-1',
   branchId: null,
   isSuperAdmin: false,

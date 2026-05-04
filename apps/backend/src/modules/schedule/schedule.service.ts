@@ -18,7 +18,7 @@
 
 import { Injectable, NotFoundException, ConflictException, Optional } from '@nestjs/common';
 import { PrismaService } from '@/common/prisma/prisma.service';
-import { branchFilter } from '@/common/utils/branch-filter.util';
+import { buildTenantWhere } from '@/common/utils/tenant-scope.util';
 import { RedisService } from '@/common/redis/redis.service';
 import { JwtPayload, DayOfWeek } from '@eduplatform/types';
 import { CreateScheduleDto } from './dto/create-schedule.dto';
@@ -95,10 +95,10 @@ export class ScheduleService {
     return result;
   }
 
-  async getToday(currentUser: JwtPayload, branchCtx?: string | null) {
+  async getToday(currentUser: JwtPayload) {
     const schoolId = currentUser.schoolId!;
     const today = new Date().toISOString().slice(0, 10);
-    const key = this.cacheKey(schoolId, `${branchCtx ?? 'all'}:today:${today}`);
+    const key = this.cacheKey(schoolId, `${currentUser.branchId ?? 'all'}:today:${today}`);
     const cached = await this.redis.getJson<any[]>(key);
     if (cached) return cached;
 
@@ -109,7 +109,7 @@ export class ScheduleService {
     const todayIndex = new Date().getDay();
     const dayOfWeek  = days[todayIndex === 0 ? 6 : todayIndex - 1];
 
-    const where: any = { ...branchFilter(currentUser, branchCtx), dayOfWeek };
+    const where: any = { ...buildTenantWhere(currentUser), dayOfWeek };
 
     const result = await this.prisma.schedule.findMany({
       where,
@@ -128,17 +128,17 @@ export class ScheduleService {
 
   /**
    * Haftalik jadval.
-   * Director/school_admin: barcha filiallar → isCrossBranch field qo'shiladi (timetable UI uchun).
+   * Director: barcha filiallar → isCrossBranch field qo'shiladi (timetable UI uchun).
    * Branch-scoped user: faqat o'z filiali.
    */
-  async getWeek(currentUser: JwtPayload, classId?: string, branchCtx?: string | null) {
+  async getWeek(currentUser: JwtPayload, classId?: string) {
     const schoolId   = currentUser.schoolId!;
     const userBranch = currentUser.branchId ?? null;
-    const key        = this.cacheKey(schoolId, `${branchCtx ?? 'all'}:week:${classId ?? 'all'}`);
+    const key        = this.cacheKey(schoolId, `${currentUser.branchId ?? 'all'}:week:${classId ?? 'all'}`);
     const cached     = await this.redis.getJson<any[]>(key);
     if (cached) return cached;
 
-    const where: any = { ...branchFilter(currentUser, branchCtx) };
+    const where: any = { ...buildTenantWhere(currentUser) };
     if (classId) where.classId = classId;
 
     const schedules = await this.prisma.schedule.findMany({
@@ -157,7 +157,7 @@ export class ScheduleService {
     // isCrossBranch: active branch'dan boshqa filial slot'lari "greyed out" bo'ladi
     const result = schedules.map((s) => ({
       ...s,
-      isCrossBranch: branchCtx ? s.branchId !== branchCtx : false,
+      isCrossBranch: currentUser.branchId ? s.branchId !== currentUser.branchId : false,
     }));
 
     await this.redis.setJson(key, result, SCHEDULE_TTL);
@@ -241,7 +241,7 @@ export class ScheduleService {
     // Global conflict detection
     await this.conflictDetector.assertNoClash({
       schoolId,
-      branchId:  branchId ?? undefined,
+      branchId: currentUser.branchId!,
       teacherId: dto.teacherId,
       roomId:    dto.roomId,
       classId:   dto.classId,
@@ -254,7 +254,7 @@ export class ScheduleService {
     const result = await this.prisma.schedule.create({
       data: {
         schoolId,
-        branchId:        branchId ?? undefined,
+        branchId: currentUser.branchId!,
         classId:         dto.classId,
         subjectId:       dto.subjectId,
         teacherId:       dto.teacherId,
@@ -283,10 +283,10 @@ export class ScheduleService {
 
   // ── Update ────────────────────────────────────────────────────────────────
 
-  async update(id: string, dto: Partial<CreateScheduleDto>, currentUser: JwtPayload, branchCtx?: string | null) {
+  async update(id: string, dto: Partial<CreateScheduleDto>, currentUser: JwtPayload) {
     const schoolId = currentUser.schoolId!;
     const slot = await this.prisma.schedule.findFirst({
-      where: { id, ...branchFilter(currentUser, branchCtx) },
+      where: { id, ...buildTenantWhere(currentUser) },
       include: { class: { select: { branchId: true } } },
     });
     if (!slot) throw new NotFoundException('Jadval sloti topilmadi');
@@ -350,9 +350,9 @@ export class ScheduleService {
 
   // ── Remove ────────────────────────────────────────────────────────────────
 
-  async remove(id: string, currentUser: JwtPayload, branchCtx?: string | null) {
+  async remove(id: string, currentUser: JwtPayload) {
     const slot = await this.prisma.schedule.findFirst({
-      where: { id, ...branchFilter(currentUser, branchCtx) },
+      where: { id, ...buildTenantWhere(currentUser) },
     });
     if (!slot) throw new NotFoundException('Jadval sloti topilmadi');
     await this.prisma.schedule.delete({ where: { id } });

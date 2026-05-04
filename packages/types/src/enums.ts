@@ -1,11 +1,10 @@
 export enum UserRole {
   SUPER_ADMIN = 'super_admin',
-  SCHOOL_ADMIN = 'school_admin',   // Texnik admin: user management, tizim sozlamalari
-  DIRECTOR = 'director',           // Maktab direktori: nazorat, e'lon, tasdiqlash (read-heavy)
-  BRANCH_ADMIN = 'branch_admin',   // Filial boshqaruvchisi: faqat o'z filialini ko'radi
+  DIRECTOR = 'director',
+  BRANCH_ADMIN = 'branch_admin',
   VICE_PRINCIPAL = 'vice_principal',
   TEACHER = 'teacher',
-  CLASS_TEACHER = 'class_teacher', // Sinf rahbari (teacher ruxsatlarini ham meros oladi)
+  CLASS_TEACHER = 'class_teacher',
   ACCOUNTANT = 'accountant',
   LIBRARIAN = 'librarian',
   STUDENT = 'student',
@@ -33,7 +32,6 @@ export enum SubscriptionStatus {
 }
 
 export enum ModuleName {
-  // Core (always enabled)
   AUTH = 'auth',
   USERS = 'users',
   CLASSES = 'classes',
@@ -41,17 +39,14 @@ export enum ModuleName {
   NOTIFICATIONS = 'notifications',
   MESSAGING = 'messaging',
   REPORTS = 'reports',
-  // Optional Phase 1
   ATTENDANCE = 'attendance',
   GRADES = 'grades',
   PAYMENTS = 'payments',
-  // Optional Phase 2
   EXAMS = 'exams',
   HOMEWORK = 'homework',
   DISPLAY = 'display',
   FINANCE_DASHBOARD = 'finance_dashboard',
   LEARNING_CENTER = 'learning_center',
-  // Optional Phase 3
   CANTEEN = 'canteen',
   LIBRARY = 'library',
   TRANSPORT = 'transport',

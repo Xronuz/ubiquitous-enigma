@@ -3,7 +3,7 @@ import { PrismaService } from '@/common/prisma/prisma.service';
 import { JwtPayload } from '@eduplatform/types';
 import { EventsGateway } from '@/modules/gateway/events.gateway';
 import { NotificationQueueService } from './notification-queue.service';
-import { branchFilter } from '@/common/utils/branch-filter.util';
+import { buildTenantWhere } from '@/common/utils/tenant-scope.util';
 
 export class SendNotificationDto {
   recipientId: string;
@@ -23,13 +23,13 @@ export class NotificationsService {
     @Optional() private readonly notificationQueue: NotificationQueueService,
   ) {}
 
-  async send(dto: SendNotificationDto, currentUser: JwtPayload, branchCtx?: string | null) {
+  async send(dto: SendNotificationDto, currentUser: JwtPayload) {
     // Recipient branch for denormalization
     const recipient = await this.prisma.user.findUnique({
       where: { id: dto.recipientId },
       select: { branchId: true },
     });
-    const branchId = branchCtx ?? recipient?.branchId ?? null;
+    const branchId = recipient?.branchId!;
 
     const notification = await this.prisma.notification.create({
       data: {
@@ -72,7 +72,7 @@ export class NotificationsService {
     return notification;
   }
 
-  async getMyNotifications(userId: string, page = 1, limit = 20, branchCtx?: string | null) {
+  async getMyNotifications(userId: string, page = 1, limit = 20) {
     const skip = (page - 1) * limit;
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
@@ -80,9 +80,7 @@ export class NotificationsService {
     });
     const where: any = { recipientId: userId };
     // For non-school-wide roles, filter notifications by branch
-    if (branchCtx) {
-      where.branchId = branchCtx;
-    } else if (user?.branchId && !['super_admin', 'school_admin', 'director'].includes(user.role)) {
+    if (user?.branchId && !['super_admin', 'director'].includes(user.role)) {
       where.OR = [
         { branchId: user.branchId },
         { branchId: null }, // school-wide notifications
@@ -163,14 +161,13 @@ export class NotificationsService {
   async broadcast(
     payload: { targetGroup: string; title: string; body: string },
     currentUser: JwtPayload,
-    branchCtx?: string | null,
   ) {
     const schoolId = currentUser.schoolId!;
-    const filter = branchFilter(currentUser, branchCtx);
+    const filter = buildTenantWhere(currentUser);
 
     // Maqsadli foydalanuvchilarni aniqlash
     const roleMap: Record<string, string[]> = {
-      all_staff:      ['school_admin', 'director', 'vice_principal', 'teacher', 'class_teacher', 'accountant', 'librarian'],
+      all_staff:      ['director', 'vice_principal', 'teacher', 'class_teacher', 'accountant', 'librarian'],
       all_teachers:   ['teacher', 'class_teacher'],
       class_teachers: ['class_teacher'],
       all_parents:    ['parent'],
@@ -226,7 +223,7 @@ export class NotificationsService {
     const notification = await this.prisma.notification.create({
       data: {
         schoolId: data.schoolId,
-        branchId: data.branchId ?? null,
+        branchId: data.branchId!,
         recipientId: data.recipientId,
         title: data.title,
         body: data.body,

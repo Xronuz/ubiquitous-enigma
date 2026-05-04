@@ -5,7 +5,7 @@ import { PrismaService } from '@/common/prisma/prisma.service';
 import { JwtPayload, UserRole } from '@eduplatform/types';
 import { AuditService } from '@/common/audit/audit.service';
 import { EventsGateway } from '@/modules/gateway/events.gateway';
-import { branchFilter } from '@/common/utils/branch-filter.util';
+import { buildTenantWhere } from '@/common/utils/tenant-scope.util';
 
 export class CreateLeaveRequestDto {
   @ApiProperty({ example: 'Kasal bo\'lgani uchun ta\'til so\'ralmoqda', minLength: 5, maxLength: 500 })
@@ -42,7 +42,7 @@ export class ReviewLeaveDto {
 }
 
 // Roles that must approve a leave request (in order)
-const APPROVER_ROLES = [UserRole.SCHOOL_ADMIN, UserRole.VICE_PRINCIPAL, UserRole.CLASS_TEACHER];
+const APPROVER_ROLES = [UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.CLASS_TEACHER];
 
 @Injectable()
 export class LeaveRequestsService {
@@ -52,18 +52,18 @@ export class LeaveRequestsService {
     @Optional() private readonly eventsGateway: EventsGateway,
   ) {}
 
-  async create(dto: CreateLeaveRequestDto, currentUser: JwtPayload, branchCtx: string | null = null) {
+  async create(dto: CreateLeaveRequestDto, currentUser: JwtPayload) {
     const start = new Date(dto.startDate);
     const end = new Date(dto.endDate);
     if (end < start) throw new BadRequestException("Tugash sanasi boshlanish sanasidan oldin bo'lishi mumkin emas");
 
     const schoolId = currentUser.schoolId!;
 
-    // Find all approvers in this school (school_admin, vice_principal)
+    // Find all approvers in this school (director, vice_principal)
     const approvers = await this.prisma.user.findMany({
       where: {
         schoolId,
-        role: { in: [UserRole.SCHOOL_ADMIN, UserRole.VICE_PRINCIPAL] as any },
+        role: { in: [UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL] as any },
         isActive: true,
         id: { not: currentUser.sub },
       },
@@ -77,7 +77,7 @@ export class LeaveRequestsService {
     const leaveRequest = await this.prisma.leaveRequest.create({
       data: {
         schoolId,
-        branchId: branchCtx ?? currentUser.branchId ?? undefined,
+        branchId: currentUser.branchId!,
         requesterId: currentUser.sub,
         reason: dto.reason,
         startDate: start,
@@ -106,6 +106,7 @@ export class LeaveRequestsService {
       await this.prisma.notification.createMany({
         data: approvers.map((a) => ({
           schoolId,
+          branchId: currentUser.branchId!,
           recipientId: a.id,
           title: notifTitle,
           body: notifBody,
@@ -135,10 +136,10 @@ export class LeaveRequestsService {
     return leaveRequest;
   }
 
-  async findAll(currentUser: JwtPayload, branchCtx: string | null = null, query?: { status?: string }) {
-    const isApprover = [UserRole.SCHOOL_ADMIN, UserRole.VICE_PRINCIPAL, UserRole.BRANCH_ADMIN].includes(currentUser.role as any);
+  async findAll(currentUser: JwtPayload, query?: { status?: string }) {
+    const isApprover = [UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.BRANCH_ADMIN].includes(currentUser.role as any);
 
-    const where: any = { ...branchFilter(currentUser, branchCtx) };
+    const where: any = { ...buildTenantWhere(currentUser) };
     if (query?.status) where.status = query.status;
 
     // Non-approver sees only their own requests
@@ -160,9 +161,9 @@ export class LeaveRequestsService {
     });
   }
 
-  async findOne(id: string, currentUser: JwtPayload, branchCtx: string | null = null) {
+  async findOne(id: string, currentUser: JwtPayload) {
     const req = await this.prisma.leaveRequest.findFirst({
-      where: { id, ...branchFilter(currentUser, branchCtx) },
+      where: { id, ...buildTenantWhere(currentUser) },
       include: {
         requester: { select: { id: true, firstName: true, lastName: true, role: true } },
         approvals: {
@@ -174,7 +175,7 @@ export class LeaveRequestsService {
     });
     if (!req) throw new NotFoundException("So'rov topilmadi");
 
-    const isApprover = [UserRole.SCHOOL_ADMIN, UserRole.VICE_PRINCIPAL].includes(currentUser.role as any);
+    const isApprover = [UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL].includes(currentUser.role as any);
     if (!isApprover && req.requesterId !== currentUser.sub) {
       throw new ForbiddenException("Bu so'rovni ko'rish huquqi yo'q");
     }
@@ -264,6 +265,7 @@ export class LeaveRequestsService {
               await this.prisma.attendance.create({
                 data: {
                   schoolId: currentUser.schoolId!,
+                  branchId: currentUser.branchId!,
                   studentId: req.requesterId,
                   classId,
                   date: dayStart,
@@ -286,6 +288,7 @@ export class LeaveRequestsService {
         await this.prisma.notification.create({
           data: {
             schoolId: currentUser.schoolId!,
+            branchId: currentUser.branchId!,
             recipientId: req.requesterId,
             title: notifTitle,
             body: notifBody,

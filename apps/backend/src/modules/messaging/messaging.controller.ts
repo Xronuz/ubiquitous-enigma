@@ -12,7 +12,7 @@ import { JwtPayload, UserRole } from '@eduplatform/types';
 @ApiBearerAuth('JWT')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(
-  UserRole.SCHOOL_ADMIN,
+  UserRole.DIRECTOR,
   UserRole.DIRECTOR,
   UserRole.VICE_PRINCIPAL,
   UserRole.TEACHER,

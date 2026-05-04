@@ -8,6 +8,8 @@ import {
   Globe, Phone, Mail, MapPin, CheckCircle2, XCircle,
   BookOpen, CreditCard, Bell, Calendar, GraduationCap,
   Utensils, Library, Bus, Package, UserPlus, Loader2,
+  BarChart2, FileText, ClipboardCheck, DollarSign,
+  TrendingUp, MessageSquare, BookCopy,
 } from 'lucide-react';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -30,19 +32,39 @@ import { formatDate } from '@/lib/utils';
 import { useToast } from '@/components/ui/use-toast';
 
 const MODULE_META: Record<string, { icon: React.ElementType; label: string; description: string; category: string }> = {
-  attendance:  { icon: CheckCircle2, label: 'Davomat',        description: 'Kunlik davomat belgilash va hisobotlar',          category: 'Asosiy' },
-  grades:      { icon: BookOpen,     label: 'Baholar & Jurnal', description: 'Elektron jurnal, baholar va GPA hisoblash',     category: 'Asosiy' },
-  schedule:    { icon: Calendar,     label: 'Dars jadvali',   description: 'Haftalik jadval va zal monitori',                 category: 'Asosiy' },
-  payments:    { icon: CreditCard,   label: 'To\'lovlar',     description: 'Payme/Click integratsiyasi, qarzdorlik nazorati', category: 'Moliya' },
-  notifications:{ icon: Bell,        label: 'Xabarnomalar',   description: 'SMS va push xabarnomalar',                       category: 'Asosiy' },
-  homework:    { icon: GraduationCap,label: 'Vazifalar',      description: 'Uy vazifalari va topshiriqlar',                   category: 'Ta\'lim' },
-  library:     { icon: Library,      label: 'Kutubxona',      description: 'Kitob katalog, berib-olish, eslatmalar',          category: 'Qo\'shimcha' },
-  cafeteria:   { icon: Utensils,     label: 'Ovqatxona',      description: 'Haftalik menyu va QR hisobdan chiqarish',         category: 'Qo\'shimcha' },
-  transport:   { icon: Bus,          label: 'Transport',      description: 'Avtobus marshrut va o\'quvchi tracking',          category: 'Qo\'shimcha' },
-  inventory:   { icon: Package,      label: 'Inventar',       description: 'Maktab mulki va ombor boshqaruvi',                category: 'Qo\'shimcha' },
+  // 1. Strategiya va Boshqaruv
+  reports:      { icon: BarChart2,    label: 'Hisobotlar',       description: 'KPI, davomat, moliya va akademik hisobotlar',     category: '1. Strategiya' },
+  // 2. Akademik Tizim
+  classes:      { icon: GraduationCap, label: 'Sinflar',         description: 'Sinf boshqaruvi va o\'quvchilar taqsimoti',       category: '2. Akademik' },
+  schedule:     { icon: Calendar,     label: 'Dars jadvali',    description: 'Haftalik jadval va zal band qilish',              category: '2. Akademik' },
+  subjects:     { icon: BookOpen,     label: 'Fanlar',          description: 'O\'quv fanlari va dasturlar',                     category: '2. Akademik' },
+  exams:        { icon: FileText,     label: 'Imtihonlar',      description: 'Imtihon rejalashtirish va natijalar',             category: '2. Akademik' },
+  homework:     { icon: ClipboardCheck, label: 'Uy vazifalari', description: 'Vazifalar berish va tekshirish',                  category: '2. Akademik' },
+  grades:       { icon: BookOpen,     label: 'Baholar & Jurnal', description: 'Elektron jurnal, baholar va GPA',                category: '2. Akademik' },
+  // 3. O\'qituvchi Tizimi
+  users:        { icon: Users,        label: 'Xodimlar',        description: 'O\'qituvchi va xodimlar boshqaruvi',              category: '3. O\'qituvchi' },
+  payroll:      { icon: DollarSign,   label: 'Ish haqi',        description: 'Maosh hisoblash va avanslar',                     category: '3. O\'qituvchi' },
+  // 4. O\'quvchi Boshqaruvi
+  attendance:   { icon: CheckCircle2, label: 'Davomat',         description: 'Kunlik davomat belgilash va hisobotlar',          category: '4. O\'quvchi' },
+  // 5. Marketing & Sales
+  // (leads CRM — hozircha alohida yo\'nalish sifatida ko\'rsatilmagan)
+  // 6. Moliya Tizimi
+  payments:     { icon: CreditCard,   label: 'To\'lovlar',      description: 'Payme/Click integratsiyasi, qarzdorlik',          category: '6. Moliya' },
+  finance_dashboard: { icon: TrendingUp, label: 'Moliya Dashboard', description: 'Kirim-chiqim va g\'azna nazorati',           category: '6. Moliya' },
+  // 7. Operatsiya Tizimi
+  transport:    { icon: Bus,          label: 'Transport',       description: 'Avtobus marshrut va tracking',                    category: '7. Operatsiya' },
+  canteen:      { icon: Utensils,     label: 'Oshxona',         description: 'Haftalik menyu va ovqatlanish',                   category: '7. Operatsiya' },
+  // 8. AI & IT
+  learning_center: { icon: Library,   label: 'O\'quv markazi',  description: 'Onlayn kurslar va materiallar',                   category: '8. AI & IT' },
+  // Qo\'shimcha
+  library:      { icon: BookCopy,     label: 'Kutubxona',       description: 'Kitob katalog, berib-olish',                      category: 'Qo\'shimcha' },
+  notifications:{ icon: Bell,         label: 'Xabarnomalar',    description: 'SMS va push xabarnomalar',                        category: 'Qo\'shimcha' },
+  messaging:    { icon: MessageSquare, label: 'Xabarlar',       description: 'Ichki xabar almashish',                           category: 'Qo\'shimcha' },
+  display:      { icon: Globe,        label: 'Display',         description: 'Maktab ekranlarida ko\'rsatish',                  category: 'Qo\'shimcha' },
+  clubs:        { icon: Users,        label: 'To\'garaklar',    description: 'Maktab to\'garaklari va ro\'yxatdan o\'tish',     category: 'Qo\'shimcha' },
 };
 
-const CATEGORIES = ['Asosiy', 'Moliya', 'Ta\'lim', 'Qo\'shimcha'];
+const CATEGORIES = ['1. Strategiya', '2. Akademik', '3. O\'qituvchi', '4. O\'quvchi', '6. Moliya', '7. Operatsiya', '8. AI & IT', 'Qo\'shimcha'];
 
 export default function SchoolDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -60,7 +82,7 @@ export default function SchoolDetailPage() {
     email: '',
     phone: '',
     password: '',
-    role: 'school_admin',
+    role: 'director',
   });
 
   const { data: school, isLoading } = useQuery({
@@ -98,7 +120,7 @@ export default function SchoolDetailPage() {
         email: adminForm.email,
         phone: adminForm.phone || undefined,
         password: adminForm.password,
-        role: 'school_admin',
+        role: 'director',
         schoolId: id,
       }),
     onSuccess: () => {
@@ -107,7 +129,7 @@ export default function SchoolDetailPage() {
         description: `${adminForm.firstName} ${adminForm.lastName} maktabga qo'shildi.`,
       });
       setShowAdminDialog(false);
-      setAdminForm({ firstName: '', lastName: '', email: '', phone: '', password: '', role: 'school_admin' });
+      setAdminForm({ firstName: '', lastName: '', email: '', phone: '', password: '', role: 'director' });
       queryClient.invalidateQueries({ queryKey: ['school', id] });
     },
     onError: (err: any) => {
@@ -435,7 +457,6 @@ export default function SchoolDetailPage() {
                   <SelectValue placeholder="Rol tanlang" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="school_admin">Maktab admini</SelectItem>
                   <SelectItem value="director">Direktor</SelectItem>
                   <SelectItem value="vice_principal">O\'rinbosar</SelectItem>
                   <SelectItem value="accountant">Hisobchi</SelectItem>

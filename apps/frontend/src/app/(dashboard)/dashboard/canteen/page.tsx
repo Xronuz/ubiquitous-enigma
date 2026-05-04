@@ -70,7 +70,7 @@ export default function CanteenPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const canManage = ['school_admin', 'vice_principal'].includes(user?.role ?? '');
+  const canManage = ['director', 'vice_principal'].includes(user?.role ?? '');
 
   // Week navigation
   const [weekStart, setWeekStart] = useState(() => getMondayOfWeek(new Date()));

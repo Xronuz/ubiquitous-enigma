@@ -6,7 +6,7 @@ import { MarkAttendanceDto } from './dto/mark-attendance.dto';
 import { NotificationQueueService } from '@/modules/notifications/notification-queue.service';
 import { AuditService } from '@/common/audit/audit.service';
 import { EventsGateway } from '@/modules/gateway/events.gateway';
-import { branchFilter } from '@/common/utils/branch-filter.util';
+import { buildTenantWhere } from '@/common/utils/tenant-scope.util';
 
 const ATTENDANCE_TTL = 3 * 60;   // 3 min — nisbatan tez-tez o'zgaradi
 const SUMMARY_TTL   = 2 * 60;   // 2 min — joriy kun xulosasi
@@ -22,8 +22,8 @@ export class AttendanceService {
     @Optional() private readonly eventsGateway: EventsGateway,
   ) {}
 
-  private ck(schoolId: string, branchCtx: string | null, suffix: string) {
-    return `attendance:${schoolId}:${branchCtx ?? 'all'}:${suffix}`;
+  private ck(schoolId: string, branchId: string | null | undefined, suffix: string) {
+    return `attendance:${schoolId}:${branchId ?? 'all'}:${suffix}`;
   }
 
   private async invalidate(schoolId: string) {
@@ -31,7 +31,7 @@ export class AttendanceService {
     if (keys.length > 0) await this.redis.del(...keys);
   }
 
-  async markAttendance(dto: MarkAttendanceDto, currentUser: JwtPayload, branchCtx: string | null = null) {
+  async markAttendance(dto: MarkAttendanceDto, currentUser: JwtPayload) {
     const schoolId = currentUser.schoolId!;
     const date = new Date(dto.date);
 
@@ -54,7 +54,7 @@ export class AttendanceService {
           await tx.attendance.create({
             data: {
               schoolId,
-              branchId: branchCtx ?? currentUser.branchId ?? undefined,
+              branchId: currentUser.branchId!,
               classId: dto.classId,
               studentId: entry.studentId,
               scheduleId: dto.scheduleId,
@@ -194,13 +194,13 @@ export class AttendanceService {
     }
   }
 
-  async getReport(currentUser: JwtPayload, branchCtx: string | null = null, classId?: string, startDate?: string, endDate?: string) {
+  async getReport(currentUser: JwtPayload, classId?: string, startDate?: string, endDate?: string) {
     const schoolId = currentUser.schoolId!;
-    const key = this.ck(schoolId, branchCtx, `report:${classId ?? 'all'}:${startDate ?? ''}:${endDate ?? ''}`);
+    const key = this.ck(schoolId, currentUser.branchId, `report:${classId ?? 'all'}:${startDate ?? ''}:${endDate ?? ''}`);
     const cached = await this.redis.getJson<any[]>(key);
     if (cached) return cached;
 
-    const where: any = { ...branchFilter(currentUser, branchCtx) };
+    const where: any = { ...buildTenantWhere(currentUser) };
     if (classId) where.classId = classId;
     if (startDate) where.date = { gte: new Date(startDate) };
     if (endDate) where.date = { ...where.date, lte: new Date(endDate) };
@@ -219,14 +219,14 @@ export class AttendanceService {
     return result;
   }
 
-  async getStudentHistory(studentId: string, currentUser: JwtPayload, branchCtx: string | null = null, limit = 30) {
+  async getStudentHistory(studentId: string, currentUser: JwtPayload, limit = 30) {
     const schoolId = currentUser.schoolId!;
-    const key = this.ck(schoolId, branchCtx, `history:${studentId}:${limit}`);
+    const key = this.ck(schoolId, currentUser.branchId, `history:${studentId}:${limit}`);
     const cached = await this.redis.getJson<any[]>(key);
     if (cached) return cached;
 
     const result = await this.prisma.attendance.findMany({
-      where: { studentId, ...branchFilter(currentUser, branchCtx) },
+      where: { studentId, ...buildTenantWhere(currentUser) },
       include: {
         schedule: {
           include: { subject: { select: { id: true, name: true } } },
@@ -240,10 +240,10 @@ export class AttendanceService {
   }
 
   /** Dashboard widget: today's attendance percentages (branch-aware) */
-  async getTodaySummary(currentUser: JwtPayload, branchCtx: string | null = null) {
+  async getTodaySummary(currentUser: JwtPayload) {
     const schoolId = currentUser.schoolId!;
     const todayStr = new Date().toISOString().slice(0, 10);
-    const key = this.ck(schoolId, branchCtx, `today-summary:${todayStr}`);
+    const key = this.ck(schoolId, currentUser.branchId, `today-summary:${todayStr}`);
     const cached = await this.redis.getJson<any>(key);
     if (cached) return cached;
 
@@ -252,7 +252,7 @@ export class AttendanceService {
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    const filter = branchFilter(currentUser, branchCtx);
+    const filter = buildTenantWhere(currentUser);
     const [records, totalStudents] = await Promise.all([
       this.prisma.attendance.findMany({
         where: { ...filter, date: { gte: today, lt: tomorrow } },

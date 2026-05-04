@@ -25,7 +25,7 @@ const STATUSES = [
   { value: AttendanceStatus.EXCUSED,  label: 'Uzrli',    icon: AlertCircle,  active: 'bg-blue-500/10 border-blue-500 text-blue-700 dark:text-blue-400' },
 ] as const;
 
-const ALLOWED = ['school_admin', 'vice_principal', 'teacher', 'class_teacher'];
+const ALLOWED = ['director', 'vice_principal', 'teacher', 'class_teacher'];
 
 export default function BulkAttendancePage() {
   const router = useRouter();

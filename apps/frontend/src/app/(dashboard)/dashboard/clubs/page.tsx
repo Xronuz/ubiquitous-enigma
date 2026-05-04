@@ -470,7 +470,7 @@ export default function ClubsPage() {
   const [joinTarget, setJoinTarget] = useState<any>(null); // club pending join dialog
   const [actioningId, setActioningId] = useState<string | null>(null);
 
-  const isAdmin   = ['school_admin', 'vice_principal'].includes(user?.role ?? '');
+  const isAdmin   = ['director', 'vice_principal'].includes(user?.role ?? '');
   const isStudent = user?.role === 'student';
   const isTeacher = ['teacher', 'class_teacher'].includes(user?.role ?? '');
 

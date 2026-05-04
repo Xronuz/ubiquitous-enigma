@@ -12,7 +12,7 @@ OUTPUT_DIR = "/tmp/xedu-audit"
 
 ACCOUNTS = [
     ("super_admin", "super@eduplatform.uz", "SuperAdmin123!"),
-    ("school_admin", "admin@demo-school.uz", "SchoolAdmin123!"),
+    ("branch_admin", "branchadmin@demo-school.uz", "BranchAdmin123!"),
     ("director", "director@demo-school.uz", "Director123!"),
     ("vice_principal", "vice@demo-school.uz", "Vice123!"),
     ("teacher", "teacher@demo-school.uz", "Teacher123!"),

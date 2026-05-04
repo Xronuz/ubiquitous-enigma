@@ -11,7 +11,6 @@ import { RolesGuard } from '@/common/guards/roles.guard';
 import { ClassesService } from './classes.service';
 import { CreateClassDto } from './dto/create-class.dto';
 import { CurrentUser } from '@/common/decorators/current-user.decorator';
-import { BranchContext } from '@/common/decorators/branch-context.decorator';
 import { Roles } from '@/common/decorators/roles.decorator';
 import { JwtPayload, UserRole } from '@eduplatform/types';
 
@@ -38,91 +37,87 @@ export class ClassesController {
   @Get('my-class')
   @Roles(UserRole.CLASS_TEACHER, UserRole.TEACHER)
   @ApiOperation({ summary: 'O\'z sinfi (class_teacher/teacher)' })
-  findMyClass(@CurrentUser() user: JwtPayload, @BranchContext() branchCtx: string | null) {
-    return this.classesService.findMyClass(user, branchCtx);
+  findMyClass(@CurrentUser() user: JwtPayload) {
+    return this.classesService.findMyClass(user);
   }
 
   @Get()
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.BRANCH_ADMIN, UserRole.VICE_PRINCIPAL, UserRole.TEACHER, UserRole.CLASS_TEACHER, UserRole.STUDENT, UserRole.PARENT, UserRole.ACCOUNTANT)
+  @Roles(UserRole.DIRECTOR, UserRole.BRANCH_ADMIN, UserRole.VICE_PRINCIPAL, UserRole.TEACHER, UserRole.CLASS_TEACHER, UserRole.STUDENT, UserRole.PARENT, UserRole.ACCOUNTANT)
   @ApiOperation({ summary: 'Sinflar ro\'yxati' })
-  findAll(@CurrentUser() user: JwtPayload, @BranchContext() branchCtx: string | null) {
-    return this.classesService.findAll(user, branchCtx);
+  findAll(@CurrentUser() user: JwtPayload) {
+    return this.classesService.findAll(user);
   }
 
   @Get(':id')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.BRANCH_ADMIN, UserRole.VICE_PRINCIPAL, UserRole.TEACHER, UserRole.CLASS_TEACHER, UserRole.STUDENT, UserRole.PARENT, UserRole.ACCOUNTANT)
+  @Roles(UserRole.DIRECTOR, UserRole.BRANCH_ADMIN, UserRole.VICE_PRINCIPAL, UserRole.TEACHER, UserRole.CLASS_TEACHER, UserRole.STUDENT, UserRole.PARENT, UserRole.ACCOUNTANT)
   @ApiOperation({ summary: 'Sinf ma\'lumoti' })
-  findOne(@Param('id') id: string, @CurrentUser() user: JwtPayload, @BranchContext() branchCtx: string | null) {
-    return this.classesService.findOne(id, user, branchCtx);
+  findOne(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
+    return this.classesService.findOne(id, user);
   }
 
   @Post()
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.BRANCH_ADMIN, UserRole.VICE_PRINCIPAL)
+  @Roles(UserRole.DIRECTOR, UserRole.BRANCH_ADMIN, UserRole.VICE_PRINCIPAL)
   @ApiOperation({ summary: 'Yangi sinf yaratish' })
-  create(@Body() dto: CreateClassDto, @CurrentUser() user: JwtPayload, @BranchContext() branchCtx: string | null) {
-    return this.classesService.create(dto, user, branchCtx);
+  create(@Body() dto: CreateClassDto, @CurrentUser() user: JwtPayload) {
+    return this.classesService.create(dto, user);
   }
 
   @Put(':id')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.BRANCH_ADMIN, UserRole.VICE_PRINCIPAL)
+  @Roles(UserRole.DIRECTOR, UserRole.BRANCH_ADMIN, UserRole.VICE_PRINCIPAL)
   @ApiOperation({ summary: 'Sinfni yangilash' })
   update(
     @Param('id') id: string,
     @Body() dto: Partial<CreateClassDto>,
     @CurrentUser() user: JwtPayload,
-    @BranchContext() branchCtx: string | null,
   ) {
-    return this.classesService.update(id, dto, user, branchCtx);
+    return this.classesService.update(id, dto, user);
   }
 
   @Delete(':id')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR)
+  @Roles(UserRole.DIRECTOR)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Sinfni o\'chirish' })
-  remove(@Param('id') id: string, @CurrentUser() user: JwtPayload, @BranchContext() branchCtx: string | null) {
-    return this.classesService.remove(id, user, branchCtx);
+  remove(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
+    return this.classesService.remove(id, user);
   }
 
   @Get(':id/students')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.BRANCH_ADMIN, UserRole.VICE_PRINCIPAL, UserRole.TEACHER, UserRole.CLASS_TEACHER)
+  @Roles(UserRole.DIRECTOR, UserRole.BRANCH_ADMIN, UserRole.VICE_PRINCIPAL, UserRole.TEACHER, UserRole.CLASS_TEACHER)
   @ApiOperation({ summary: 'Sinfdagi o\'quvchilar ro\'yxati' })
-  getStudents(@Param('id') id: string, @CurrentUser() user: JwtPayload, @BranchContext() branchCtx: string | null) {
-    return this.classesService.getStudents(id, user, branchCtx);
+  getStudents(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
+    return this.classesService.getStudents(id, user);
   }
 
   @Post(':id/students/:studentId')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.BRANCH_ADMIN, UserRole.VICE_PRINCIPAL)
+  @Roles(UserRole.DIRECTOR, UserRole.BRANCH_ADMIN, UserRole.VICE_PRINCIPAL)
   @ApiOperation({ summary: 'O\'quvchini sinfga qo\'shish' })
   addStudent(
     @Param('id') classId: string,
     @Param('studentId') studentId: string,
     @CurrentUser() user: JwtPayload,
-    @BranchContext() branchCtx: string | null,
   ) {
-    return this.classesService.addStudent(classId, studentId, user, branchCtx);
+    return this.classesService.addStudent(classId, studentId, user);
   }
 
   @Delete(':id/students/:studentId')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.BRANCH_ADMIN, UserRole.VICE_PRINCIPAL)
+  @Roles(UserRole.DIRECTOR, UserRole.BRANCH_ADMIN, UserRole.VICE_PRINCIPAL)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'O\'quvchini sinfdan chiqarish' })
   removeStudent(
     @Param('id') classId: string,
     @Param('studentId') studentId: string,
     @CurrentUser() user: JwtPayload,
-    @BranchContext() branchCtx: string | null,
   ) {
-    return this.classesService.removeStudent(classId, studentId, user, branchCtx);
+    return this.classesService.removeStudent(classId, studentId, user);
   }
 
   @Post('promote')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL)
+  @Roles(UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL)
   @ApiOperation({ summary: 'O\'quvchilarni yangi o\'quv yiliga ko\'chirish' })
   promoteStudents(
     @Body() dto: PromoteStudentsDto,
     @CurrentUser() user: JwtPayload,
-    @BranchContext() branchCtx: string | null,
   ) {
-    return this.classesService.promoteStudents(dto.promotions, user, branchCtx);
+    return this.classesService.promoteStudents(dto.promotions, user);
   }
 }

@@ -198,7 +198,7 @@ export class ImportService {
             phone:     row.data.phone,
             password:  row.data.password ?? 'Staff@123',
             role:      row.data.role as UserRole,
-            branchId:  branchIdOverride ?? undefined,
+            branchId: currentUser.branchId!,
           },
           currentUser,
         );
@@ -271,10 +271,10 @@ export class ImportService {
     for (const row of validRows) {
       try {
         // Classdan branchId ni olish (agar override berilmagan bo'lsa)
-        let branchId = branchIdOverride ?? undefined;
+        let branchId = branchIdOverride;
         if (!branchId) {
           const cls = await this.prisma.class.findUnique({ where: { id: row.data.classId }, select: { branchId: true } });
-          branchId = cls?.branchId ?? currentUser.branchId ?? undefined;
+          branchId = cls!.branchId;
         }
 
         // Konflikt tekshirish
@@ -370,10 +370,10 @@ export class ImportService {
       await this.prisma.$transaction(async (tx) => {
         for (const row of validRows) {
           // Classdan branchId ni olish (agar override berilmagan bo'lsa)
-          let branchId = branchIdOverride ?? undefined;
+          let branchId = branchIdOverride;
           if (!branchId) {
             const cls = await tx.class.findUnique({ where: { id: row.data.classId }, select: { branchId: true } });
-            branchId = cls?.branchId ?? currentUser.branchId ?? undefined;
+            branchId = cls!.branchId;
           }
 
           await tx.grade.create({
@@ -467,12 +467,12 @@ export class ImportService {
               where: { studentId: row.data.studentId },
               include: { class: { select: { branchId: true } } },
             });
-            const branchId = branchIdOverride ?? enrollment?.class?.branchId ?? currentUser.branchId ?? undefined;
+            const branchId = branchIdOverride ?? enrollment!.class!.branchId;
             await tx.attendance.create({
               data: {
                 schoolId,
                 branchId,
-                classId: enrollment?.classId ?? '',
+                classId: enrollment!.classId,
                 studentId: row.data.studentId,
                 date: dateObj,
                 status: row.data.status as any,

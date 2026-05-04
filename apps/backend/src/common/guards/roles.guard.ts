@@ -5,7 +5,7 @@ import { ROLES_KEY } from '../decorators/roles.decorator';
 
 /** Roles that indicate a school-scoped endpoint */
 const SCHOOL_ROLES = new Set<UserRole>([
-  UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR,
+  UserRole.DIRECTOR,
   UserRole.BRANCH_ADMIN, UserRole.VICE_PRINCIPAL,
   UserRole.TEACHER, UserRole.CLASS_TEACHER,
   UserRole.ACCOUNTANT, UserRole.LIBRARIAN,

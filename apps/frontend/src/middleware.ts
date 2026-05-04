@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { ROUTE_PERMISSIONS, ROLE_HOME, type UserRole } from '@/config/permissions';
 
 /**
  * Simple JWT payload decoder (no signature verification — backend handles that).
@@ -20,29 +21,11 @@ function decodeJwtPayload(token: string): Record<string, any> | null {
 
 const PUBLIC_PATHS = ['/login', '/register', '/forgot-password', '/reset-password'];
 
-/** Role-appropriate default dashboard landing pages */
-const ROLE_HOME: Record<string, string> = {
-  super_admin: '/dashboard/schools',
-  student: '/dashboard/student',
-  parent: '/dashboard/parent',
-};
-
-/** Routes restricted to specific roles */
-const ROLE_RESTRICTIONS: Array<{ path: string; roles: string[] }> = [
-  { path: '/dashboard/schools',    roles: ['super_admin'] },
-  { path: '/dashboard/audit-log',  roles: ['super_admin'] },
-  { path: '/dashboard/student',    roles: ['student'] },
-  { path: '/dashboard/student/shop', roles: ['student'] },
-  { path: '/dashboard/parent',     roles: ['parent'] },
-  { path: '/dashboard/finance',    roles: ['school_admin', 'director', 'accountant', 'branch_admin'] },
-  { path: '/dashboard/payroll',    roles: ['school_admin', 'director', 'accountant'] },
-  { path: '/dashboard/fee-structures', roles: ['school_admin', 'director', 'accountant'] },
-  { path: '/dashboard/staff',      roles: ['school_admin', 'director', 'vice_principal'] },
-  { path: '/dashboard/users',      roles: ['super_admin', 'school_admin', 'director', 'vice_principal', 'branch_admin'] },
-  { path: '/dashboard/leave-requests', roles: ['school_admin', 'director', 'vice_principal'] },
-  { path: '/dashboard/discipline', roles: ['school_admin', 'director', 'vice_principal', 'branch_admin'] },
-  { path: '/dashboard/reports',    roles: ['school_admin', 'director', 'vice_principal', 'accountant'] },
-];
+// Build ROLE_RESTRICTIONS from ROUTE_PERMISSIONS (single source of truth)
+const ROLE_RESTRICTIONS = Object.entries(ROUTE_PERMISSIONS).map(([path, roles]) => ({
+  path,
+  roles: roles as string[],
+}));
 
 // ─── Middleware ───────────────────────────────────────────────────────────────
 
@@ -63,12 +46,13 @@ export function middleware(request: NextRequest) {
   const payload = token ? decodeJwtPayload(token) : null;
   const isAuthenticated = !!payload && typeof payload.exp === 'number' && payload.exp * 1000 > Date.now();
   const role = (payload?.role as string) || '';
+  const branchId = (payload?.branchId as string) || '';
 
   // ── 1. Public auth pages ──────────────────────────────────────────────
   if (PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + '/'))) {
     // Already logged in → redirect away from login/register pages
     if (isAuthenticated) {
-      const home = ROLE_HOME[role] ?? '/dashboard';
+      const home = ROLE_HOME[role as UserRole] ?? '/dashboard';
       return NextResponse.redirect(new URL(home, request.url));
     }
     return NextResponse.next();
@@ -85,11 +69,16 @@ export function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL('/login', request.url));
     }
 
-    // Role-specific route guards
+    // Branch guard: every authenticated non-super_admin must have a branchId
+    if (role !== 'super_admin' && !branchId && pathname !== '/dashboard/onboarding') {
+      return NextResponse.redirect(new URL('/dashboard/onboarding', request.url));
+    }
+
+    // Role-specific route guards (from ROUTE_PERMISSIONS)
     for (const restriction of ROLE_RESTRICTIONS) {
       if (pathname === restriction.path || pathname.startsWith(restriction.path + '/')) {
         if (!restriction.roles.includes(role)) {
-          const home = ROLE_HOME[role] ?? '/dashboard';
+          const home = ROLE_HOME[role as UserRole] ?? '/dashboard';
           return NextResponse.redirect(new URL(home, request.url));
         }
       }

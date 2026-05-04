@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * BranchSwitcher — director / school_admin / branch_admin uchun
+ * BranchSwitcher — director / branch_admin uchun
  * aktiv filialni tanlash dropdown komponenti.
  *
  * - Filialar ro'yxatini /branches dan yuklab useBranchStore.setBranches() ga saqlaydi.
@@ -29,7 +29,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 
 /** Bu rollar uchun filial switcher ko'rsatiladi */
-const SWITCHER_ROLES = new Set(['director', 'school_admin', 'branch_admin']);
+const SWITCHER_ROLES = new Set(['director', 'branch_admin']);
 
 export function BranchSwitcher() {
   const user = useAuthStore((s) => s.user);
@@ -69,7 +69,7 @@ export function BranchSwitcher() {
   // Hozirgi filial nomi
   const currentLabel = activeBranchId
     ? (activeBranchMeta?.name ?? branches.find((b) => b.id === activeBranchId)?.name ?? 'Filial')
-    : 'Barcha filiallar';
+    : 'Filial tanlanmagan';
 
   const activeBranches = branches.filter((b) => b.isActive);
 
@@ -105,10 +105,8 @@ export function BranchSwitcher() {
         >
           {isSwitching ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0" />
-          ) : activeBranchId ? (
-            <Building2 className="h-3.5 w-3.5 shrink-0" />
           ) : (
-            <Layers className="h-3.5 w-3.5 shrink-0" />
+            <Building2 className="h-3.5 w-3.5 shrink-0" />
           )}
           <span className="truncate">{currentLabel}</span>
           <ChevronDown className="h-3 w-3 shrink-0 opacity-60" />
@@ -121,20 +119,7 @@ export function BranchSwitcher() {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
 
-        {/* Barcha filiallar (school-wide) — faqat director/school_admin uchun */}
-        {!isBranchAdmin && (
-          <>
-            <DropdownMenuItem
-              onClick={() => switchBranch(null, null)}
-              className="flex items-center gap-2"
-            >
-              <Layers className="h-4 w-4 text-muted-foreground" />
-              <span className="flex-1">Barcha filiallar</span>
-              {!activeBranchId && <Check className="h-4 w-4 text-primary" />}
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-          </>
-        )}
+        {/* "Barcha filiallar" ko'rinishi olib tashlandi — strict branch-required */}
 
         {/* Filiallar ro'yxati */}
         {isLoading ? (
@@ -175,8 +160,8 @@ export function BranchSwitcher() {
           ))
         )}
 
-        {/* Filialni boshqarish — faqat school_admin/director */}
-        {(user.role === 'school_admin' || user.role === 'director') && (
+        {/* Filialni boshqarish — faqat director */}
+        {user.role === 'director' && (
           <>
             <DropdownMenuSeparator />
             <DropdownMenuItem

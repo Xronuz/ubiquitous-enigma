@@ -25,7 +25,7 @@ export default function LibraryPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const canManage = ['school_admin', 'librarian'].includes(user?.role ?? '');
+  const canManage = ['director', 'librarian'].includes(user?.role ?? '');
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [studentSearch, setStudentSearch] = useState('');

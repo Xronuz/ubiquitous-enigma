@@ -43,7 +43,7 @@ export class CreateUserDto {
   @IsUUID('4', { message: 'schoolId UUID formatida bo\'lishi kerak' })
   schoolId?: string;
 
-  @ApiPropertyOptional({ description: 'Filial ID (UUID) — director/school_admin uchun null' })
+  @ApiPropertyOptional({ description: 'Filial ID (UUID) — director uchun null' })
   @IsOptional()
   @IsUUID('4', { message: 'branchId UUID formatida bo\'lishi kerak' })
   branchId?: string;

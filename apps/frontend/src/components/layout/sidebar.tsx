@@ -10,11 +10,13 @@ import {
   BookCheck, School, Settings, Shield, CreditCard,
   Wallet, BarChart3, ShoppingBag, Coins, FileText,
   Building2, Bell, Award, Library, Bus,
+  Brain, Megaphone,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useUIStore } from '@/store/ui.store';
 import { useAuthStore } from '@/store/auth.store';
+import { ROUTE_PERMISSIONS } from '@/config/permissions';
 
 // ── Section map: child route → parent nav item ────────────────────────────────
 const SECTION_MAP: Record<string, string> = {
@@ -105,41 +107,46 @@ const NAV: NavItem[] = [
   {
     label: 'Maktablar', href: '/dashboard/schools',
     icon: School, section: 'main',
-    roles: ['super_admin'],
+    roles: ROUTE_PERMISSIONS['/dashboard/schools'],
   },
   {
     label: 'Foydalanuvchilar', href: '/dashboard/users',
     icon: Users, section: 'main',
-    roles: ['super_admin'],
+    roles: ROUTE_PERMISSIONS['/dashboard/users'],
   },
   {
     label: 'Audit log', href: '/dashboard/audit-log',
     icon: Shield, section: 'main',
-    roles: ['super_admin'],
+    roles: ROUTE_PERMISSIONS['/dashboard/audit-log'],
+  },
+  {
+    label: 'Filiallar', href: '/dashboard/branches',
+    icon: Building2, section: 'main',
+    roles: ROUTE_PERMISSIONS['/dashboard/branches'],
   },
 
   // ═════════════════════════════════════════════════════════════════════════════
-  // SCHOOL ADMIN / DIRECTOR — Full school management
+  // DIRECTOR / VICE_PRINCIPAL / BRANCH_ADMIN — Full school management
   // ═════════════════════════════════════════════════════════════════════════════
   {
     label: "Ta'lim", href: '/dashboard/education',
     icon: BookOpen, section: 'main',
-    roles: ['school_admin', 'director', 'vice_principal', 'branch_admin'],
+    roles: ROUTE_PERMISSIONS['/dashboard/education'],
   },
   {
     label: "O'quvchilar", href: '/dashboard/students',
     icon: Users, section: 'main',
-    roles: ['school_admin', 'director', 'vice_principal', 'branch_admin', 'teacher', 'class_teacher'],
+    roles: ROUTE_PERMISSIONS['/dashboard/students'],
   },
   {
     label: 'Xodimlar', href: '/dashboard/staff',
     icon: Briefcase, section: 'main',
-    roles: ['school_admin', 'director', 'vice_principal'],
+    roles: ROUTE_PERMISSIONS['/dashboard/staff'],
   },
   {
     label: 'Moliya', href: '/dashboard/finance',
     icon: TrendingUp, section: 'main',
-    roles: ['school_admin', 'director', 'accountant'],
+    roles: ROUTE_PERMISSIONS['/dashboard/finance'],
   },
 
   // ═════════════════════════════════════════════════════════════════════════════
@@ -148,12 +155,12 @@ const NAV: NavItem[] = [
   {
     label: "Ta'til so'rovlar", href: '/dashboard/leave-requests',
     icon: FileText, section: 'main',
-    roles: ['vice_principal', 'school_admin', 'director'],
+    roles: ROUTE_PERMISSIONS['/dashboard/leave-requests'],
   },
   {
     label: 'Intizom', href: '/dashboard/discipline',
     icon: Shield, section: 'main',
-    roles: ['vice_principal', 'school_admin', 'director', 'branch_admin'],
+    roles: ROUTE_PERMISSIONS['/dashboard/discipline'],
   },
 
   // ═════════════════════════════════════════════════════════════════════════════
@@ -162,32 +169,32 @@ const NAV: NavItem[] = [
   {
     label: 'Dars jadvali', href: '/dashboard/schedule',
     icon: Calendar, section: 'main',
-    roles: ['teacher', 'class_teacher', 'student', 'parent'],
+    roles: ROUTE_PERMISSIONS['/dashboard/schedule'],
   },
   {
     label: 'Baholar', href: '/dashboard/grades',
     icon: GraduationCap, section: 'main',
-    roles: ['teacher', 'class_teacher', 'student', 'parent'],
+    roles: ROUTE_PERMISSIONS['/dashboard/grades'],
   },
   {
     label: 'Imtihonlar', href: '/dashboard/exams',
     icon: ClipboardList, section: 'main',
-    roles: ['teacher', 'class_teacher', 'student', 'parent', 'school_admin', 'director', 'vice_principal', 'branch_admin'],
+    roles: ROUTE_PERMISSIONS['/dashboard/exams'],
   },
   {
     label: 'Uy vazifalari', href: '/dashboard/homework',
     icon: BookMarked, section: 'main',
-    roles: ['teacher', 'class_teacher', 'student', 'parent', 'school_admin', 'director', 'vice_principal', 'branch_admin'],
+    roles: ROUTE_PERMISSIONS['/dashboard/homework'],
   },
   {
     label: 'Davomat', href: '/dashboard/attendance',
     icon: CalendarCheck, section: 'main',
-    roles: ['teacher', 'class_teacher', 'student', 'parent', 'school_admin', 'director', 'vice_principal', 'branch_admin'],
+    roles: ROUTE_PERMISSIONS['/dashboard/attendance'],
   },
   {
     label: 'Mening sinfim', href: '/dashboard/my-class',
     icon: BookCheck, section: 'main',
-    roles: ['class_teacher'],
+    roles: ROUTE_PERMISSIONS['/dashboard/my-class'],
   },
 
   // ═════════════════════════════════════════════════════════════════════════════
@@ -196,22 +203,37 @@ const NAV: NavItem[] = [
   {
     label: "To'lovlar", href: '/dashboard/payments',
     icon: CreditCard, section: 'main',
-    roles: ['accountant', 'school_admin', 'director'],
+    roles: ROUTE_PERMISSIONS['/dashboard/payments'],
   },
   {
     label: 'Tariflar', href: '/dashboard/fee-structures',
     icon: Wallet, section: 'main',
-    roles: ['accountant', 'school_admin', 'director'],
+    roles: ROUTE_PERMISSIONS['/dashboard/fee-structures'],
   },
   {
     label: 'Ish haqi', href: '/dashboard/payroll',
     icon: Award, section: 'main',
-    roles: ['accountant', 'school_admin', 'director'],
+    roles: ROUTE_PERMISSIONS['/dashboard/payroll'],
   },
   {
     label: 'Hisobotlar', href: '/dashboard/reports',
     icon: BarChart3, section: 'main',
-    roles: ['accountant', 'school_admin', 'director', 'vice_principal'],
+    roles: ROUTE_PERMISSIONS['/dashboard/reports'],
+  },
+  {
+    label: 'KPI Dashboard', href: '/dashboard/kpi',
+    icon: TrendingUp, section: 'main',
+    roles: ROUTE_PERMISSIONS['/dashboard/kpi'],
+  },
+  {
+    label: 'AI Analytics', href: '/dashboard/ai-analytics',
+    icon: Brain, section: 'main',
+    roles: ROUTE_PERMISSIONS['/dashboard/ai-analytics'],
+  },
+  {
+    label: 'Marketing', href: '/dashboard/marketing',
+    icon: Megaphone, section: 'main',
+    roles: ROUTE_PERMISSIONS['/dashboard/marketing'],
   },
 
   // ═════════════════════════════════════════════════════════════════════════════
@@ -220,17 +242,17 @@ const NAV: NavItem[] = [
   {
     label: "O'quvchi portal", href: '/dashboard/student',
     icon: UserCircle, section: 'portal',
-    roles: ['student'],
+    roles: ROUTE_PERMISSIONS['/dashboard/student'],
   },
   {
     label: 'Do\'kon', href: '/dashboard/student/shop',
     icon: ShoppingBag, section: 'portal',
-    roles: ['student'],
+    roles: ROUTE_PERMISSIONS['/dashboard/student/shop'],
   },
   {
     label: 'EduCoin', href: '/dashboard/coins',
     icon: Coins, section: 'portal',
-    roles: ['student'],
+    roles: ROUTE_PERMISSIONS['/dashboard/coins'],
   },
 
   // ═════════════════════════════════════════════════════════════════════════════
@@ -239,12 +261,12 @@ const NAV: NavItem[] = [
   {
     label: 'Farzand', href: '/dashboard/parent',
     icon: UserCircle, section: 'portal',
-    roles: ['parent'],
+    roles: ROUTE_PERMISSIONS['/dashboard/parent'],
   },
   {
     label: "O'quvchi to'lovlari", href: '/dashboard/payments',
     icon: CreditCard, section: 'portal',
-    roles: ['parent'],
+    roles: ROUTE_PERMISSIONS['/dashboard/payments'],
   },
 
   // ═════════════════════════════════════════════════════════════════════════════
@@ -253,7 +275,7 @@ const NAV: NavItem[] = [
   {
     label: 'Filial xodimlari', href: '/dashboard/staff',
     icon: Briefcase, section: 'main',
-    roles: ['branch_admin'],
+    roles: ROUTE_PERMISSIONS['/dashboard/staff'],
   },
 
   // ═════════════════════════════════════════════════════════════════════════════
@@ -262,17 +284,17 @@ const NAV: NavItem[] = [
   {
     label: 'Resurslar', href: '/dashboard/resources',
     icon: Package, section: 'system',
-    roles: ['school_admin', 'director', 'vice_principal', 'teacher', 'class_teacher', 'branch_admin', 'librarian'],
+    roles: ROUTE_PERMISSIONS['/dashboard/resources'],
   },
   {
     label: 'Kommunikatsiya', href: '/dashboard/comms',
     icon: MessageSquare, section: 'system',
-    roles: ['school_admin', 'director', 'vice_principal', 'teacher', 'class_teacher', 'accountant', 'branch_admin', 'student', 'parent'],
+    roles: ROUTE_PERMISSIONS['/dashboard/comms'],
   },
   {
     label: 'Sozlamalar', href: '/dashboard/settings',
     icon: Settings, section: 'system',
-    roles: ['school_admin', 'director', 'super_admin'],
+    roles: ROUTE_PERMISSIONS['/dashboard/settings'],
   },
 ];
 

@@ -13,17 +13,17 @@ const TABS = [
   {
     id: 'messages',
     label: 'Xabarlar',
-    roles: ['director', 'school_admin', 'vice_principal', 'teacher', 'class_teacher', 'accountant', 'librarian', 'parent', 'student'],
+    roles: ['director', 'vice_principal', 'teacher', 'class_teacher', 'accountant', 'librarian', 'parent', 'student'],
   },
   {
     id: 'notifications',
     label: 'Bildirishnomalar',
-    roles: ['director', 'school_admin', 'vice_principal', 'teacher', 'class_teacher', 'accountant', 'librarian', 'parent', 'student'],
+    roles: ['director', 'vice_principal', 'teacher', 'class_teacher', 'accountant', 'librarian', 'parent', 'student'],
   },
   {
     id: 'announcements',
     label: 'E\'lonlar',
-    roles: ['director', 'school_admin', 'vice_principal', 'teacher', 'class_teacher'],
+    roles: ['director', 'vice_principal', 'teacher', 'class_teacher'],
   },
 ];
 

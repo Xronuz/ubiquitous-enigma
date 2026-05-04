@@ -16,32 +16,32 @@ const TABS = [
   {
     id: 'library',
     label: 'Kutubxona',
-    roles: ['director', 'school_admin', 'vice_principal', 'librarian'],
+    roles: ['director', 'vice_principal', 'librarian'],
   },
   {
     id: 'learning',
     label: "O'quv markazi",
-    roles: ['director', 'school_admin', 'vice_principal', 'teacher', 'class_teacher'],
+    roles: ['director', 'vice_principal', 'teacher', 'class_teacher'],
   },
   {
     id: 'clubs',
     label: "To'garaklar",
-    roles: ['director', 'school_admin', 'vice_principal', 'teacher', 'class_teacher'],
+    roles: ['director', 'vice_principal', 'teacher', 'class_teacher'],
   },
   {
     id: 'coins',
     label: 'EduCoin',
-    roles: ['director', 'school_admin', 'vice_principal'],
+    roles: ['director', 'vice_principal'],
   },
   {
     id: 'canteen',
     label: 'Oshxona',
-    roles: ['director', 'school_admin', 'vice_principal', 'teacher', 'class_teacher'],
+    roles: ['director', 'vice_principal', 'teacher', 'class_teacher'],
   },
   {
     id: 'transport',
     label: 'Transport',
-    roles: ['director', 'school_admin', 'vice_principal'],
+    roles: ['director', 'vice_principal'],
   },
 ];
 

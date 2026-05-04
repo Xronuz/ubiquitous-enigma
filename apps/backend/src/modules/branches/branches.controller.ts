@@ -13,14 +13,14 @@ import { JwtPayload, UserRole } from '@eduplatform/types';
 
 /** Filialga kirish huquqi bor barcha rollar */
 const BRANCH_READERS = [
-  UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR,
+  UserRole.DIRECTOR,
   UserRole.BRANCH_ADMIN, UserRole.VICE_PRINCIPAL,
   UserRole.ACCOUNTANT,
 ];
 
 /** Filialni yaratish / tahrirlash / o'chirish — faqat school-wide */
 const BRANCH_MANAGERS = [
-  UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR,
+  UserRole.DIRECTOR,
 ];
 
 @ApiTags('branches')

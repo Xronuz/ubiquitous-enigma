@@ -19,10 +19,13 @@ import {
   MessageSquare, Library, Settings, UserCircle, School,
   CheckSquare, Briefcase, Clock, Search, History,
   ShieldAlert, Bus, CalendarCheck, Shield, Banknote,
+  Building2, Award, Wallet, Package, Coins, ShoppingBag,
+  Brain, Megaphone,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/auth.store';
 import { usersApi } from '@/lib/api/users';
 import { classesApi } from '@/lib/api/classes';
+import { ROUTE_PERMISSIONS } from '@/config/permissions';
 
 // ── Recent pages helpers ───────────────────────────────────────────────────────
 const RECENT_KEY = 'command_recent_pages';
@@ -48,33 +51,43 @@ function pushRecentPage(href: string, label: string) {
   }
 }
 
-// ── Navigation items ───────────────────────────────────────────────────────────
+// ── Navigation items (from ROUTE_PERMISSIONS) ─────────────────────────────────
 const NAV_ITEMS = [
-  { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, roles: ['school_admin', 'vice_principal', 'teacher', 'class_teacher', 'accountant', 'librarian'] },
-  { label: 'Foydalanuvchilar', href: '/dashboard/users', icon: Users, roles: ['school_admin', 'vice_principal'] },
-  { label: 'Sinflar', href: '/dashboard/classes', icon: GraduationCap, roles: ['school_admin', 'vice_principal', 'teacher', 'class_teacher'] },
-  { label: 'Dars jadvali', href: '/dashboard/schedule', icon: Calendar, roles: ['school_admin', 'vice_principal', 'teacher', 'class_teacher', 'accountant', 'librarian'] },
-  { label: 'Fanlar', href: '/dashboard/subjects', icon: BookOpen, roles: ['school_admin', 'vice_principal', 'teacher'] },
-  { label: 'Davomat', href: '/dashboard/attendance', icon: CheckSquare, roles: ['school_admin', 'vice_principal', 'teacher', 'class_teacher'] },
-  { label: 'Baholar', href: '/dashboard/grades', icon: TrendingUp, roles: ['school_admin', 'vice_principal', 'teacher', 'class_teacher'] },
-  { label: 'Imtihonlar', href: '/dashboard/exams', icon: FileText, roles: ['school_admin', 'vice_principal', 'teacher', 'class_teacher'] },
-  { label: 'Uy vazifalari', href: '/dashboard/homework', icon: ClipboardList, roles: ['school_admin', 'vice_principal', 'teacher', 'class_teacher'] },
-  { label: 'To\'lovlar', href: '/dashboard/payments', icon: CreditCard, roles: ['school_admin', 'accountant'] },
-  { label: 'Maosh tizimi', href: '/dashboard/payroll', icon: Briefcase, roles: ['school_admin', 'accountant'] },
-  { label: 'Hisobotlar', href: '/dashboard/reports', icon: FileText, roles: ['school_admin', 'vice_principal', 'accountant'] },
-  { label: 'Kutubxona', href: '/dashboard/library', icon: Library, roles: ['school_admin', 'vice_principal', 'librarian'] },
-  { label: 'Xabarlar', href: '/dashboard/messages', icon: MessageSquare, roles: ['school_admin', 'vice_principal', 'teacher', 'class_teacher', 'accountant', 'librarian'] },
-  { label: 'Bildirishnomalar', href: '/dashboard/notifications', icon: Bell, roles: ['school_admin', 'vice_principal', 'teacher', 'class_teacher', 'accountant', 'librarian'] },
-  { label: 'Ta\'til so\'rovlari', href: '/dashboard/leave-requests', icon: Clock, roles: ['school_admin', 'vice_principal', 'teacher', 'class_teacher', 'accountant', 'librarian'] },
-  { label: 'Maktablar', href: '/dashboard/schools', icon: School, roles: ['super_admin'] },
-  { label: 'Intizom jurnali', href: '/dashboard/discipline', icon: ShieldAlert, roles: ['school_admin', 'vice_principal', 'teacher', 'class_teacher'] },
-  { label: 'Ota-ona uchrashuvlari', href: '/dashboard/meetings', icon: CalendarCheck, roles: ['school_admin', 'vice_principal', 'teacher', 'class_teacher'] },
-  { label: 'Transport', href: '/dashboard/transport', icon: Bus, roles: ['school_admin', 'vice_principal'] },
-  { label: 'Ish yuklamasi', href: '/dashboard/reports/workload', icon: TrendingUp, roles: ['school_admin', 'vice_principal'] },
-  { label: 'Profil', href: '/dashboard/profile', icon: UserCircle, roles: ['school_admin', 'vice_principal', 'teacher', 'class_teacher', 'accountant', 'librarian', 'student', 'parent'] },
-  { label: 'Sozlamalar', href: '/dashboard/settings', icon: Settings, roles: ['school_admin', 'vice_principal', 'teacher', 'class_teacher', 'accountant', 'librarian'] },
-  { label: 'Audit Log', href: '/dashboard/audit-log', icon: Shield, roles: ['school_admin', 'vice_principal', 'super_admin'] },
-  { label: 'To\'lov tartiblari', href: '/dashboard/fee-structures', icon: Banknote, roles: ['school_admin', 'accountant'] },
+  { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, roles: ROUTE_PERMISSIONS['/dashboard'] },
+  { label: 'Maktablar', href: '/dashboard/schools', icon: School, roles: ROUTE_PERMISSIONS['/dashboard/schools'] },
+  { label: 'Filiallar', href: '/dashboard/branches', icon: Building2, roles: ROUTE_PERMISSIONS['/dashboard/branches'] },
+  { label: 'Foydalanuvchilar', href: '/dashboard/users', icon: Users, roles: ROUTE_PERMISSIONS['/dashboard/users'] },
+  { label: 'Xodimlar', href: '/dashboard/staff', icon: Briefcase, roles: ROUTE_PERMISSIONS['/dashboard/staff'] },
+  { label: "Ta'lim", href: '/dashboard/education', icon: BookOpen, roles: ROUTE_PERMISSIONS['/dashboard/education'] },
+  { label: "O'quvchilar", href: '/dashboard/students', icon: Users, roles: ROUTE_PERMISSIONS['/dashboard/students'] },
+  { label: 'Dars jadvali', href: '/dashboard/schedule', icon: Calendar, roles: ROUTE_PERMISSIONS['/dashboard/schedule'] },
+  { label: 'Fanlar', href: '/dashboard/subjects', icon: BookOpen, roles: ROUTE_PERMISSIONS['/dashboard/subjects'] },
+  { label: 'Davomat', href: '/dashboard/attendance', icon: CheckSquare, roles: ROUTE_PERMISSIONS['/dashboard/attendance'] },
+  { label: 'Baholar', href: '/dashboard/grades', icon: TrendingUp, roles: ROUTE_PERMISSIONS['/dashboard/grades'] },
+  { label: 'Imtihonlar', href: '/dashboard/exams', icon: FileText, roles: ROUTE_PERMISSIONS['/dashboard/exams'] },
+  { label: 'Uy vazifalari', href: '/dashboard/homework', icon: ClipboardList, roles: ROUTE_PERMISSIONS['/dashboard/homework'] },
+  { label: 'Moliya', href: '/dashboard/finance', icon: TrendingUp, roles: ROUTE_PERMISSIONS['/dashboard/finance'] },
+  { label: "To'lovlar", href: '/dashboard/payments', icon: CreditCard, roles: ROUTE_PERMISSIONS['/dashboard/payments'] },
+  { label: 'Tariflar', href: '/dashboard/fee-structures', icon: Wallet, roles: ROUTE_PERMISSIONS['/dashboard/fee-structures'] },
+  { label: 'Ish haqi', href: '/dashboard/payroll', icon: Award, roles: ROUTE_PERMISSIONS['/dashboard/payroll'] },
+  { label: 'Hisobotlar', href: '/dashboard/reports', icon: FileText, roles: ROUTE_PERMISSIONS['/dashboard/reports'] },
+  { label: 'Intizom', href: '/dashboard/discipline', icon: ShieldAlert, roles: ROUTE_PERMISSIONS['/dashboard/discipline'] },
+  { label: "Ta'til so'rovlar", href: '/dashboard/leave-requests', icon: Clock, roles: ROUTE_PERMISSIONS['/dashboard/leave-requests'] },
+  { label: 'Resurslar', href: '/dashboard/resources', icon: Package, roles: ROUTE_PERMISSIONS['/dashboard/resources'] },
+  { label: 'Kutubxona', href: '/dashboard/library', icon: Library, roles: ROUTE_PERMISSIONS['/dashboard/library'] },
+  { label: 'EduCoin', href: '/dashboard/coins', icon: Coins, roles: ROUTE_PERMISSIONS['/dashboard/coins'] },
+  { label: 'Transport', href: '/dashboard/transport', icon: Bus, roles: ROUTE_PERMISSIONS['/dashboard/transport'] },
+  { label: 'Kommunikatsiya', href: '/dashboard/comms', icon: MessageSquare, roles: ROUTE_PERMISSIONS['/dashboard/comms'] },
+  { label: 'Bildirishnomalar', href: '/dashboard/notifications', icon: Bell, roles: ROUTE_PERMISSIONS['/dashboard/notifications'] },
+  { label: 'Mening sinfim', href: '/dashboard/my-class', icon: GraduationCap, roles: ROUTE_PERMISSIONS['/dashboard/my-class'] },
+  { label: "O'quvchi portal", href: '/dashboard/student', icon: UserCircle, roles: ROUTE_PERMISSIONS['/dashboard/student'] },
+  { label: "O'quvchi do'koni", href: '/dashboard/student/shop', icon: ShoppingBag, roles: ROUTE_PERMISSIONS['/dashboard/student/shop'] },
+  { label: 'Farzand', href: '/dashboard/parent', icon: UserCircle, roles: ROUTE_PERMISSIONS['/dashboard/parent'] },
+  { label: 'Sozlamalar', href: '/dashboard/settings', icon: Settings, roles: ROUTE_PERMISSIONS['/dashboard/settings'] },
+  { label: 'Audit Log', href: '/dashboard/audit-log', icon: Shield, roles: ROUTE_PERMISSIONS['/dashboard/audit-log'] },
+  { label: 'KPI Dashboard', href: '/dashboard/kpi', icon: TrendingUp, roles: ROUTE_PERMISSIONS['/dashboard/kpi'] },
+  { label: 'AI Analytics', href: '/dashboard/ai-analytics', icon: Brain, roles: ROUTE_PERMISSIONS['/dashboard/ai-analytics'] },
+  { label: 'Marketing', href: '/dashboard/marketing', icon: Megaphone, roles: ROUTE_PERMISSIONS['/dashboard/marketing'] },
 ];
 
 interface CommandPaletteProps {
@@ -102,7 +115,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
 
   // Filter nav items by user role
   const navItems = NAV_ITEMS.filter(item =>
-    !user?.role || item.roles.includes(user.role),
+    !user?.role || item.roles?.includes(user.role as any),
   );
 
   // Search users (debounced)
@@ -121,164 +134,97 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     staleTime: 60_000,
   });
 
-  const navigate = useCallback((href: string, label?: string) => {
-    if (label) pushRecentPage(href, label);
-    router.push(href);
+  const handleNavigate = useCallback((href: string) => {
     onOpenChange(false);
-    setSearch('');
-  }, [router, onOpenChange]);
+    router.push(href);
+  }, [onOpenChange, router]);
 
-  // Filter classes by search
-  const filteredClasses = (classesData ?? []).filter((c: any) =>
-    c.name.toLowerCase().includes(search.toLowerCase()),
-  ).slice(0, 5);
+  const recentItems = recentPages
+    .map(r => navItems.find(n => n.href === r.href))
+    .filter(Boolean) as typeof navItems;
 
-  const users = usersData?.data ?? [];
-
-  const ROLE_UZ: Record<string, string> = {
-    school_admin: 'Admin',
-    vice_principal: 'Direktor o\'rinbosari',
-    teacher: 'O\'qituvchi',
-    class_teacher: 'Sinf rahbari',
-    accountant: 'Hisobchi',
-    librarian: 'Kutubxonachi',
-    student: 'O\'quvchi',
-    parent: 'Ota-ona',
-  };
+  const filteredNav = search.trim()
+    ? navItems.filter(n =>
+        n.label.toLowerCase().includes(search.toLowerCase()) ||
+        n.href.toLowerCase().includes(search.toLowerCase()),
+      )
+    : [];
 
   return (
-    <CommandDialog open={open} onOpenChange={(o) => { onOpenChange(o); if (!o) setSearch(''); }}>
+    <CommandDialog open={open} onOpenChange={onOpenChange}>
       <CommandInput
-        placeholder="Qidiruv: sahifalar, o'quvchilar, sinflar..."
+        placeholder="Qidirish..."
         value={search}
         onValueChange={setSearch}
       />
       <CommandList>
-        <CommandEmpty>
-          <div className="flex flex-col items-center gap-2 py-6 text-muted-foreground">
-            <Search className="h-8 w-8 opacity-40" />
-            <p className="text-sm">Natija topilmadi: &quot;{search}&quot;</p>
-          </div>
-        </CommandEmpty>
+        <CommandEmpty>Hech narsa topilmadi</CommandEmpty>
 
-        {/* Recent pages — shown only when no search */}
-        {!search && recentPages.length > 0 && (
-          <>
-            <CommandGroup heading="So'nggi sahifalar">
-              {recentPages.map(p => {
-                const navItem = NAV_ITEMS.find(n => n.href === p.href);
-                const Icon = navItem?.icon ?? History;
-                return (
-                  <CommandItem
-                    key={`recent-${p.href}`}
-                    value={`recent-${p.href}-${p.label}`}
-                    onSelect={() => navigate(p.href)}
-                    className="cursor-pointer"
-                  >
-                    <History className="mr-2 h-4 w-4 text-muted-foreground opacity-60" />
-                    <Icon className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
-                    {p.label}
-                  </CommandItem>
-                );
-              })}
-            </CommandGroup>
-            <CommandSeparator />
-          </>
-        )}
-
-        {/* Navigation pages */}
-        <CommandGroup heading="Sahifalar">
-          {navItems
-            .filter(item =>
-              !search ||
-              item.label.toLowerCase().includes(search.toLowerCase()),
-            )
-            .slice(0, search ? 10 : 6)
-            .map(item => (
+        {recentItems.length > 0 && !search.trim() && (
+          <CommandGroup heading="So'nggi sahifalar">
+            {recentItems.map(item => (
               <CommandItem
                 key={item.href}
-                value={`page-${item.href}-${item.label}`}
-                onSelect={() => navigate(item.href, item.label)}
-                className="cursor-pointer"
+                onSelect={() => handleNavigate(item.href)}
+                className="flex items-center gap-2"
               >
-                <item.icon className="mr-2 h-4 w-4 text-muted-foreground" />
-                {item.label}
-                {item.href === pathname && (
-                  <span className="ml-auto text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">Hozir</span>
-                )}
+                <History className="h-4 w-4 text-muted-foreground" />
+                <span>{item.label}</span>
               </CommandItem>
             ))}
-        </CommandGroup>
+          </CommandGroup>
+        )}
 
-        {/* Users search results */}
-        {users.length > 0 && (
+        {filteredNav.length > 0 && (
+          <CommandGroup heading="Navigatsiya">
+            {filteredNav.map(item => {
+              const Icon = item.icon;
+              return (
+                <CommandItem
+                  key={item.href}
+                  onSelect={() => handleNavigate(item.href)}
+                  className="flex items-center gap-2"
+                >
+                  <Icon className="h-4 w-4 text-muted-foreground" />
+                  <span>{item.label}</span>
+                </CommandItem>
+              );
+            })}
+          </CommandGroup>
+        )}
+
+        {usersData?.data && usersData.data.length > 0 && (
           <>
             <CommandSeparator />
             <CommandGroup heading="Foydalanuvchilar">
-              {users.map((u: any) => (
+              {usersData.data.map((u: any) => (
                 <CommandItem
                   key={u.id}
-                  value={`user-${u.id}-${u.firstName}-${u.lastName}`}
-                  onSelect={() => navigate(`/dashboard/users`)}
-                  className="cursor-pointer"
+                  onSelect={() => handleNavigate(`/dashboard/users/${u.id}`)}
+                  className="flex items-center gap-2"
                 >
-                  <Users className="mr-2 h-4 w-4 text-muted-foreground" />
-                  <span className="font-medium">{u.firstName} {u.lastName}</span>
-                  <span className="ml-2 text-xs text-muted-foreground">
-                    {ROLE_UZ[u.role] ?? u.role}
-                  </span>
+                  <UserCircle className="h-4 w-4 text-muted-foreground" />
+                  <span>{u.firstName} {u.lastName}</span>
                 </CommandItem>
               ))}
             </CommandGroup>
           </>
         )}
 
-        {/* Classes search results */}
-        {filteredClasses.length > 0 && (
+        {classesData?.data && classesData.data.length > 0 && (
           <>
             <CommandSeparator />
             <CommandGroup heading="Sinflar">
-              {filteredClasses.map((c: any) => (
+              {classesData.data.slice(0, 5).map((c: any) => (
                 <CommandItem
                   key={c.id}
-                  value={`class-${c.id}-${c.name}`}
-                  onSelect={() => navigate(`/dashboard/classes/${c.id}`)}
-                  className="cursor-pointer"
+                  onSelect={() => handleNavigate(`/dashboard/classes/${c.id}`)}
+                  className="flex items-center gap-2"
                 >
-                  <GraduationCap className="mr-2 h-4 w-4 text-muted-foreground" />
-                  <span className="font-medium">{c.name}</span>
-                  {c._count?.students !== undefined && (
-                    <span className="ml-2 text-xs text-muted-foreground">
-                      {c._count.students} o&apos;quvchi
-                    </span>
-                  )}
+                  <GraduationCap className="h-4 w-4 text-muted-foreground" />
+                  <span>{c.name}</span>
                 </CommandItem>
               ))}
-            </CommandGroup>
-          </>
-        )}
-
-        {/* Quick actions */}
-        {!search && (
-          <>
-            <CommandSeparator />
-            <CommandGroup heading="Tezkor amallar">
-              <CommandItem onSelect={() => navigate('/dashboard/attendance')} className="cursor-pointer">
-                <CheckSquare className="mr-2 h-4 w-4 text-green-500" />
-                Davomat belgilash
-              </CommandItem>
-              <CommandItem onSelect={() => navigate('/dashboard/grades')} className="cursor-pointer">
-                <TrendingUp className="mr-2 h-4 w-4 text-blue-500" />
-                Baho kiritish
-              </CommandItem>
-              <CommandItem onSelect={() => navigate('/dashboard/notifications')} className="cursor-pointer">
-                <Bell className="mr-2 h-4 w-4 text-yellow-500" />
-                Bildirishnomalar
-              </CommandItem>
-              <CommandItem onSelect={() => navigate('/dashboard/messages')} className="cursor-pointer">
-                <MessageSquare className="mr-2 h-4 w-4 text-purple-500" />
-                Xabarlar
-              </CommandItem>
             </CommandGroup>
           </>
         )}

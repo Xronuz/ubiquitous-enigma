@@ -102,7 +102,6 @@ export default function ProfilePage() {
   };
 
   const roleColors: Record<string, string> = {
-    school_admin: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300',
     vice_principal: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
     teacher: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
     class_teacher: 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300',

@@ -16,19 +16,19 @@ import {
 // Rollar:
 //   CRM_READ:    barcha CRM rollar — leads ro'yxati + tafsilot
 //   CRM_WRITE:   branch_admin va undan yuqori — lead yaratish/tahrirlash/izoh
-//   CRM_CONVERT: school_admin / director / branch_admin — konvertatsiya
+//   CRM_CONVERT: director / branch_admin — konvertatsiya
 const CRM_READ: UserRole[] = [
-  UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.BRANCH_ADMIN,
+  UserRole.DIRECTOR, UserRole.BRANCH_ADMIN,
   UserRole.VICE_PRINCIPAL, UserRole.ACCOUNTANT,
 ];
 
 const CRM_WRITE: UserRole[] = [
-  UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.BRANCH_ADMIN,
+  UserRole.DIRECTOR, UserRole.BRANCH_ADMIN,
   UserRole.VICE_PRINCIPAL, UserRole.ACCOUNTANT,
 ];
 
 const CRM_CONVERT: UserRole[] = [
-  UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.BRANCH_ADMIN,
+  UserRole.DIRECTOR, UserRole.BRANCH_ADMIN,
 ];
 
 @ApiTags('leads')

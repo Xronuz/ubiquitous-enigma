@@ -75,7 +75,7 @@ export function useSwitchBranch() {
   const { setActiveBranch, setIsSwitching, isSwitching } = useBranchStore();
 
   const switchBranch = useCallback(
-    async (branchId: string | null, branchMeta?: BranchMeta | null) => {
+    async (branchId: string, branchMeta?: BranchMeta | null) => {
       if (isSwitching) return;
 
       try {
@@ -103,9 +103,7 @@ export function useSwitchBranch() {
         );
 
         toast({
-          title: branchId
-            ? `✅ Filial almashtirildi: ${branchMeta?.name ?? branchId}`
-            : '🏫 Barcha filiallar ko\'rinishi',
+          title: `✅ Filial almashtirildi: ${branchMeta?.name ?? branchId}`,
           description: 'Ma\'lumotlar yangilanmoqda...',
         });
 

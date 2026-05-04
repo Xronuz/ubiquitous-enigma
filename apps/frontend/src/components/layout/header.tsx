@@ -23,7 +23,6 @@ import { HeaderActionsSlot } from '@/lib/header-actions-context';
 
 const ROLE_COLORS: Record<string, string> = {
   director:       'ring-violet-400',
-  school_admin:   'ring-blue-400',
   branch_admin:   'ring-orange-400',
   vice_principal: 'ring-indigo-400',
   teacher:        'ring-emerald-400',
@@ -139,7 +138,7 @@ export function Header() {
             <DropdownMenuItem onClick={() => router.push('/dashboard/settings')} className="cursor-pointer">
               <Settings className="mr-2 h-4 w-4 text-muted-foreground" /> Sozlamalar
             </DropdownMenuItem>
-            {user && ['director', 'school_admin', 'vice_principal', 'super_admin'].includes(user.role) && (
+            {user && ['director', 'vice_principal', 'super_admin'].includes(user.role) && (
               <>
                 <DropdownMenuSeparator />
                 <DropdownMenuLabel className="text-[11px] font-normal text-muted-foreground/70 py-0.5">Tizim</DropdownMenuLabel>

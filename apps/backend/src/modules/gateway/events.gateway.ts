@@ -50,7 +50,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
           rooms.push(`school:${payload.schoolId}`);
         }
 
-        // Branch room — filial xodimlari (director/school_admin ham ulani kuzatadi)
+        // Branch room — filial xodimlari (director ham ulani kuzatadi)
         if (payload.branchId) {
           rooms.push(`branch:${payload.branchId}`);
         }

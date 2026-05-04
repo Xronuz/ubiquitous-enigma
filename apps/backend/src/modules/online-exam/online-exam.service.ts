@@ -77,7 +77,7 @@ export class SubmitAnswerDto {
 // ─── Service ──────────────────────────────────────────────────────────────────
 
 const TEACHER_ROLES = [
-  UserRole.TEACHER, UserRole.CLASS_TEACHER, UserRole.SCHOOL_ADMIN, UserRole.VICE_PRINCIPAL,
+  UserRole.TEACHER, UserRole.CLASS_TEACHER, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL,
 ];
 
 @Injectable()

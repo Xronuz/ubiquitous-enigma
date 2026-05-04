@@ -3,7 +3,6 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { ExamsService, BulkCreateExamDto, BulkResultsDto } from './exams.service';
 import { CreateExamDto, UpdateExamDto } from './dto/create-exam.dto';
 import { CurrentUser } from '@/common/decorators/current-user.decorator';
-import { BranchContext } from '@/common/decorators/branch-context.decorator';
 import { Roles } from '@/common/decorators/roles.decorator';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
@@ -18,7 +17,7 @@ export class ExamsController {
 
   @Get('upcoming')
   @Roles(
-    UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.BRANCH_ADMIN,
+    UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.BRANCH_ADMIN,
     UserRole.TEACHER, UserRole.CLASS_TEACHER, UserRole.STUDENT,
   )
   @ApiOperation({ summary: 'Yaqin imtihonlar (dashboard widget)' })
@@ -31,49 +30,47 @@ export class ExamsController {
 
   @Get()
   @Roles(
-    UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.BRANCH_ADMIN,
+    UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.BRANCH_ADMIN,
     UserRole.TEACHER, UserRole.CLASS_TEACHER, UserRole.STUDENT,
   )
   @ApiOperation({ summary: 'Imtihonlar ro\'yxati' })
   findAll(
     @CurrentUser() user: JwtPayload,
-    @BranchContext() branchCtx: string | null,
     @Query('classId') classId?: string,
     @Query('subjectId') subjectId?: string,
   ) {
-    return this.examsService.findAll(user, classId, subjectId, branchCtx);
+    return this.examsService.findAll(user, classId, subjectId);
   }
 
   @Get(':id')
   @Roles(
-    UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.BRANCH_ADMIN,
+    UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.BRANCH_ADMIN,
     UserRole.TEACHER, UserRole.CLASS_TEACHER, UserRole.STUDENT,
   )
   @ApiOperation({ summary: 'Imtihon ma\'lumoti' })
   findOne(
     @Param('id') id: string,
     @CurrentUser() user: JwtPayload,
-    @BranchContext() branchCtx: string | null,
   ) {
-    return this.examsService.findOne(id, user, branchCtx);
+    return this.examsService.findOne(id, user);
   }
 
   @Post()
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.BRANCH_ADMIN, UserRole.TEACHER, UserRole.CLASS_TEACHER)
+  @Roles(UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.BRANCH_ADMIN, UserRole.TEACHER, UserRole.CLASS_TEACHER)
   @ApiOperation({ summary: 'Imtihon yaratish' })
   create(@Body() dto: CreateExamDto, @CurrentUser() user: JwtPayload) {
     return this.examsService.create(dto, user);
   }
 
   @Put(':id')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.BRANCH_ADMIN, UserRole.TEACHER, UserRole.CLASS_TEACHER)
+  @Roles(UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.BRANCH_ADMIN, UserRole.TEACHER, UserRole.CLASS_TEACHER)
   @ApiOperation({ summary: 'Imtihonni yangilash' })
   update(@Param('id') id: string, @Body() dto: UpdateExamDto, @CurrentUser() user: JwtPayload) {
     return this.examsService.update(id, dto, user);
   }
 
   @Delete(':id')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL)
+  @Roles(UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL)
   @ApiOperation({ summary: 'Imtihonni o\'chirish' })
   remove(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
     return this.examsService.remove(id, user);
@@ -81,7 +78,7 @@ export class ExamsController {
 
   @Get(':id/results')
   @Roles(
-    UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.BRANCH_ADMIN,
+    UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.BRANCH_ADMIN,
     UserRole.TEACHER, UserRole.CLASS_TEACHER, UserRole.STUDENT,
   )
   @ApiOperation({ summary: 'Imtihon natijalari va statistika' })
@@ -93,14 +90,14 @@ export class ExamsController {
   }
 
   @Put(':id/publish')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.BRANCH_ADMIN, UserRole.TEACHER, UserRole.CLASS_TEACHER)
+  @Roles(UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.BRANCH_ADMIN, UserRole.TEACHER, UserRole.CLASS_TEACHER)
   @ApiOperation({ summary: 'Imtihonni nashr etish' })
   publish(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
     return this.examsService.publish(id, user);
   }
 
   @Post(':id/results/bulk')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.TEACHER, UserRole.CLASS_TEACHER)
+  @Roles(UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.TEACHER, UserRole.CLASS_TEACHER)
   @ApiOperation({ summary: 'Imtihon natijalarini toplu kiritish' })
   submitBulkResults(
     @Param('id') id: string,
@@ -111,7 +108,7 @@ export class ExamsController {
   }
 
   @Post('bulk')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL)
+  @Roles(UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL)
   @ApiOperation({ summary: 'Ko\'p sinflar uchun toplu imtihon yaratish' })
   bulkCreate(@Body() dto: BulkCreateExamDto, @CurrentUser() user: JwtPayload) {
     return this.examsService.bulkCreate(dto, user);

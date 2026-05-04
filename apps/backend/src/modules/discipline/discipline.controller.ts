@@ -7,12 +7,11 @@ import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
 import { DisciplineService, CreateDisciplineDto, ResolveDto } from './discipline.service';
 import { CurrentUser } from '@/common/decorators/current-user.decorator';
-import { BranchContext } from '@/common/decorators/branch-context.decorator';
 import { Roles } from '@/common/decorators/roles.decorator';
 import { JwtPayload, UserRole } from '@eduplatform/types';
 
 const MANAGERS = [
-  UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.BRANCH_ADMIN,
+  UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.BRANCH_ADMIN,
   UserRole.TEACHER, UserRole.CLASS_TEACHER,
 ];
 
@@ -24,13 +23,12 @@ export class DisciplineController {
   constructor(private readonly service: DisciplineService) {}
 
   @Get('stats')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.BRANCH_ADMIN)
+  @Roles(UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.BRANCH_ADMIN)
   @ApiOperation({ summary: 'Intizom statistikasi' })
   getStats(
     @CurrentUser() user: JwtPayload,
-    @BranchContext() branchCtx: string | null,
   ) {
-    return this.service.getStats(user, branchCtx);
+    return this.service.getStats(user);
   }
 
   @Get()
@@ -44,7 +42,6 @@ export class DisciplineController {
   @ApiQuery({ name: 'limit',     required: false, type: Number })
   findAll(
     @CurrentUser() user: JwtPayload,
-    @BranchContext() branchCtx: string | null,
     @Query('studentId') studentId?: string,
     @Query('classId')   classId?: string,
     @Query('from')      from?: string,
@@ -52,7 +49,7 @@ export class DisciplineController {
     @Query('page')      page?: number,
     @Query('limit')     limit?: number,
   ) {
-    return this.service.findAll(user, branchCtx, {
+    return this.service.findAll(user, {
       studentId, classId, from, to,
       page:  page  ? +page  : undefined,
       limit: limit ? +limit : undefined,
@@ -65,9 +62,8 @@ export class DisciplineController {
   getStudentHistory(
     @Param('studentId') studentId: string,
     @CurrentUser() user: JwtPayload,
-    @BranchContext() branchCtx: string | null,
   ) {
-    return this.service.getStudentHistory(studentId, user, branchCtx);
+    return this.service.getStudentHistory(studentId, user);
   }
 
   @Post()
@@ -76,9 +72,8 @@ export class DisciplineController {
   create(
     @Body() dto: CreateDisciplineDto,
     @CurrentUser() user: JwtPayload,
-    @BranchContext() branchCtx: string | null,
   ) {
-    return this.service.create(dto, user, branchCtx);
+    return this.service.create(dto, user);
   }
 
   @Patch(':id/resolve')
@@ -88,9 +83,8 @@ export class DisciplineController {
     @Param('id') id: string,
     @Body() dto: ResolveDto,
     @CurrentUser() user: JwtPayload,
-    @BranchContext() branchCtx: string | null,
   ) {
-    return this.service.resolve(id, dto, user, branchCtx);
+    return this.service.resolve(id, dto, user);
   }
 
   @Delete(':id')
@@ -100,8 +94,7 @@ export class DisciplineController {
   remove(
     @Param('id') id: string,
     @CurrentUser() user: JwtPayload,
-    @BranchContext() branchCtx: string | null,
   ) {
-    return this.service.remove(id, user, branchCtx);
+    return this.service.remove(id, user);
   }
 }

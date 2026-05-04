@@ -4,7 +4,7 @@
  * ShiftManager — Kassir smenasini boshqarish komponenti.
  * - Ochiq smena bo'lsa: smena ma'lumotlari + "Kassani yopish" tugmasi
  * - Ochiq smena bo'lmasa: "Smenani ochish" formasi
- * - Faqat accountant, branch_admin, school_admin, director uchun ko'rsatiladi
+ * - Faqat accountant, branch_admin, director uchun ko'rsatiladi
  */
 
 import { useState } from 'react';
@@ -29,7 +29,7 @@ import { shiftsApi, treasuryApi, FinancialShift } from '@/lib/api/treasury';
 import { useAuthStore } from '@/store/auth.store';
 import { cn } from '@/lib/utils';
 
-const SHIFT_ROLES = new Set(['accountant', 'branch_admin', 'school_admin', 'director']);
+const SHIFT_ROLES = new Set(['accountant', 'branch_admin', 'director']);
 
 function formatUZS(n: number) {
   return n.toLocaleString('uz-UZ') + ' UZS';

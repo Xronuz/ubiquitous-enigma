@@ -32,7 +32,7 @@ export default function ClassDetailPage() {
   const { user, activeBranchId } = useAuthStore();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const canManage = ['school_admin', 'vice_principal'].includes(user?.role ?? '');
+  const canManage = ['director', 'vice_principal'].includes(user?.role ?? '');
 
   const [addOpen, setAddOpen] = useState(false);
   const [search, setSearch] = useState('');

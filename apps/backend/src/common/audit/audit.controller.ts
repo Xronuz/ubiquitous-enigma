@@ -18,10 +18,10 @@ export class AuditController {
   constructor(private readonly auditService: AuditService) {}
 
   /**
-   * Maktab bo'yicha audit log tarixi — school_admin va vice_principal uchun
+   * Maktab bo'yicha audit log tarixi — director va vice_principal uchun
    */
   @Get()
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.VICE_PRINCIPAL, UserRole.DIRECTOR)
+  @Roles(UserRole.VICE_PRINCIPAL, UserRole.DIRECTOR)
   @ApiOperation({ summary: 'Maktab audit log tarixi' })
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
@@ -55,7 +55,7 @@ export class AuditController {
    * Audit loglarni Excel sifatida yuklab olish
    */
   @Get('export')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.VICE_PRINCIPAL, UserRole.DIRECTOR)
+  @Roles(UserRole.VICE_PRINCIPAL, UserRole.DIRECTOR)
   @ApiOperation({ summary: 'Audit loglarni Excel sifatida eksport' })
   async exportLogs(
     @CurrentUser() user: JwtPayload,

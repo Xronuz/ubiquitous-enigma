@@ -6,7 +6,7 @@ import {
   Users, School, CreditCard, TrendingUp, TrendingDown,
   AlertCircle, Globe, CheckCircle2, Building2, LayoutGrid,
   BookOpen, BookMarked, ClipboardCheck, Calendar, GraduationCap, ChevronRight,
-  Rocket, X, Library, BookCopy, Hourglass, DollarSign, BarChart2,
+  Rocket, X, Library, BookCopy, Hourglass, DollarSign, BarChart2, Coins,
   CalendarOff, ShieldAlert, CalendarCheck, Activity, Bell, ArrowUpRight,
 } from 'lucide-react';
 import {
@@ -29,6 +29,7 @@ import { examsApi } from '@/lib/api/exams';
 import { homeworkApi } from '@/lib/api/homework';
 import { subjectsApi } from '@/lib/api/subjects';
 import { gradesApi } from '@/lib/api/grades';
+import { coinsApi } from '@/lib/api/coins';
 import { leaveRequestsApi } from '@/lib/api/leave-requests';
 import { disciplineApi } from '@/lib/api/discipline';
 import { financeApi } from '@/lib/api/finance';
@@ -1177,25 +1178,25 @@ function SchoolDashboard() {
   const { data: usersData, isLoading: usersLoading } = useQuery({
     queryKey: ['users', 'count', activeBranchId],
     queryFn: () => usersApi.getAll({ limit: 100 }),
-    enabled: ['school_admin', 'vice_principal', 'branch_admin'].includes(user?.role ?? ''),
+    enabled: ['director', 'vice_principal', 'branch_admin'].includes(user?.role ?? ''),
   });
 
   const { data: classesData, isLoading: classesLoading } = useQuery({
     queryKey: ['classes', activeBranchId],
     queryFn: classesApi.getAll,
-    enabled: ['school_admin', 'vice_principal', 'teacher', 'class_teacher', 'branch_admin'].includes(user?.role ?? ''),
+    enabled: ['director', 'vice_principal', 'teacher', 'class_teacher', 'branch_admin'].includes(user?.role ?? ''),
   });
 
   const { data: paymentReport, isLoading: paymentsLoading } = useQuery({
     queryKey: ['payments', 'report', activeBranchId],
     queryFn: paymentsApi.getReport,
-    enabled: ['school_admin', 'accountant'].includes(user?.role ?? ''),
+    enabled: ['director', 'accountant'].includes(user?.role ?? ''),
   });
 
   const { data: subjectsData } = useQuery({
     queryKey: ['subjects', 'count', activeBranchId],
     queryFn: () => subjectsApi.getAll(),
-    enabled: ['school_admin', 'branch_admin'].includes(user?.role ?? ''),
+    enabled: ['director', 'branch_admin'].includes(user?.role ?? ''),
   });
 
   const classList     = Array.isArray(classesData) ? classesData : [];
@@ -1224,7 +1225,7 @@ function SchoolDashboard() {
       </div>
 
       {/* ── Onboarding ── */}
-      {user?.role === 'school_admin' && (
+      {user?.role === 'director' && (
         <OnboardingChecklist classList={classList} usersData={usersData} subjectsCount={subjectsCount} />
       )}
 
@@ -1232,7 +1233,7 @@ function SchoolDashboard() {
       {user?.role === 'vice_principal' && <VicePrincipalSection />}
 
       {/* ── Charts (admin / VP) ── */}
-      {['school_admin', 'vice_principal'].includes(user?.role ?? '') && <AdminChartsSection />}
+      {['director', 'vice_principal'].includes(user?.role ?? '') && <AdminChartsSection />}
 
       {/* ── Class teacher: my class ── */}
       {user?.role === 'class_teacher' && <ClassTeacherMyClassSection />}
@@ -1242,13 +1243,13 @@ function SchoolDashboard() {
 
       {/* ── Stat cards row ── */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {['school_admin', 'vice_principal', 'branch_admin'].includes(user?.role ?? '') && (
+        {['director', 'vice_principal', 'branch_admin'].includes(user?.role ?? '') && (
           <StatCard title="Foydalanuvchilar" value={usersData?.meta.total ?? 0}      icon={Users}      description="Aktiv foydalanuvchilar" color="violet"  loading={usersLoading}   href="/dashboard/users" />
         )}
         {!['student', 'parent'].includes(user?.role ?? '') && (
           <StatCard title="Sinflar"           value={classList.length}               icon={School}     description="Aktiv sinflar"         color="blue"    loading={classesLoading} href="/dashboard/classes" />
         )}
-        {['school_admin', 'accountant'].includes(user?.role ?? '') && (
+        {['director', 'accountant'].includes(user?.role ?? '') && (
           <>
             <StatCard title="Bu oy tushumi" value={formatCurrency(paymentReport?.monthly?.paid ?? 0)} icon={CreditCard}   trend="up"   description="Oylik tushum"       color="emerald" loading={paymentsLoading} href="/dashboard/payments" />
             <StatCard title="Qarzdorlar"    value={formatCurrency(paymentReport?.overdue ?? 0)}       icon={AlertCircle} trend="down" description="Kechikkan to'lovlar" color="red"     loading={paymentsLoading} href="/dashboard/payments" />
@@ -1258,18 +1259,18 @@ function SchoolDashboard() {
 
       {/* ── Bottom grid ── */}
       <div className="grid gap-4 md:grid-cols-2">
-        {['school_admin', 'vice_principal', 'class_teacher', 'teacher', 'branch_admin'].includes(user?.role ?? '') && (
+        {['director', 'vice_principal', 'class_teacher', 'teacher', 'branch_admin'].includes(user?.role ?? '') && (
           <AttendanceSummaryWidget />
         )}
-        {['school_admin', 'vice_principal', 'teacher', 'class_teacher', 'branch_admin'].includes(user?.role ?? '') && (
+        {['director', 'vice_principal', 'teacher', 'class_teacher', 'branch_admin'].includes(user?.role ?? '') && (
           <UpcomingExamsWidget />
         )}
-        {['teacher', 'class_teacher', 'vice_principal', 'school_admin', 'branch_admin'].includes(user?.role ?? '') && (
+        {['teacher', 'class_teacher', 'vice_principal', 'director', 'branch_admin'].includes(user?.role ?? '') && (
           <TodayScheduleWidget />
         )}
 
         {/* Debtors list */}
-        {['school_admin', 'accountant'].includes(user?.role ?? '') && (paymentReport?.debtors?.length ?? 0) > 0 && (
+        {['director', 'accountant'].includes(user?.role ?? '') && (paymentReport?.debtors?.length ?? 0) > 0 && (
           <PCard>
             <p className="font-bold text-[15px] mb-1" style={{ color: C.text }}>Qarzdorlar</p>
             <p className="text-xs mb-5" style={{ color: C.muted }}>Kechikkan va kutilayotgan to'lovlar</p>
@@ -1316,7 +1317,7 @@ function SchoolDashboard() {
         {/* Quick actions */}
         <PCard>
           <p className="font-bold text-[15px] mb-5" style={{ color: C.text }}>Tezkor harakatlar</p>
-          {user?.role === 'school_admin' && (
+          {user?.role === 'director' && (
             <QuickActions items={[
               { label: 'Foydalanuvchi qo\'sh', href: '/dashboard/users',      icon: Users,         iconColor: '#7C3AED' },
               { label: 'Davomat',              href: '/dashboard/attendance', icon: ClipboardCheck, iconColor: C.primary },
@@ -1532,17 +1533,18 @@ function DirectorDashboard() {
   const router       = useRouter();
   const queryClient  = useQueryClient();
   const { toast }    = useToast();
-  const { activeBranchId } = useAuthStore();
   const [annTitle,   setAnnTitle]  = useState('');
   const [annBody,    setAnnBody]   = useState('');
   const [annTarget,  setAnnTarget] = useState('all_staff');
 
-  const { data: attendanceSummary, isLoading: attLoading } = useQuery({ queryKey: ['attendance', 'today-summary', activeBranchId],    queryFn: attendanceApi.getTodaySummary });
-  const { data: classesData }  = useQuery({ queryKey: ['classes', activeBranchId],              queryFn: classesApi.getAll });
-  const { data: usersData }    = useQuery({ queryKey: ['users', 'all', activeBranchId],          queryFn: () => usersApi.getAll({ limit: 200 }) });
-  const { data: pendingLeaves }= useQuery({ queryKey: ['leave-requests', 'pending', activeBranchId], queryFn: () => leaveRequestsApi.getAll({ status: 'pending' }) });
-  const { data: financeData }  = useQuery({ queryKey: ['finance', 'dashboard', activeBranchId], queryFn: financeApi.getDashboard });
-  const { data: pendingDiscipline } = useQuery({ queryKey: ['discipline', 'unresolved', activeBranchId], queryFn: () => disciplineApi.getAll().catch(() => ({ data: [] })) });
+  // School-wide queries — no branchId in cache key; backend returns school-level aggregation for DIRECTOR role
+  const { data: attendanceSummary, isLoading: attLoading } = useQuery({ queryKey: ['attendance', 'today-summary', 'school-wide'],    queryFn: attendanceApi.getTodaySummary });
+  const { data: classesData }  = useQuery({ queryKey: ['classes', 'school-wide'],              queryFn: classesApi.getAll });
+  const { data: usersData }    = useQuery({ queryKey: ['users', 'all', 'school-wide'],          queryFn: () => usersApi.getAll({ limit: 200 }) });
+  const { data: pendingLeaves }= useQuery({ queryKey: ['leave-requests', 'pending', 'school-wide'], queryFn: () => leaveRequestsApi.getAll({ status: 'pending' }) });
+  const { data: financeData }  = useQuery({ queryKey: ['finance', 'dashboard', 'school-wide'], queryFn: financeApi.getDashboard });
+  const { data: pendingDiscipline } = useQuery({ queryKey: ['discipline', 'unresolved', 'school-wide'], queryFn: () => disciplineApi.getAll().catch(() => ({ data: [] })) });
+  const { data: coinStats } = useQuery({ queryKey: ['coins', 'admin', 'stats'], queryFn: () => coinsApi.getAdminBalances().catch(() => ({ data: [] })), staleTime: 60_000 });
 
   const classList: any[]         = Array.isArray(classesData) ? classesData : (classesData as any)?.data ?? [];
   const allUsers: any[]          = (usersData as any)?.data ?? [];
@@ -1588,6 +1590,7 @@ function DirectorDashboard() {
         <StatCard title="Sinflar soni"    value={classList.length}    description="Faol sinflar"                      icon={School}         color="blue"    />
         <StatCard title="O'qituvchilar"  value={teacherCount}        description="Faol xodimlar"                    icon={Users}          color="violet"  />
         <StatCard title="Oylik tushum"    value={formatCurrency((financeData as any)?.thisMonthRevenue ?? 0)} description="Joriy oy" icon={TrendingUp} color="amber" />
+        <StatCard title="EduCoin aylanma" value={((coinStats as any)?.data?.length ?? 0).toLocaleString()} description="Faol o'quvchilar" icon={Coins} color="amber" href="/dashboard/coins" />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
@@ -1759,11 +1762,13 @@ export default function DashboardPage() {
     );
   }
 
-  if (user?.role === 'super_admin') return <SuperAdminDashboard />;
-  if (user?.role === 'director')    return <DirectorDashboard />;
-  if (user?.role === 'parent')      return <ParentDashboard />;
-  if (user?.role === 'student')     return <StudentRedirect />;
-  if (user?.role === 'accountant')  return <AccountantDashboard />;
-  if (user?.role === 'librarian')   return <LibrarianDashboard />;
+  if (user?.role === 'super_admin')  return <SuperAdminDashboard />;
+  if (user?.role === 'director')     return <DirectorDashboard />;
+  if (user?.role === 'parent')       return <ParentDashboard />;
+  if (user?.role === 'student')      return <StudentRedirect />;
+  if (user?.role === 'accountant')   return <AccountantDashboard />;
+  if (user?.role === 'librarian')    return <LibrarianDashboard />;
+  if (user?.role === 'branch_admin') return <SchoolDashboard />;
+  if (user?.role === 'teacher' || user?.role === 'class_teacher') return <SchoolDashboard />;
   return <SchoolDashboard />;
 }

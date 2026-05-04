@@ -26,7 +26,7 @@ export default function SubjectsPage() {
   const { user, activeBranchId } = useAuthStore();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const canManage = ['school_admin', 'vice_principal'].includes(user?.role ?? '');
+  const canManage = ['director', 'vice_principal'].includes(user?.role ?? '');
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(EMPTY);
   const [errors, setErrors] = useState<Record<string, string>>({});

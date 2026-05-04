@@ -10,25 +10,6 @@ export const apiClient = axios.create({
   withCredentials: true,
 });
 
-// Attach branch context header (auth is now cookie-based, no Bearer header needed)
-apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
-  if (typeof window !== 'undefined') {
-    // x-branch-id: Zustand store dan aktiv branchId ni qo'shish.
-    // Lazy import — circular dep dan qochish uchun runtime require
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const { useAuthStore } = require('@/store/auth.store');
-      const activeBranchId: string | null =
-        useAuthStore.getState().activeBranchId ?? useAuthStore.getState().user?.branchId ?? null;
-      if (activeBranchId) {
-        config.headers['x-branch-id'] = activeBranchId;
-      }
-    } catch {
-      // store henüz yüklenmemiş — skip
-    }
-  }
-  return config;
-});
 
 // Auto-refresh on 401
 let isRefreshing = false;

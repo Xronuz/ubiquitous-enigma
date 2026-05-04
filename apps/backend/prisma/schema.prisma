@@ -12,9 +12,8 @@ datasource db {
 
 enum UserRole {
   super_admin
-  school_admin
   director
-  branch_admin // Filial boshqaruvchisi — faqat o'z filialini ko'radi
+  branch_admin
   vice_principal
   teacher
   class_teacher
@@ -67,6 +66,7 @@ enum ModuleName {
   inventory
   psychology
   clubs
+  kpi
 }
 
 enum ClubCategory {
@@ -83,12 +83,6 @@ enum ClubRequestStatus {
   PENDING
   APPROVED
   REJECTED
-}
-
-// ─── Course Scope (O'quv kurs ko'rinishi) ─────────────────────────────────
-enum CourseScope {
-  GLOBAL // Barcha filiallar uchun ko'rinadigan markaziy kurs
-  LOCAL // Faqat yaratilgan filial uchun
 }
 
 // ─── Finance Type (Maktab moliya rejimi) ──────────────────────────────────
@@ -261,6 +255,7 @@ model School {
   leadComments        LeadComment[]
   coinTransactions    CoinTransaction[]
   coinShopItems       CoinShopItem[]
+  kpiMetrics          KpiMetric[]
 
   @@map("schools")
 }
@@ -297,6 +292,7 @@ model Branch {
   rooms               Room[]
   schedules           Schedule[]
   leads               Lead[] // CRM leadlar (filial kesimi)
+  kpiMetrics          KpiMetric[]
   subjects            Subject[]
   exams               Exam[]
   homework            Homework[]
@@ -387,8 +383,8 @@ model SchoolModule {
 
 model User {
   id           String   @id @default(uuid())
-  schoolId     String?
-  branchId     String? // NULL = barcha filiallarga tegishli (director, school_admin)
+  schoolId     String
+  branchId     String
   role         UserRole
   email        String   @unique
   phone        String?
@@ -402,8 +398,8 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  school School? @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  branch Branch? @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  school School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  branch Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
 
   // Teacher relations
   taughtSubjects Subject[]  @relation("TeacherSubjects")
@@ -487,12 +483,14 @@ model User {
   // Gamification
   coinTransactions CoinTransaction[]
 
+  // KPI
+  kpiRecords       KpiRecord[]
+
   @@index([schoolId, branchId])
   @@index([branchId])
   @@index([schoolId, role, isActive])
   @@map("users")
 }
-
 model RefreshToken {
   id        String   @id @default(uuid())
   userId    String
@@ -523,7 +521,7 @@ model ParentStudent {
 model Class {
   id             String   @id @default(uuid())
   schoolId       String
-  branchId       String? // NULL = maktab umumiy sinfi (filial yo'q rejim)
+  branchId       String
   name           String
   gradeLevel     Int
   academicYear   String
@@ -532,7 +530,7 @@ model Class {
   updatedAt      DateTime @updatedAt
 
   school       School         @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  branch       Branch?        @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  branch       Branch        @relation(fields: [branchId], references: [id], onDelete: Cascade)
   classTeacher User?          @relation("ClassTeacher", fields: [classTeacherId], references: [id])
   students     ClassStudent[]
   subjects     Subject[]
@@ -546,7 +544,6 @@ model Class {
   @@index([branchId])
   @@map("classes")
 }
-
 model ClassStudent {
   id        String   @id @default(uuid())
   classId   String
@@ -565,14 +562,14 @@ model ClassStudent {
 model Subject {
   id        String   @id @default(uuid())
   schoolId  String
-  branchId  String? // Sinfning filiali (denormalized)
+  branchId  String
   classId   String
   name      String
   teacherId String
   createdAt DateTime @default(now())
 
   school    School     @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  branch    Branch?    @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  branch    Branch    @relation(fields: [branchId], references: [id], onDelete: Cascade)
   class     Class      @relation(fields: [classId], references: [id], onDelete: Cascade)
   teacher   User       @relation("TeacherSubjects", fields: [teacherId], references: [id])
   schedules Schedule[]
@@ -586,11 +583,10 @@ model Subject {
 }
 
 // ─── Schedule ─────────────────────────────────────────────────────────────
-
 model Schedule {
   id             String    @id @default(uuid())
   schoolId       String
-  branchId       String? // Sinfning filiali (denormalized, konflikt tekshirish uchun)
+  branchId       String
   classId        String
   subjectId      String
   teacherId      String
@@ -608,13 +604,14 @@ model Schedule {
   updatedAt      DateTime  @updatedAt
 
   school     School       @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  branch     Branch?      @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  branch     Branch      @relation(fields: [branchId], references: [id], onDelete: Cascade)
   class      Class        @relation(fields: [classId], references: [id], onDelete: Cascade)
   subject    Subject      @relation(fields: [subjectId], references: [id], onDelete: Cascade)
   teacher    User         @relation("ScheduleTeacher", fields: [teacherId], references: [id])
   room       Room?        @relation(fields: [roomId], references: [id], onDelete: SetNull)
   attendance Attendance[]
 
+  @@index([schoolId, branchId])
   @@index([schoolId, dayOfWeek])
   @@index([teacherId, dayOfWeek])
   @@index([branchId, dayOfWeek])
@@ -626,7 +623,7 @@ model Schedule {
 model Attendance {
   id         String           @id @default(uuid())
   schoolId   String
-  branchId   String? // Denormalized from class — tezkor filtr uchun
+  branchId   String
   classId    String
   studentId  String
   scheduleId String?
@@ -637,7 +634,7 @@ model Attendance {
   updatedAt  DateTime         @updatedAt
 
   school   School    @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  branch   Branch?   @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  branch   Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
   class    Class     @relation(fields: [classId], references: [id], onDelete: Cascade)
   student  User      @relation(fields: [studentId], references: [id], onDelete: Cascade)
   schedule Schedule? @relation(fields: [scheduleId], references: [id])
@@ -652,11 +649,10 @@ model Attendance {
 }
 
 // ─── Grades ───────────────────────────────────────────────────────────────
-
 model Grade {
   id        String    @id @default(uuid())
   schoolId  String
-  branchId  String? // Denormalized from class — tezkor filtr uchun
+  branchId  String
   classId   String
   studentId String
   subjectId String
@@ -669,11 +665,12 @@ model Grade {
   updatedAt DateTime  @updatedAt
 
   school  School  @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  branch  Branch? @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  branch  Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
   class   Class   @relation(fields: [classId], references: [id], onDelete: Cascade)
   student User    @relation(fields: [studentId], references: [id], onDelete: Cascade)
   subject Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
 
+  @@index([schoolId, branchId])
   @@index([studentId, subjectId])
   @@index([classId, type])
   @@index([classId, date])
@@ -687,7 +684,7 @@ model Grade {
 model Exam {
   id          String        @id @default(uuid())
   schoolId    String
-  branchId    String? // Sinfning filiali (denormalized)
+  branchId    String
   classId     String
   subjectId   String
   title       String
@@ -700,7 +697,7 @@ model Exam {
   updatedAt   DateTime      @updatedAt
 
   school    School         @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  branch    Branch?        @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  branch    Branch        @relation(fields: [branchId], references: [id], onDelete: Cascade)
   class     Class          @relation(fields: [classId], references: [id], onDelete: Cascade)
   subject   Subject        @relation(fields: [subjectId], references: [id], onDelete: Cascade)
   questions ExamQuestion[]
@@ -712,11 +709,10 @@ model Exam {
 }
 
 // ─── Homework (Phase 2 stub) ──────────────────────────────────────────────
-
 model Homework {
   id          String   @id @default(uuid())
   schoolId    String
-  branchId    String? // Sinfning filiali (denormalized)
+  branchId    String
   classId     String
   subjectId   String
   title       String
@@ -725,7 +721,7 @@ model Homework {
   createdAt   DateTime @default(now())
 
   school      School               @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  branch      Branch?              @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  branch      Branch              @relation(fields: [branchId], references: [id], onDelete: Cascade)
   class       Class                @relation(fields: [classId], references: [id], onDelete: Cascade)
   subject     Subject              @relation(fields: [subjectId], references: [id], onDelete: Cascade)
   submissions HomeworkSubmission[]
@@ -756,7 +752,7 @@ model HomeworkSubmission {
 model Payment {
   id              String          @id @default(uuid())
   schoolId        String
-  branchId        String? // Filialga tegishli to'lov izolyatsiyasi
+  branchId        String
   studentId       String
   treasuryId      String? // To'lov tushgan g'azna (Treasury)
   shiftId         String? // Qaysi smena ichida qabul qilingan
@@ -772,7 +768,7 @@ model Payment {
   updatedAt       DateTime        @updatedAt
 
   school   School          @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  branch   Branch?         @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  branch   Branch         @relation(fields: [branchId], references: [id], onDelete: Cascade)
   student  User            @relation(fields: [studentId], references: [id], onDelete: Cascade)
   treasury Treasury?       @relation(fields: [treasuryId], references: [id], onDelete: SetNull)
   shift    FinancialShift? @relation(fields: [shiftId], references: [id], onDelete: SetNull)
@@ -785,11 +781,10 @@ model Payment {
 }
 
 // ─── Fee Structures ───────────────────────────────────────────────────────
-
 model FeeStructure {
   id           String   @id @default(uuid())
   schoolId     String
-  branchId     String? // Filialga tegishli to'lov shakli
+  branchId     String
   name         String   @db.VarChar(200)
   description  String?
   amount       Float
@@ -802,7 +797,7 @@ model FeeStructure {
   updatedAt    DateTime @updatedAt
 
   school School  @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  branch Branch? @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  branch Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
 
   @@index([schoolId, branchId])
   @@index([branchId])
@@ -814,7 +809,7 @@ model FeeStructure {
 model Notification {
   id          String              @id @default(uuid())
   schoolId    String
-  branchId    String? // Filialga tegishli xabar
+  branchId    String
   recipientId String
   title       String
   body        String
@@ -824,7 +819,7 @@ model Notification {
   createdAt   DateTime            @default(now())
 
   school    School  @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  branch    Branch? @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  branch    Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
   recipient User    @relation(fields: [recipientId], references: [id], onDelete: Cascade)
 
   @@index([schoolId, branchId])
@@ -833,7 +828,6 @@ model Notification {
 }
 
 // ─── Messages ─────────────────────────────────────────────────────────────
-
 model Message {
   id         String   @id @default(uuid())
   schoolId   String
@@ -982,7 +976,7 @@ enum LeaveStatus {
 model LeaveRequest {
   id          String      @id @default(uuid())
   schoolId    String
-  branchId    String? // Ta'til so'rovchisi qaysi filialda
+  branchId    String
   requesterId String
   reason      String
   startDate   DateTime    @db.Date
@@ -992,7 +986,7 @@ model LeaveRequest {
   updatedAt   DateTime    @updatedAt
 
   school    School          @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  branch    Branch?         @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  branch    Branch         @relation(fields: [branchId], references: [id], onDelete: Cascade)
   requester User            @relation("LeaveRequests", fields: [requesterId], references: [id], onDelete: Cascade)
   approvals LeaveApproval[]
 
@@ -1001,7 +995,6 @@ model LeaveRequest {
   @@index([schoolId, startDate]) // D-2: sana oralig'i qidirish
   @@map("leave_requests")
 }
-
 model LeaveApproval {
   id             String      @id @default(uuid())
   leaveRequestId String
@@ -1062,7 +1055,7 @@ enum PayrollStatus {
 model StaffSalary {
   id                   String          @id @default(uuid())
   schoolId             String
-  branchId             String? // Maosh qaysi filial byujetidan
+  branchId             String
   userId               String          @unique
   // ─ Hisoblash turi ─
   calculationType      CalculationType @default(fixed)
@@ -1092,14 +1085,13 @@ model StaffSalary {
   updatedAt            DateTime        @updatedAt
 
   school       School          @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  branch       Branch?         @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  branch       Branch         @relation(fields: [branchId], references: [id], onDelete: Cascade)
   user         User            @relation("StaffSalary", fields: [userId], references: [id], onDelete: Cascade)
   advances     SalaryAdvance[]
   payrollItems PayrollItem[]
 
   @@map("staff_salaries")
 }
-
 model SalaryAdvance {
   id            String        @id @default(uuid())
   schoolId      String
@@ -1354,7 +1346,7 @@ enum DisciplineAction {
 model DisciplineIncident {
   id           String             @id @default(uuid())
   schoolId     String
-  branchId     String? // O'quvchining filiali (denormalized)
+  branchId     String
   studentId    String
   reportedById String
   type         DisciplineType     @default(other)
@@ -1369,7 +1361,7 @@ model DisciplineIncident {
   updatedAt    DateTime           @updatedAt
 
   school     School  @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  branch     Branch? @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  branch     Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
   student    User    @relation("DisciplineStudent", fields: [studentId], references: [id], onDelete: Cascade)
   reportedBy User    @relation("DisciplineReporter", fields: [reportedById], references: [id], onDelete: Cascade)
 
@@ -1393,7 +1385,6 @@ enum MeetingMedium {
   phone
   video
 }
-
 model ParentMeeting {
   id          String        @id @default(uuid())
   schoolId    String
@@ -1425,7 +1416,7 @@ model ParentMeeting {
 model TransportRoute {
   id            String   @id @default(uuid())
   schoolId      String
-  branchId      String? // Transport qaysi filialga xizmat qiladi
+  branchId      String
   name          String
   description   String?
   stops         Json     @default("[]") // string[]
@@ -1440,7 +1431,7 @@ model TransportRoute {
   updatedAt     DateTime @updatedAt
 
   school      School             @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  branch      Branch?            @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  branch      Branch            @relation(fields: [branchId], references: [id], onDelete: Cascade)
   assignments TransportStudent[]
 
   @@unique([schoolId, name])
@@ -1448,7 +1439,6 @@ model TransportRoute {
   @@index([branchId])
   @@map("transport_routes")
 }
-
 model TransportStudent {
   id        String   @id @default(uuid())
   schoolId  String
@@ -1472,8 +1462,7 @@ model TransportStudent {
 model Course {
   id          String      @id @default(uuid())
   schoolId    String
-  branchId    String? // Qaysi filialda o'qitiladi (LOCAL uchun talab qilinadi)
-  scope       CourseScope @default(GLOBAL) // GLOBAL = barcha filiallar, LOCAL = faqat shu filial
+  branchId    String
   name        String
   description String?
   teacherId   String?
@@ -1487,23 +1476,22 @@ model Course {
   updatedAt   DateTime    @updatedAt
 
   school      School             @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  branch      Branch?            @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  branch      Branch            @relation(fields: [branchId], references: [id], onDelete: Cascade)
   teacher     User?              @relation("CourseTeacher", fields: [teacherId], references: [id])
   enrollments CourseEnrollment[]
   materials   CourseMaterial[]
 
+  @@index([schoolId, branchId])
   @@index([schoolId])
   @@index([branchId])
-  @@index([schoolId, scope])
   @@map("courses")
 }
 
 // ─── Course Materials (Shared — schoolId bo'yicha, branchdan mustaqil) ─────
 // Har qaysi filial o'qituvchisi maktabning markaziy materiallariga kira oladi.
-
 model CourseMaterial {
   id          String   @id @default(uuid())
-  schoolId    String // schoolId-ga bog'liq — filialga emas. Barcha filial o'qituvchilari ko'ra oladi.
+  schoolId    String
   courseId    String
   title       String
   description String?
@@ -1549,7 +1537,7 @@ model CourseEnrollment {
 model Club {
   id                String       @id @default(uuid())
   schoolId          String
-  branchId          String? // Qaysi filialda ishlaydi
+  branchId          String
   name              String
   description       String?
   category          ClubCategory @default(other)
@@ -1564,7 +1552,7 @@ model Club {
   updatedAt         DateTime     @updatedAt
 
   school       School            @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  branch       Branch?           @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  branch       Branch           @relation(fields: [branchId], references: [id], onDelete: Cascade)
   leader       User              @relation("ClubLeader", fields: [leaderId], references: [id])
   members      ClubMember[]
   joinRequests ClubJoinRequest[]
@@ -1573,7 +1561,6 @@ model Club {
   @@index([branchId])
   @@map("clubs")
 }
-
 model ClubMember {
   id        String   @id @default(uuid())
   clubId    String
@@ -1613,7 +1600,7 @@ model ClubJoinRequest {
 model Treasury {
   id        String       @id @default(uuid())
   schoolId  String
-  branchId  String? // null = markaziy (CENTRALIZED), SET = filial kassasi
+  branchId  String
   name      String // "Asosiy kassa", "Chilonzor naqd"
   type      TreasuryType @default(CASH)
   balance   Float        @default(0) // Hozirgi balans (UZS)
@@ -1623,7 +1610,7 @@ model Treasury {
   updatedAt DateTime     @updatedAt
 
   school School  @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  branch Branch? @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  branch Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
 
   payments        Payment[]
   financialShifts FinancialShift[]
@@ -1636,11 +1623,10 @@ model Treasury {
 // ─── Financial Shift (Kassir smenasi) ────────────────────────────────────
 // O'quv markazlari (DECENTRALIZED) uchun kunlik kassa smenasini boshqarish.
 // To'lov qabul qilish uchun ochiq smena bo'lishi shart.
-
 model FinancialShift {
   id              String      @id @default(uuid())
   schoolId        String
-  branchId        String?
+  branchId        String
   treasuryId      String
   openerId        String // Smenani ochgan xodim
   closerId        String? // Smenani yopgan xodim
@@ -1656,8 +1642,10 @@ model FinancialShift {
   updatedAt       DateTime    @updatedAt
 
   school   School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  branch   Branch?  @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  branch   Branch  @relation(fields: [branchId], references: [id], onDelete: Cascade)
   treasury Treasury @relation(fields: [treasuryId], references: [id], onDelete: Cascade)
+
+  @@index([schoolId, branchId])
   opener   User     @relation("ShiftOpener", fields: [openerId], references: [id])
   closer   User?    @relation("ShiftCloser", fields: [closerId], references: [id])
 
@@ -1676,7 +1664,7 @@ model FinancialShift {
 model Room {
   id        String   @id @default(uuid())
   schoolId  String
-  branchId  String // Required — xona har doim bitta filialga tegishli
+  branchId  String
   name      String // "201-xona", "Fizika lab", "Sport zal"
   capacity  Int      @default(30)
   floor     Int? // Qavat raqami
@@ -1710,7 +1698,7 @@ model Room {
 model Lead {
   id                 String     @id @default(uuid())
   schoolId           String
-  branchId           String? // Qaysi filialgaa tegishli (NULL = umumiy / filial aniqlanmagan)
+  branchId           String
   firstName          String
   lastName           String
   phone              String // Asosiy identifikator (duplicate tekshirish uchun)
@@ -1726,7 +1714,7 @@ model Lead {
   updatedAt          DateTime   @updatedAt
 
   school     School  @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  branch     Branch? @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  branch     Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
   assignedTo User?   @relation("LeadAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
   createdBy  User?   @relation("LeadCreator", fields: [createdById], references: [id], onDelete: SetNull)
 
@@ -1742,7 +1730,6 @@ model Lead {
 }
 
 // ─── CRM: Lead izohlari (muloqot tarixi) ──────────────────────────────────────
-
 model LeadComment {
   id        String   @id @default(uuid())
   leadId    String
@@ -1798,4 +1785,70 @@ model CoinShopItem {
 
   @@index([schoolId])
   @@map("coin_shop_items")
+}
+
+// ─── KPI & Monitoring System ─────────────────────────────────────────────────
+
+enum KpiCategory {
+  STRATEGY
+  ACADEMIC
+  TEACHER
+  STUDENT
+  MARKETING
+  FINANCE
+  OPERATIONS
+  AI_IT
+  BRANDING
+  MONITORING
+}
+
+enum KpiPeriod {
+  WEEKLY
+  MONTHLY
+  QUARTERLY
+  YEARLY
+}
+
+model KpiMetric {
+  id          String      @id @default(uuid())
+  schoolId    String
+  branchId    String?
+  name        String
+  description String?
+  category    KpiCategory
+  targetValue Float       @default(0)
+  unit        String      @default("%") // %, sum, count, score
+  period      KpiPeriod   @default(MONTHLY)
+  isActive    Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  school   School       @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  branch   Branch?      @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  records  KpiRecord[]
+
+  @@index([schoolId])
+  @@index([schoolId, category])
+  @@index([schoolId, branchId])
+  @@map("kpi_metrics")
+}
+
+model KpiRecord {
+  id          String   @id @default(uuid())
+  metricId    String
+  actualValue Float
+  periodStart DateTime
+  periodEnd   DateTime
+  notes       String?
+  createdById String?
+  createdAt   DateTime @default(now())
+
+  metric    KpiMetric @relation(fields: [metricId], references: [id], onDelete: Cascade)
+  createdBy User?     @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([metricId])
+  @@index([metricId, periodStart])
+  @@index([metricId, periodEnd])
+  @@unique([metricId, periodStart])
+  @@map("kpi_records")
 }

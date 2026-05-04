@@ -9,7 +9,7 @@ import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { PrismaService } from '@/common/prisma/prisma.service';
 import { JwtPayload, UserRole } from '@eduplatform/types';
-import { branchFilter } from '@/common/utils/branch-filter.util';
+import { buildTenantWhere } from '@/common/utils/tenant-scope.util';
 
 // CourseScope — GLOBAL: barcha filiallarga ko'rinadi, LOCAL: faqat yaratgan filial
 enum CourseScope { GLOBAL = 'GLOBAL', LOCAL = 'LOCAL' }
@@ -182,7 +182,7 @@ export class UpdateEnrollmentDto {
 
 // ─── Service ─────────────────────────────────────────────────────────────────
 
-const MANAGER_ROLES = [UserRole.SCHOOL_ADMIN, UserRole.VICE_PRINCIPAL];
+const MANAGER_ROLES = [UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL];
 
 @Injectable()
 export class LearningCenterService {
@@ -190,18 +190,18 @@ export class LearningCenterService {
 
   // ── Courses ───────────────────────────────────────────────────────────────
 
-  async getCourses(currentUser: JwtPayload, branchCtx: string | null = null, search?: string) {
+  async getCourses(currentUser: JwtPayload, search?: string) {
     const schoolId  = currentUser.schoolId!;
-    const viewerBranchId = branchCtx ?? currentUser.branchId ?? null;
+    const viewerBranchId = currentUser.branchId ?? null;
 
     // CourseScope logikasi:
     //   GLOBAL kurslar — schoolId ga tegishli barcha filiallarga ko'rinadi
     //   LOCAL kurslar  — faqat o'sha filialning kurslari
-    // Director/school_admin barcha kurslarni ko'radi.
-    const SCHOOL_WIDE = new Set(['super_admin', 'school_admin', 'director']);
+    // Director barcha kurslarni ko'radi.
+    const SCHOOL_WIDE = new Set(['super_admin', 'director']);
     let where: any;
 
-    if (SCHOOL_WIDE.has(currentUser.role) && !branchCtx) {
+    if (SCHOOL_WIDE.has(currentUser.role) && !currentUser.branchId) {
       // Barcha kurslar: GLOBAL + LOCAL (filialga qaramay)
       where = { schoolId };
     } else if (viewerBranchId) {
@@ -249,9 +249,9 @@ export class LearningCenterService {
     }));
   }
 
-  async getCourseById(id: string, currentUser: JwtPayload, branchCtx: string | null = null) {
+  async getCourseById(id: string, currentUser: JwtPayload) {
     const course = await this.prisma.course.findFirst({
-      where: { id, ...branchFilter(currentUser, branchCtx) },
+      where: { id, ...buildTenantWhere(currentUser) },
       include: {
         teacher: { select: { id: true, firstName: true, lastName: true } },
         enrollments: {
@@ -267,7 +267,7 @@ export class LearningCenterService {
     return { ...course, enrolledCount: course._count.enrollments };
   }
 
-  async createCourse(dto: CreateCourseDto, currentUser: JwtPayload, branchCtx: string | null = null) {
+  async createCourse(dto: CreateCourseDto, currentUser: JwtPayload) {
     const schoolId = currentUser.schoolId!;
 
     if (dto.teacherId) {
@@ -284,7 +284,7 @@ export class LearningCenterService {
     return this.prisma.course.create({
       data: {
         schoolId,
-        branchId: branchCtx ?? currentUser.branchId ?? undefined,
+        branchId: currentUser.branchId!,
         name:        dto.name,
         description: dto.description,
         teacherId:   dto.teacherId,
@@ -292,7 +292,7 @@ export class LearningCenterService {
         price:       dto.price,
         maxStudents: dto.maxStudents ?? 30,
         isActive:    dto.isActive ?? true,
-        scope:       dto.scope ?? 'GLOBAL',
+        // scope removed — strict branch-required architecture
         startDate:   dto.startDate ? new Date(dto.startDate) : undefined,
         endDate:     dto.endDate   ? new Date(dto.endDate)   : undefined,
       },

@@ -6,14 +6,13 @@ import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger'
 import { ClubsService } from './clubs.service';
 import { CreateClubDto, UpdateClubDto, ClubJoinRequestDto } from './dto/clubs.dto';
 import { CurrentUser } from '@/common/decorators/current-user.decorator';
-import { BranchContext } from '@/common/decorators/branch-context.decorator';
 import { Roles } from '@/common/decorators/roles.decorator';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
 import { JwtPayload, UserRole } from '@eduplatform/types';
 
 const ALL_SCHOOL = [
-  UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.BRANCH_ADMIN, UserRole.VICE_PRINCIPAL,
+  UserRole.DIRECTOR, UserRole.BRANCH_ADMIN, UserRole.VICE_PRINCIPAL,
   UserRole.TEACHER, UserRole.CLASS_TEACHER,
   UserRole.ACCOUNTANT, UserRole.LIBRARIAN,
   UserRole.STUDENT,
@@ -31,10 +30,9 @@ export class ClubsController {
   @ApiOperation({ summary: 'Barcha to\'garaklar ro\'yxati' })
   findAll(
     @CurrentUser() user: JwtPayload,
-    @BranchContext() branchCtx: string | null,
     @Query('category') category?: string,
   ) {
-    return this.clubsService.findAll(user, branchCtx, category);
+    return this.clubsService.findAll(user, category);
   }
 
   @Get('my-clubs')
@@ -52,7 +50,7 @@ export class ClubsController {
   }
 
   @Get('led')
-  @Roles(UserRole.TEACHER, UserRole.CLASS_TEACHER, UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL)
+  @Roles(UserRole.TEACHER, UserRole.CLASS_TEACHER, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL)
   @ApiOperation({ summary: 'Men rahbar bo\'lgan to\'garaklar' })
   findLed(@CurrentUser() user: JwtPayload) {
     return this.clubsService.findLed(user);
@@ -66,38 +64,35 @@ export class ClubsController {
   }
 
   @Post()
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.BRANCH_ADMIN, UserRole.VICE_PRINCIPAL)
+  @Roles(UserRole.DIRECTOR, UserRole.BRANCH_ADMIN, UserRole.VICE_PRINCIPAL)
   @ApiOperation({ summary: 'Yangi to\'garak yaratish' })
   create(
     @Body() dto: CreateClubDto,
     @CurrentUser() user: JwtPayload,
-    @BranchContext() branchCtx: string | null,
   ) {
-    return this.clubsService.create(dto, user, branchCtx);
+    return this.clubsService.create(dto, user);
   }
 
   @Put(':id')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.TEACHER, UserRole.CLASS_TEACHER)
+  @Roles(UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.TEACHER, UserRole.CLASS_TEACHER)
   @ApiOperation({ summary: 'To\'garakni yangilash (admin yoki rahbar)' })
   update(
     @Param('id') id: string,
     @Body() dto: UpdateClubDto,
     @CurrentUser() user: JwtPayload,
-    @BranchContext() branchCtx: string | null,
   ) {
-    return this.clubsService.update(id, dto, user, branchCtx);
+    return this.clubsService.update(id, dto, user);
   }
 
   @Delete(':id')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL)
+  @Roles(UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'To\'garakni o\'chirish' })
   remove(
     @Param('id') id: string,
     @CurrentUser() user: JwtPayload,
-    @BranchContext() branchCtx: string | null,
   ) {
-    return this.clubsService.remove(id, user, branchCtx);
+    return this.clubsService.remove(id, user);
   }
 
   // ─── Join Request Flow ────────────────────────────────────────────────────
@@ -114,7 +109,7 @@ export class ClubsController {
   }
 
   @Get(':id/requests')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.TEACHER, UserRole.CLASS_TEACHER)
+  @Roles(UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.TEACHER, UserRole.CLASS_TEACHER)
   @ApiOperation({ summary: 'To\'garakka qo\'shilish arizalari ro\'yxati' })
   @ApiQuery({ name: 'status', required: false, enum: ['PENDING', 'APPROVED', 'REJECTED'] })
   getJoinRequests(
@@ -126,7 +121,7 @@ export class ClubsController {
   }
 
   @Patch(':id/requests/:requestId/approve')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.TEACHER, UserRole.CLASS_TEACHER)
+  @Roles(UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.TEACHER, UserRole.CLASS_TEACHER)
   @ApiOperation({ summary: 'Arizani tasdiqlash (rahbar yoki admin)' })
   approveRequest(
     @Param('id') id: string,
@@ -137,7 +132,7 @@ export class ClubsController {
   }
 
   @Patch(':id/requests/:requestId/reject')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.TEACHER, UserRole.CLASS_TEACHER)
+  @Roles(UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.TEACHER, UserRole.CLASS_TEACHER)
   @ApiOperation({ summary: 'Arizani rad etish (rahbar yoki admin)' })
   rejectRequest(
     @Param('id') id: string,
@@ -158,18 +153,17 @@ export class ClubsController {
   }
 
   @Get(':id/members')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.TEACHER, UserRole.CLASS_TEACHER)
+  @Roles(UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.TEACHER, UserRole.CLASS_TEACHER)
   @ApiOperation({ summary: 'To\'garak a\'zolari ro\'yxati' })
   getMembers(
     @Param('id') id: string,
     @CurrentUser() user: JwtPayload,
-    @BranchContext() branchCtx: string | null,
   ) {
-    return this.clubsService.getMembers(id, user, branchCtx);
+    return this.clubsService.getMembers(id, user);
   }
 
   @Delete(':id/members/:studentId')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.TEACHER, UserRole.CLASS_TEACHER)
+  @Roles(UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.TEACHER, UserRole.CLASS_TEACHER)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'A\'zoni to\'garakdan chiqarish' })
   removeMember(

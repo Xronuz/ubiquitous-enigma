@@ -93,7 +93,7 @@ export default function AttendancePage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const canMark = ['school_admin', 'director', 'vice_principal', 'teacher', 'class_teacher'].includes(user?.role ?? '');
+  const canMark = ['director', 'vice_principal', 'teacher', 'class_teacher'].includes(user?.role ?? '');
   const today = format(new Date(), 'yyyy-MM-dd');
 
   const [selectedClass, setSelectedClass] = useState('');

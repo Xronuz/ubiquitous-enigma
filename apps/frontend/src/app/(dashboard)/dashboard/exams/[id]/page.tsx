@@ -981,7 +981,7 @@ export default function ExamResultsPage() {
   const router = useRouter();
   const { user } = useAuthStore();
 
-  const canEdit = ['school_admin', 'vice_principal', 'teacher', 'class_teacher'].includes(user?.role ?? '');
+  const canEdit = ['director', 'vice_principal', 'teacher', 'class_teacher'].includes(user?.role ?? '');
   const isStudent = user?.role === 'student';
 
   const { data, isLoading, isError } = useQuery<ExamResult>({

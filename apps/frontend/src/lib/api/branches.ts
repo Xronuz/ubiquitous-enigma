@@ -22,7 +22,7 @@ export interface CreateBranchDto {
 }
 
 export const branchesApi = {
-  /** Maktab filiallarini olish (director/school_admin uchun) */
+  /** Maktab filiallarini olish (director uchun) */
   getAll: async (): Promise<Branch[]> => {
     const { data } = await apiClient.get<Branch[]>('/branches');
     return data;

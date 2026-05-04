@@ -208,7 +208,7 @@ export class CronService {
             _sum: { amount: true },
           }),
           this.prisma.user.findMany({
-            where: { schoolId: school.id, role: 'school_admin' as any, isActive: true },
+            where: { schoolId: school.id, role: 'director' as any, isActive: true },
             select: { email: true, firstName: true },
           }),
         ]);
@@ -286,7 +286,7 @@ export class CronService {
           where: {
             schoolId,
             isActive: true,
-            role: { in: ['school_admin', 'vice_principal', 'teacher', 'class_teacher'] as any },
+            role: { in: ['director', 'vice_principal', 'teacher', 'class_teacher'] as any },
             email: { not: undefined },
           },
           select: { email: true, firstName: true },
@@ -575,6 +575,7 @@ export class CronService {
           await this.prisma.payment.create({
             data: {
               schoolId,
+              branchId: fee.branchId!,
               studentId: student.id,
               amount: fee.amount,
               currency: fee.currency,

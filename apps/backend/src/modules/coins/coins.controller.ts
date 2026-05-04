@@ -12,7 +12,7 @@ import { CoinsService, CreateShopItemDto } from './coins.service';
 import { SpendCoinsDto } from './dto/spend-coins.dto';
 
 const ADMIN_ROLES = [
-  UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL,
+  UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL,
 ];
 
 @ApiTags('coins')

@@ -172,8 +172,8 @@ export class ConvertToStudentDto {
 
 // ─── Service ──────────────────────────────────────────────────────────────────
 
-const SCHOOL_WIDE_ROLES = new Set(['super_admin', 'school_admin', 'director']);
-const CRM_ROLES         = new Set(['super_admin', 'school_admin', 'director', 'branch_admin', 'vice_principal', 'accountant']);
+const SCHOOL_WIDE_ROLES = new Set(['super_admin', 'director']);
+const CRM_ROLES         = new Set(['super_admin', 'director', 'branch_admin', 'vice_principal', 'accountant']);
 
 /** Telefon raqamini normallashtirish: faqat raqamlar, + boshida */
 function normalizePhone(phone: string): string {
@@ -211,8 +211,7 @@ export class LeadsService {
     const schoolId = currentUser.schoolId!;
 
     // Branch-scoped xodim faqat o'z filialida lead yarata oladi
-    const branchId = dto.branchId
-      ?? (!SCHOOL_WIDE_ROLES.has(currentUser.role) ? currentUser.branchId ?? undefined : undefined);
+    const branchId = dto.branchId ?? currentUser.branchId!;
 
     // ─ DUPLICATE CHECK ────────────────────────────────────────────────────
     const { normalized, existing } = await this.checkDuplicate(schoolId, dto.phone);
@@ -459,7 +458,7 @@ export class LeadsService {
 
     // SECURITY: branch-scoped foydalanuvchi boshqa filial sinfiga convert qila olmaydi
     const SCHOOL_WIDE = new Set([
-      'super_admin', 'school_admin', 'director', 'vice_principal',
+      'super_admin', 'director', 'vice_principal',
     ]);
     if (!SCHOOL_WIDE.has(currentUser.role as string) && lead.branchId && cls.branchId && cls.branchId !== lead.branchId) {
       throw new ForbiddenException(

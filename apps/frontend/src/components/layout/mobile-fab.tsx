@@ -22,21 +22,21 @@ const FAB_ACTIONS: FabAction[] = [
     icon: ClipboardCheck,
     href: '/dashboard/attendance',
     color: 'bg-green-500 hover:bg-green-600',
-    roles: ['school_admin', 'vice_principal', 'teacher', 'class_teacher'],
+    roles: ['director', 'vice_principal', 'teacher', 'class_teacher'],
   },
   {
     label: 'Baho',
     icon: BookOpen,
     href: '/dashboard/grades',
     color: 'bg-blue-500 hover:bg-blue-600',
-    roles: ['school_admin', 'vice_principal', 'teacher', 'class_teacher'],
+    roles: ['director', 'vice_principal', 'teacher', 'class_teacher'],
   },
   {
     label: 'Imtihon',
     icon: GraduationCap,
     href: '/dashboard/exams',
     color: 'bg-orange-500 hover:bg-orange-600',
-    roles: ['school_admin', 'vice_principal', 'teacher', 'class_teacher'],
+    roles: ['director', 'vice_principal', 'teacher', 'class_teacher'],
   },
   {
     label: 'Vazifa',
@@ -50,14 +50,14 @@ const FAB_ACTIONS: FabAction[] = [
     icon: Calendar,
     href: '/dashboard/schedule',
     color: 'bg-teal-500 hover:bg-teal-600',
-    roles: ['school_admin', 'vice_principal', 'teacher', 'class_teacher', 'accountant', 'librarian'],
+    roles: ['director', 'vice_principal', 'teacher', 'class_teacher', 'accountant', 'librarian'],
   },
   {
     label: 'Xabar',
     icon: MessageSquare,
     href: '/dashboard/messages',
     color: 'bg-pink-500 hover:bg-pink-600',
-    roles: ['school_admin', 'vice_principal', 'teacher', 'class_teacher', 'accountant', 'librarian'],
+    roles: ['director', 'vice_principal', 'teacher', 'class_teacher', 'accountant', 'librarian'],
   },
 ];
 
@@ -69,7 +69,7 @@ export function MobileFab() {
   const role = user?.role ?? '';
 
   // Only show for staff roles, not student/parent/super_admin
-  const staffRoles = ['school_admin', 'vice_principal', 'teacher', 'class_teacher', 'accountant', 'librarian'];
+  const staffRoles = ['director', 'vice_principal', 'teacher', 'class_teacher', 'accountant', 'librarian'];
   if (!staffRoles.includes(role)) return null;
 
   const actions = FAB_ACTIONS.filter(a => !a.roles || a.roles.includes(role));

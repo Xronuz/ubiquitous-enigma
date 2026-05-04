@@ -98,7 +98,7 @@ export function ImportDialog({ open, onOpenChange, type, onSuccess }: ImportDial
   const { data: branchesData } = useQuery({
     queryKey: ['branches', user?.schoolId],
     queryFn: () => branchesApi.getAll(),
-    enabled: open && !!user?.schoolId && ['super_admin', 'school_admin', 'director'].includes(user?.role ?? ''),
+    enabled: open && !!user?.schoolId && ['super_admin', 'director'].includes(user?.role ?? ''),
   });
   const branchesList = Array.isArray(branchesData) ? branchesData : (branchesData as any)?.data ?? [];
   const canSelectBranch = branchesList.length > 0;

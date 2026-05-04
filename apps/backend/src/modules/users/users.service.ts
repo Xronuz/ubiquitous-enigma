@@ -10,7 +10,7 @@ import { UserRole, JwtPayload } from '@eduplatform/types';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
-import { branchFilter } from '@/common/utils/branch-filter.util';
+import { buildTenantWhere } from '@/common/utils/tenant-scope.util';
 
 @Injectable()
 export class UsersService {
@@ -26,14 +26,9 @@ export class UsersService {
   private readonly ROLE_CREATION_MATRIX: Record<UserRole, UserRole[]> = {
     [UserRole.SUPER_ADMIN]: Object.values(UserRole),
     [UserRole.DIRECTOR]: [
-      UserRole.SCHOOL_ADMIN, UserRole.VICE_PRINCIPAL, UserRole.BRANCH_ADMIN,
+      UserRole.VICE_PRINCIPAL, UserRole.BRANCH_ADMIN,
       UserRole.TEACHER, UserRole.CLASS_TEACHER, UserRole.ACCOUNTANT,
       UserRole.LIBRARIAN, UserRole.STUDENT, UserRole.PARENT,
-    ],
-    [UserRole.SCHOOL_ADMIN]: [
-      UserRole.VICE_PRINCIPAL, UserRole.BRANCH_ADMIN, UserRole.TEACHER,
-      UserRole.CLASS_TEACHER, UserRole.ACCOUNTANT, UserRole.LIBRARIAN,
-      UserRole.STUDENT, UserRole.PARENT,
     ],
     [UserRole.VICE_PRINCIPAL]: [
       UserRole.BRANCH_ADMIN, UserRole.TEACHER, UserRole.CLASS_TEACHER,
@@ -71,7 +66,6 @@ export class UsersService {
 
   async findAll(
     currentUser: JwtPayload,
-    branchCtx: string | null = null,
     page = 1,
     limit = 20,
     search?: string,
@@ -80,7 +74,7 @@ export class UsersService {
     const skip = (page - 1) * limit;
 
     // super_admin can see all users; others get branchFilter
-    const baseFilter = currentUser.isSuperAdmin ? {} : branchFilter(currentUser, branchCtx);
+    const baseFilter = currentUser.isSuperAdmin ? {} : buildTenantWhere(currentUser);
     const where: any = { ...baseFilter };
     if (role) where.role = role;
     if (search) {
@@ -131,27 +125,31 @@ export class UsersService {
 
     // 2. Non-super-admin can only create users for their school
     const schoolId = currentUser.isSuperAdmin
-      ? (dto.schoolId ?? null)
-      : currentUser.schoolId;
+      ? (dto.schoolId ?? currentUser.schoolId!)
+      : currentUser.schoolId!;
 
-    // 3. BranchId validation for branch-scoped roles
-    let branchId: string | null = null;
-    if (this.BRANCH_SCOPED_ROLES.has(dto.role)) {
-      if (!dto.branchId && !currentUser.branchId) {
-        throw new BadRequestException(
-          `${dto.role} rolidagi foydalanuvchi uchun branchId majburiy`,
-        );
-      }
-      // Explicit branchId or fallback to creator's branch
-      branchId = dto.branchId ?? currentUser.branchId ?? null;
+    // 3. BranchId validation — ALL users MUST have a branchId
+    let branchId = dto.branchId ?? currentUser.branchId ?? null;
 
-      // Branch admins can only create users in their own branch
-      if (currentUser.role === UserRole.BRANCH_ADMIN && branchId !== currentUser.branchId) {
-        throw new ForbiddenException('Faqat o\'z filialingiz uchun foydalanuvchi yaratish mumkin');
+    // Director created by super_admin without branchId → auto-assign to main branch
+    if (!branchId && dto.role === UserRole.DIRECTOR && schoolId) {
+      const mainBranch = await this.prisma.branch.findFirst({
+        where: { schoolId, isActive: true },
+        orderBy: { createdAt: 'asc' },
+        select: { id: true },
+      });
+      if (mainBranch) {
+        branchId = mainBranch.id;
       }
-    } else {
-      // School-wide roles (director, school_admin) must have null branchId
-      branchId = null;
+    }
+
+    if (!branchId) {
+      throw new BadRequestException('Foydalanuvchi uchun branchId majburiy');
+    }
+
+    // Branch admins can only create users in their own branch
+    if (currentUser.role === UserRole.BRANCH_ADMIN && branchId !== currentUser.branchId) {
+      throw new ForbiddenException('Faqat o\'z filialingiz uchun foydalanuvchi yaratish mumkin');
     }
 
     const passwordHash = await bcrypt.hash(dto.password, 12);
@@ -312,14 +310,13 @@ export class UsersService {
   async importFromCsv(
     csvBuffer: Buffer,
     currentUser: JwtPayload,
-    branchCtx: string | null = null,
   ): Promise<{ created: number; skipped: number; errors: string[] }> {
     if (!currentUser.schoolId) {
       throw new ForbiddenException('Maktab ID si topilmadi');
     }
 
     // CSV import qilingan o'quvchilar uchun branchId
-    const importBranchId = branchCtx ?? currentUser.branchId ?? null;
+    const importBranchId = currentUser.branchId ?? null;
 
     let rows: Record<string, string>[];
     try {

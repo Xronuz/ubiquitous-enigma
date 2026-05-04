@@ -149,7 +149,7 @@ export class ParentService {
     const approvers = await this.prisma.user.findMany({
       where: {
         schoolId,
-        role: { in: [UserRole.SCHOOL_ADMIN, UserRole.VICE_PRINCIPAL] as any },
+        role: { in: [UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL] as any },
         isActive: true,
       },
       select: { id: true, role: true },
@@ -169,6 +169,7 @@ export class ParentService {
     const leaveRequest = await this.prisma.leaveRequest.create({
       data: {
         schoolId,
+        branchId: currentUser.branchId!,
         requesterId: studentId,       // so'rovchi — o'quvchi
         reason: `[Ota-ona so'rovi] ${dto.reason}`,
         startDate: start,
@@ -187,6 +188,7 @@ export class ParentService {
       await this.prisma.notification.createMany({
         data: approvers.map(a => ({
           schoolId,
+          branchId: currentUser.branchId!,
           recipientId: a.id,
           title: "Yangi ta'til so'rovi (ota-ona)",
           body: `${student?.firstName} ${student?.lastName} uchun ota-ona ta'til so'rov yubordi: ${dto.startDate} – ${dto.endDate}`,

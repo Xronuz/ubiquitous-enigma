@@ -6,7 +6,7 @@ import { PrismaService } from '@/common/prisma/prisma.service';
 import { JwtPayload, PaymentStatus } from '@eduplatform/types';
 import { AuditService } from '@/common/audit/audit.service';
 import { EventsGateway } from '@/modules/gateway/events.gateway';
-import { branchFilter } from '@/common/utils/branch-filter.util';
+import { buildTenantWhere } from '@/common/utils/tenant-scope.util';
 import { TreasuryService } from '@/modules/treasury/treasury.service';
 import { FinancialShiftsService } from '@/modules/financial-shifts/financial-shifts.service';
 
@@ -42,9 +42,9 @@ export class PaymentsService {
     @Optional() private readonly shiftsService: FinancialShiftsService,
   ) {}
 
-  async create(dto: CreatePaymentDto, currentUser: JwtPayload, branchCtx: string | null = null) {
+  async create(dto: CreatePaymentDto, currentUser: JwtPayload) {
     const schoolId = currentUser.schoolId!;
-    const effectiveBranchId = branchCtx ?? currentUser.branchId ?? null;
+    const effectiveBranchId = currentUser.branchId!;
     const isCash = !dto.provider || dto.provider === 'cash';
 
     // ── 1. G'azna aniqlash ──────────────────────────────────────────────────
@@ -81,7 +81,7 @@ export class PaymentsService {
       const created = await tx.payment.create({
         data: {
           schoolId,
-          branchId: effectiveBranchId ?? undefined,
+          branchId: currentUser.branchId!,
           studentId: dto.studentId,
           treasuryId: treasury?.id ?? undefined,
           shiftId: activeShift?.id ?? undefined,
@@ -140,7 +140,6 @@ export class PaymentsService {
 
   async getHistory(
     currentUser: JwtPayload,
-    branchCtx: string | null = null,
     studentId?: string,
     classId?: string,
     status?: string,
@@ -153,7 +152,7 @@ export class PaymentsService {
     page  = Math.max(1, page);
     limit = Math.min(100, Math.max(1, limit));
     const skip = (page - 1) * limit;
-    const where: any = { ...branchFilter(currentUser, branchCtx) };
+    const where: any = { ...buildTenantWhere(currentUser) };
     if (studentId) where.studentId = studentId;
     if (status) where.status = status;
     if (from || to) {
@@ -186,8 +185,8 @@ export class PaymentsService {
     return { data: payments, meta: { total, page, limit, totalPages: Math.ceil(total / limit) } };
   }
 
-  async getReport(currentUser: JwtPayload, branchCtx: string | null = null) {
-    const filter = branchFilter(currentUser, branchCtx);
+  async getReport(currentUser: JwtPayload) {
+    const filter = buildTenantWhere(currentUser);
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
@@ -257,9 +256,9 @@ export class PaymentsService {
     };
   }
 
-  async markAsPaid(id: string, currentUser: JwtPayload, branchCtx: string | null = null) {
+  async markAsPaid(id: string, currentUser: JwtPayload) {
     const payment = await this.prisma.payment.findFirst({
-      where: { id, ...branchFilter(currentUser, branchCtx) },
+      where: { id, ...buildTenantWhere(currentUser) },
     });
     if (!payment) throw new NotFoundException('To\'lov topilmadi');
     if ((payment.status as string) === 'paid') {
@@ -283,7 +282,7 @@ export class PaymentsService {
         // Treasury bog'liq bo'lmasa — getEffectiveTreasury orqali topamiz
         const treasury = await this.treasuryService.getEffectiveTreasury(
           currentUser.schoolId!,
-          branchCtx ?? currentUser.branchId,
+          currentUser.branchId!,
         );
         if (treasury) {
           await tx.treasury.update({

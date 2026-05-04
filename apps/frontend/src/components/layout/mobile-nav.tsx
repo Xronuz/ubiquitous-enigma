@@ -9,13 +9,16 @@ import {
   LayoutDashboard, Users, BookOpen, Calendar, ClipboardCheck,
   BarChart2, BarChart3, CreditCard, Bell, Settings, School,
   MessageSquare, BookMarked, FileText, Library, CalendarOff, Banknote,
-  UserCircle, Heart,
+  UserCircle, Heart, Building2, Shield, TrendingUp, Coins,
+  ShoppingBag, Package, Bus, Award, Wallet,
+  Brain, Megaphone,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/auth.store';
 import { Button } from '@/components/ui/button';
-import { Sheet } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Separator } from '@/components/ui/separator';
+import { ROUTE_PERMISSIONS } from '@/config/permissions';
 
 interface NavItem {
   label: string;
@@ -29,58 +32,74 @@ interface NavGroup {
   items: NavItem[];
 }
 
-const SCHOOL_ROLES = ['school_admin', 'vice_principal', 'teacher', 'class_teacher', 'accountant', 'librarian', 'student', 'parent'];
-const ALL_STAFF = ['school_admin', 'vice_principal', 'teacher', 'class_teacher', 'accountant', 'librarian'];
+const ALL_SCHOOL = ['director', 'vice_principal', 'branch_admin', 'teacher', 'class_teacher', 'accountant', 'librarian', 'student', 'parent'];
+const STAFF = ['director', 'vice_principal', 'branch_admin', 'teacher', 'class_teacher', 'accountant', 'librarian'];
 
 const navGroups: NavGroup[] = [
   {
     title: 'ASOSIY',
     items: [
-      { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, roles: ['school_admin', 'vice_principal', 'teacher', 'class_teacher', 'accountant', 'librarian'] },
-      { label: 'Mening portalim', href: '/dashboard/student', icon: UserCircle, roles: ['student'] },
-      { label: 'Farzandlarim', href: '/dashboard/parent', icon: Heart, roles: ['parent'] },
+      { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, roles: ALL_SCHOOL },
+      { label: "O'quvchi portal", href: '/dashboard/student', icon: UserCircle, roles: ['student'] },
+      { label: 'Farzand', href: '/dashboard/parent', icon: Heart, roles: ['parent'] },
     ],
   },
   {
     title: "TA'LIM",
     items: [
-      { label: 'Sinflar', href: '/dashboard/classes', icon: School, roles: ['school_admin', 'vice_principal', 'teacher', 'class_teacher'] },
-      { label: 'Dars jadvali', href: '/dashboard/schedule', icon: Calendar, roles: ['school_admin', 'vice_principal', 'teacher', 'class_teacher', 'accountant', 'librarian'] },
-      { label: 'Fanlar', href: '/dashboard/subjects', icon: BookOpen, roles: ['school_admin', 'vice_principal', 'teacher'] },
-      { label: 'Davomat', href: '/dashboard/attendance', icon: ClipboardCheck, roles: ['school_admin', 'vice_principal', 'teacher', 'class_teacher'] },
-      { label: 'Baholar', href: '/dashboard/grades', icon: BarChart2, roles: ['school_admin', 'vice_principal', 'teacher', 'class_teacher'] },
-      { label: 'Imtihonlar', href: '/dashboard/exams', icon: FileText, roles: ['school_admin', 'vice_principal', 'teacher', 'class_teacher'] },
-      { label: 'Uy vazifalari', href: '/dashboard/homework', icon: BookMarked, roles: ['school_admin', 'vice_principal', 'teacher', 'class_teacher'] },
+      { label: "Ta'lim markazi", href: '/dashboard/education', icon: School, roles: ROUTE_PERMISSIONS['/dashboard/education'] },
+      { label: "O'quvchilar", href: '/dashboard/students', icon: Users, roles: ROUTE_PERMISSIONS['/dashboard/students'] },
+      { label: 'Dars jadvali', href: '/dashboard/schedule', icon: Calendar, roles: ROUTE_PERMISSIONS['/dashboard/schedule'] },
+      { label: 'Davomat', href: '/dashboard/attendance', icon: ClipboardCheck, roles: ROUTE_PERMISSIONS['/dashboard/attendance'] },
+      { label: 'Baholar', href: '/dashboard/grades', icon: BarChart2, roles: ROUTE_PERMISSIONS['/dashboard/grades'] },
+      { label: 'Imtihonlar', href: '/dashboard/exams', icon: FileText, roles: ROUTE_PERMISSIONS['/dashboard/exams'] },
+      { label: 'Uy vazifalari', href: '/dashboard/homework', icon: BookMarked, roles: ROUTE_PERMISSIONS['/dashboard/homework'] },
     ],
   },
   {
     title: 'MOLIYA',
     items: [
-      { label: "O'quvchilar to'lovi", href: '/dashboard/payments', icon: CreditCard, roles: ['school_admin', 'accountant'] },
-      { label: 'Maosh tizimi', href: '/dashboard/payroll', icon: Banknote, roles: ['school_admin', 'accountant'] },
-      { label: 'Hisobotlar', href: '/dashboard/reports', icon: BarChart3, roles: ['school_admin', 'vice_principal', 'accountant'] },
+      { label: 'Moliya', href: '/dashboard/finance', icon: TrendingUp, roles: ROUTE_PERMISSIONS['/dashboard/finance'] },
+      { label: "To'lovlar", href: '/dashboard/payments', icon: CreditCard, roles: ROUTE_PERMISSIONS['/dashboard/payments'] },
+      { label: 'Tariflar', href: '/dashboard/fee-structures', icon: Wallet, roles: ROUTE_PERMISSIONS['/dashboard/fee-structures'] },
+      { label: 'Ish haqi', href: '/dashboard/payroll', icon: Award, roles: ROUTE_PERMISSIONS['/dashboard/payroll'] },
+      { label: 'Hisobotlar', href: '/dashboard/reports', icon: BarChart3, roles: ROUTE_PERMISSIONS['/dashboard/reports'] },
+      { label: 'KPI Dashboard', href: '/dashboard/kpi', icon: TrendingUp, roles: ROUTE_PERMISSIONS['/dashboard/kpi'] },
+      { label: 'AI Analytics', href: '/dashboard/ai-analytics', icon: Brain, roles: ROUTE_PERMISSIONS['/dashboard/ai-analytics'] },
+      { label: 'Marketing', href: '/dashboard/marketing', icon: Megaphone, roles: ROUTE_PERMISSIONS['/dashboard/marketing'] },
     ],
   },
   {
-    title: 'XODIMLAR',
+    title: 'BOSHQARUV',
     items: [
-      { label: 'Foydalanuvchilar', href: '/dashboard/users', icon: Users, roles: ['school_admin', 'vice_principal'] },
-      { label: "Ta'til so'rovlari", href: '/dashboard/leave-requests', icon: CalendarOff, roles: ALL_STAFF },
+      { label: 'Xodimlar', href: '/dashboard/staff', icon: Users, roles: ROUTE_PERMISSIONS['/dashboard/staff'] },
+      { label: 'Foydalanuvchilar', href: '/dashboard/users', icon: Users, roles: ROUTE_PERMISSIONS['/dashboard/users'] },
+      { label: "Ta'til so'rovlar", href: '/dashboard/leave-requests', icon: CalendarOff, roles: ROUTE_PERMISSIONS['/dashboard/leave-requests'] },
+      { label: 'Intizom', href: '/dashboard/discipline', icon: Shield, roles: ROUTE_PERMISSIONS['/dashboard/discipline'] },
     ],
   },
   {
-    title: 'BOSHQA',
+    title: 'RESURSLAR',
     items: [
-      { label: 'Kutubxona', href: '/dashboard/library', icon: Library, roles: ['school_admin', 'vice_principal', 'librarian'] },
-      { label: 'Xabarlar', href: '/dashboard/messages', icon: MessageSquare, roles: SCHOOL_ROLES },
-      { label: 'Bildirishnomalar', href: '/dashboard/notifications', icon: Bell, roles: SCHOOL_ROLES },
+      { label: 'Resurslar', href: '/dashboard/resources', icon: Package, roles: ROUTE_PERMISSIONS['/dashboard/resources'] },
+      { label: 'Kutubxona', href: '/dashboard/library', icon: Library, roles: ROUTE_PERMISSIONS['/dashboard/library'] },
+      { label: 'Transport', href: '/dashboard/transport', icon: Bus, roles: ROUTE_PERMISSIONS['/dashboard/transport'] },
+    ],
+  },
+  {
+    title: 'ALOQA',
+    items: [
+      { label: 'Kommunikatsiya', href: '/dashboard/comms', icon: MessageSquare, roles: ROUTE_PERMISSIONS['/dashboard/comms'] },
+      { label: 'Bildirishnomalar', href: '/dashboard/notifications', icon: Bell, roles: ROUTE_PERMISSIONS['/dashboard/notifications'] },
     ],
   },
 ];
 
 const adminItems: NavItem[] = [
-  { label: 'Maktablar', href: '/dashboard/schools', icon: GraduationCap, roles: ['super_admin'] },
-  { label: 'Sozlamalar', href: '/dashboard/settings', icon: Settings },
+  { label: 'Maktablar', href: '/dashboard/schools', icon: School, roles: ROUTE_PERMISSIONS['/dashboard/schools'] },
+  { label: 'Filiallar', href: '/dashboard/branches', icon: Building2, roles: ROUTE_PERMISSIONS['/dashboard/branches'] },
+  { label: 'Audit log', href: '/dashboard/audit-log', icon: Shield, roles: ROUTE_PERMISSIONS['/dashboard/audit-log'] },
+  { label: 'Sozlamalar', href: '/dashboard/settings', icon: Settings, roles: ROUTE_PERMISSIONS['/dashboard/settings'] },
 ];
 
 export function MobileNav() {
@@ -94,34 +113,33 @@ export function MobileNav() {
     return item.roles.includes(user.role);
   };
 
+  const visibleGroups = navGroups
+    .map(g => ({ ...g, items: g.items.filter(canSee) }))
+    .filter(g => g.items.length > 0);
+
+  const visibleAdmin = adminItems.filter(canSee);
+
   return (
     <>
-      <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setOpen(true)}>
-        <Menu className="h-5 w-5" />
-        <span className="sr-only">Menyu</span>
-      </Button>
+      <Sheet open={open} onOpenChange={setOpen}>
+        <SheetTrigger asChild>
+          <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setOpen(true)}>
+            <Menu className="h-5 w-5" />
+          </Button>
+        </SheetTrigger>
+        <SheetContent side="left" className="w-[280px] p-0">
+          <SheetHeader className="px-4 py-4 border-b">
+            <SheetTitle className="text-left text-lg font-bold">Xedu Platform</SheetTitle>
+          </SheetHeader>
 
-      <Sheet open={open} onClose={() => setOpen(false)} side="left">
-        {/* Logo */}
-        <div className="flex h-16 items-center border-b px-4">
-          <Link href="/dashboard" className="flex items-center gap-2 font-bold text-primary" onClick={() => setOpen(false)}>
-            <GraduationCap className="h-6 w-6" />
-            EduPlatform
-          </Link>
-        </div>
-
-        {/* Nav */}
-        <nav className="flex-1 overflow-y-auto p-2 space-y-1 pb-20">
-          {navGroups.map((group) => {
-            const visibleItems = group.items.filter(canSee);
-            if (visibleItems.length === 0) return null;
-            return (
-              <div key={group.title}>
-                <p className="px-3 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">
+          <div className="flex flex-col overflow-y-auto h-[calc(100vh-80px)] px-3 py-2">
+            {visibleGroups.map(group => (
+              <div key={group.title} className="mb-3">
+                <p className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">
                   {group.title}
                 </p>
-                <div className="space-y-0.5">
-                  {visibleItems.map((item) => {
+                <div className="flex flex-col gap-0.5">
+                  {group.items.map(item => {
                     const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
                     const Icon = item.icon;
                     return (
@@ -130,53 +148,51 @@ export function MobileNav() {
                         href={item.href}
                         onClick={() => setOpen(false)}
                         className={cn(
-                          'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+                          'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
                           isActive
-                            ? 'bg-primary text-primary-foreground'
-                            : 'text-muted-foreground hover:bg-accent hover:text-foreground',
+                            ? 'bg-emerald-50 text-emerald-700'
+                            : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900',
                         )}
                       >
                         <Icon className="h-4 w-4 shrink-0" />
-                        {item.label}
+                        <span>{item.label}</span>
+                      </Link>
+                    );
+                  })}
+                </div>
+                <Separator className="mt-2" />
+              </div>
+            ))}
+
+            {visibleAdmin.length > 0 && (
+              <div>
+                <p className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">TIZIM</p>
+                <div className="flex flex-col gap-0.5">
+                  {visibleAdmin.map(item => {
+                    const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+                    const Icon = item.icon;
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        onClick={() => setOpen(false)}
+                        className={cn(
+                          'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
+                          isActive
+                            ? 'bg-emerald-50 text-emerald-700'
+                            : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900',
+                        )}
+                      >
+                        <Icon className="h-4 w-4 shrink-0" />
+                        <span>{item.label}</span>
                       </Link>
                     );
                   })}
                 </div>
               </div>
-            );
-          })}
-
-          {adminItems.some(canSee) && (
-            <>
-              <Separator className="my-1" />
-              <p className="px-3 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">
-                TIZIM
-              </p>
-              <div className="space-y-0.5">
-                {adminItems.filter(canSee).map((item) => {
-                  const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
-                  const Icon = item.icon;
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={() => setOpen(false)}
-                      className={cn(
-                        'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
-                        isActive
-                          ? 'bg-primary text-primary-foreground'
-                          : 'text-muted-foreground hover:bg-accent hover:text-foreground',
-                      )}
-                    >
-                      <Icon className="h-4 w-4 shrink-0" />
-                      {item.label}
-                    </Link>
-                  );
-                })}
-              </div>
-            </>
-          )}
-        </nav>
+            )}
+          </div>
+        </SheetContent>
       </Sheet>
     </>
   );

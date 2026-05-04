@@ -6,7 +6,7 @@ import { PrismaService } from '@/common/prisma/prisma.service';
 import { JwtPayload, UserRole } from '@eduplatform/types';
 import { AuditService, AuditAction } from '@/common/audit/audit.service';
 import { CreateClubDto, UpdateClubDto, ClubJoinRequestDto } from './dto/clubs.dto';
-import { branchFilter } from '@/common/utils/branch-filter.util';
+import { buildTenantWhere } from '@/common/utils/tenant-scope.util';
 
 const CLUB_INCLUDE = {
   leader: { select: { id: true, firstName: true, lastName: true, avatarUrl: true } },
@@ -32,8 +32,8 @@ export class ClubsService {
   ) {}
 
   // ─── List all clubs ───────────────────────────────────────────────────────
-  async findAll(currentUser: JwtPayload, branchCtx: string | null = null, category?: string) {
-    const where: any = { ...branchFilter(currentUser, branchCtx), isActive: true };
+  async findAll(currentUser: JwtPayload, category?: string) {
+    const where: any = { ...buildTenantWhere(currentUser), isActive: true };
     if (category) where.category = category;
 
     return this.prisma.club.findMany({
@@ -79,9 +79,9 @@ export class ClubsService {
   }
 
   // ─── Single club detail ───────────────────────────────────────────────────
-  async findOne(id: string, currentUser: JwtPayload, branchCtx: string | null = null) {
+  async findOne(id: string, currentUser: JwtPayload) {
     const club = await this.prisma.club.findFirst({
-      where: { id, ...branchFilter(currentUser, branchCtx) },
+      where: { id, ...buildTenantWhere(currentUser) },
       include: {
         leader: { select: { id: true, firstName: true, lastName: true, avatarUrl: true } },
         members: {
@@ -98,14 +98,14 @@ export class ClubsService {
   }
 
   // ─── Create ───────────────────────────────────────────────────────────────
-  async create(dto: CreateClubDto, currentUser: JwtPayload, branchCtx: string | null = null) {
+  async create(dto: CreateClubDto, currentUser: JwtPayload) {
     const { scheduleDays, ...rest } = dto;
     const club = await this.prisma.club.create({
       data: {
         ...rest,
         scheduleDays: (scheduleDays ?? []) as any,
         schoolId: currentUser.schoolId!,
-        branchId: branchCtx ?? currentUser.branchId ?? undefined,
+        branchId: currentUser.branchId!,
       },
       include: CLUB_INCLUDE,
     });
@@ -123,13 +123,13 @@ export class ClubsService {
   }
 
   // ─── Update ───────────────────────────────────────────────────────────────
-  async update(id: string, dto: UpdateClubDto, currentUser: JwtPayload, branchCtx?: string | null) {
+  async update(id: string, dto: UpdateClubDto, currentUser: JwtPayload) {
     const club = await this.prisma.club.findFirst({
-      where: { id, ...branchFilter(currentUser, branchCtx) },
+      where: { id, ...buildTenantWhere(currentUser) },
     });
     if (!club) throw new NotFoundException('To\'garak topilmadi');
 
-    const isAdmin = [UserRole.SCHOOL_ADMIN, UserRole.VICE_PRINCIPAL].includes(currentUser.role as UserRole);
+    const isAdmin = [UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL].includes(currentUser.role as UserRole);
     const isLeader = club.leaderId === currentUser.sub;
     if (!isAdmin && !isLeader) throw new ForbiddenException('Faqat admin yoki rahbar tahrirlay oladi');
 
@@ -145,9 +145,9 @@ export class ClubsService {
   }
 
   // ─── Delete ───────────────────────────────────────────────────────────────
-  async remove(id: string, currentUser: JwtPayload, branchCtx?: string | null) {
+  async remove(id: string, currentUser: JwtPayload) {
     const club = await this.prisma.club.findFirst({
-      where: { id, ...branchFilter(currentUser, branchCtx) },
+      where: { id, ...buildTenantWhere(currentUser) },
     });
     if (!club) throw new NotFoundException('To\'garak topilmadi');
 
@@ -312,9 +312,9 @@ export class ClubsService {
   }
 
   // ─── Get members list ─────────────────────────────────────────────────────
-  async getMembers(id: string, currentUser: JwtPayload, branchCtx?: string | null) {
+  async getMembers(id: string, currentUser: JwtPayload) {
     const club = await this.prisma.club.findFirst({
-      where: { id, ...branchFilter(currentUser, branchCtx) },
+      where: { id, ...buildTenantWhere(currentUser) },
     });
     if (!club) throw new NotFoundException('To\'garak topilmadi');
 
@@ -330,7 +330,7 @@ export class ClubsService {
   // ─── Helpers ──────────────────────────────────────────────────────────────
 
   private assertLeaderOrAdmin(club: { leaderId: string }, currentUser: JwtPayload) {
-    const isAdmin = [UserRole.SCHOOL_ADMIN, UserRole.VICE_PRINCIPAL, UserRole.DIRECTOR].includes(currentUser.role as UserRole);
+    const isAdmin = [UserRole.VICE_PRINCIPAL, UserRole.DIRECTOR].includes(currentUser.role as UserRole);
     const isLeader = club.leaderId === currentUser.sub;
     if (!isAdmin && !isLeader) throw new ForbiddenException('Ruxsat yo\'q');
   }

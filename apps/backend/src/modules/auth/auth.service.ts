@@ -169,62 +169,40 @@ export class AuthService {
    * Yangi JWT tokenlar qaytariladi (branchId yangilangan).
    *
    * Qoidalar:
-   * - SCHOOL_WIDE_ROLES (super_admin, school_admin, director) → har qanday filialga
+   * - SCHOOL_WIDE_ROLES (super_admin, director) → har qanday filialga
    * - branch_admin → faqat o'ziga assigned filiallarga
    * - Boshqa rollar → 403
    */
   async switchBranch(dto: SwitchBranchDto, currentUser: JwtPayload): Promise<TokenPair> {
-    const SCHOOL_WIDE_ROLES = new Set<UserRole>([
-      UserRole.SUPER_ADMIN, UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR,
-    ]);
-
-    const canSwitch = SCHOOL_WIDE_ROLES.has(currentUser.role as UserRole) ||
-      currentUser.role === UserRole.BRANCH_ADMIN;
-
-    if (!canSwitch) {
-      throw new ForbiddenException('Filial almashtirish sizning rolingiz uchun ruxsat etilmagan');
+    const targetBranchId = dto.branchId;
+    if (!targetBranchId) {
+      throw new BadRequestException('Filial ID majburiy');
     }
 
-    const targetBranchId = dto.branchId ?? null;
+    const branch = await this.prisma.branch.findUnique({
+      where: { id: targetBranchId },
+      select: { id: true, schoolId: true, isActive: true },
+    });
 
-    // SECURITY: branch_admin "barcha filiallar" rejimiga (null) o'ta olmaydi.
-    // Bu null bypass orqali assignment tekshiruvini chetlab o'tishni bloklaydi.
-    if (currentUser.role === UserRole.BRANCH_ADMIN && !targetBranchId) {
-      throw new ForbiddenException(
-        'Branch admin "barcha filiallar" rejimiga o\'ta olmaydi. Aniq filial tanlang.',
-      );
+    if (!branch || !branch.isActive) {
+      throw new BadRequestException('Filial topilmadi yoki faol emas');
     }
 
-    // Agar branchId berilgan bo'lsa — validate
-    if (targetBranchId) {
-      const branch = await this.prisma.branch.findUnique({
-        where: { id: targetBranchId },
-        select: { id: true, schoolId: true, isActive: true },
+    if (currentUser.role !== UserRole.SUPER_ADMIN &&
+        branch.schoolId !== currentUser.schoolId) {
+      throw new ForbiddenException('Bu filial sizning maktabingizga tegishli emas');
+    }
+
+    if (currentUser.role === UserRole.BRANCH_ADMIN) {
+      const assignment = await this.prisma.userBranchAssignment.findUnique({
+        where: { userId_branchId: { userId: currentUser.sub, branchId: targetBranchId } },
+        select: { isActive: true },
       });
-
-      if (!branch || !branch.isActive) {
-        throw new BadRequestException('Filial topilmadi yoki faol emas');
-      }
-
-      // schoolId mos kelishi kerak (super_admin uchun tekshirmaymiz)
-      if (currentUser.role !== UserRole.SUPER_ADMIN &&
-          branch.schoolId !== currentUser.schoolId) {
-        throw new ForbiddenException('Bu filial sizning maktabingizga tegishli emas');
-      }
-
-      // branch_admin: faqat o'z assigned filiallariga kirish huquqi
-      if (currentUser.role === UserRole.BRANCH_ADMIN) {
-        const assignment = await this.prisma.userBranchAssignment.findUnique({
-          where: { userId_branchId: { userId: currentUser.sub, branchId: targetBranchId } },
-          select: { isActive: true },
-        });
-        if (!assignment?.isActive && currentUser.branchId !== targetBranchId) {
-          throw new ForbiddenException('Bu filialga kirish huquqingiz yo\'q');
-        }
+      if (!assignment?.isActive && currentUser.branchId !== targetBranchId) {
+        throw new ForbiddenException('Bu filialga kirish huquqingiz yo\'q');
       }
     }
 
-    // Yangi tokenlar — branchId ni override qilib
     const user = await this.prisma.user.findUnique({
       where: { id: currentUser.sub, isActive: true },
       select: { id: true, email: true, role: true, schoolId: true, branchId: true },
@@ -273,7 +251,7 @@ export class AuthService {
       email: user.email,
       role: user.role as UserRole,
       schoolId: user.schoolId,
-      branchId: user.branchId ?? null,
+      branchId: user.branchId!,
       isSuperAdmin,
     };
 

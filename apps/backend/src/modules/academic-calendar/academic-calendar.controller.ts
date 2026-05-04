@@ -17,7 +17,7 @@ export class AcademicCalendarController {
 
   @Get()
   @Roles(
-    UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.TEACHER,
+    UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.TEACHER,
     UserRole.CLASS_TEACHER, UserRole.STUDENT, UserRole.PARENT, UserRole.ACCOUNTANT,
   )
   @ApiOperation({ summary: 'Akademik kalendar tadbirlari' })
@@ -32,28 +32,28 @@ export class AcademicCalendarController {
   }
 
   @Get(':id')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.TEACHER, UserRole.CLASS_TEACHER)
+  @Roles(UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.TEACHER, UserRole.CLASS_TEACHER)
   @ApiOperation({ summary: 'Bir tadbir' })
   findOne(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
     return this.service.findOne(id, user);
   }
 
   @Post()
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL)
+  @Roles(UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL)
   @ApiOperation({ summary: 'Tadbir qo\'shish' })
   create(@Body() dto: CreateAcademicEventDto, @CurrentUser() user: JwtPayload) {
     return this.service.create(dto, user);
   }
 
   @Put(':id')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL)
+  @Roles(UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL)
   @ApiOperation({ summary: 'Tadbirni yangilash' })
   update(@Param('id') id: string, @Body() dto: Partial<CreateAcademicEventDto>, @CurrentUser() user: JwtPayload) {
     return this.service.update(id, dto, user);
   }
 
   @Delete(':id')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL)
+  @Roles(UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL)
   @ApiOperation({ summary: 'Tadbirni o\'chirish' })
   remove(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
     return this.service.remove(id, user);
@@ -63,7 +63,7 @@ export class AcademicCalendarController {
 
   @Get('export/pdf')
   @Roles(
-    UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.TEACHER,
+    UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.TEACHER,
     UserRole.CLASS_TEACHER, UserRole.ACCOUNTANT,
   )
   @ApiOperation({ summary: 'Akademik kalendarni PDF eksport' })
@@ -84,7 +84,7 @@ export class AcademicCalendarController {
 
   @Get('export/ical')
   @Roles(
-    UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.TEACHER,
+    UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.TEACHER,
     UserRole.CLASS_TEACHER, UserRole.ACCOUNTANT, UserRole.STUDENT, UserRole.PARENT,
   )
   @ApiOperation({ summary: 'Akademik kalendarni iCal (.ics) eksport' })

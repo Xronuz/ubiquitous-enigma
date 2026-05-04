@@ -10,7 +10,7 @@ import { CurrentUser } from '@/common/decorators/current-user.decorator';
 import { Roles } from '@/common/decorators/roles.decorator';
 import { JwtPayload, UserRole } from '@eduplatform/types';
 
-const MANAGERS = [UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL];
+const MANAGERS = [UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL];
 const TEACHERS  = [UserRole.TEACHER, UserRole.CLASS_TEACHER];
 const ALL_RELEVANT = [...MANAGERS, ...TEACHERS, UserRole.PARENT];
 

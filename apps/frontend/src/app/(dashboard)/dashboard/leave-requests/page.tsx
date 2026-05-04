@@ -55,7 +55,7 @@ export default function LeaveRequestsPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const isApprover = ['school_admin', 'vice_principal'].includes(user?.role ?? '');
+  const isApprover = ['director', 'vice_principal'].includes(user?.role ?? '');
   const isStudent  = user?.role === 'student';
 
   const [filterStatus, setFilterStatus] = useState('');

@@ -296,6 +296,13 @@ export class CoinsService {
     });
 
     for (const school of schools) {
+      // Get the first active branch for this school (cron runs school-wide)
+      const branch = await this.prisma.branch.findFirst({
+        where: { schoolId: school.id, isActive: true },
+        select: { id: true },
+      });
+      if (!branch) continue;
+
       const students = await this.prisma.user.findMany({
         where:  { schoolId: school.id, role: 'student' as any, isActive: true },
         select: { id: true, firstName: true, lastName: true },
@@ -328,6 +335,7 @@ export class CoinsService {
           await this.prisma.notification.createMany({
             data: parents.map(p => ({
               schoolId:    school.id,
+              branchId:    branch.id,
               recipientId: p.parentId,
               title:       "Farzandingizning natijalari pasaymoqda",
               body:        `${student.firstName} ${student.lastName}ning bu haftadagi o'rtacha ko'rsatkichi ${thisAvg.toFixed(0)}% (o'tgan hafta: ${lastAvg.toFixed(0)}%). E'tibor qarating!`,

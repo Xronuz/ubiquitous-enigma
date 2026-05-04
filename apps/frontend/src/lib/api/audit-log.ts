@@ -51,7 +51,7 @@ export interface AuditLogFilters {
 }
 
 export const auditLogApi = {
-  /** Maktab bo'yicha audit loglar (school_admin, vice_principal) */
+  /** Maktab bo'yicha audit loglar (director, vice_principal) */
   getSchoolLogs: async (filters: AuditLogFilters = {}): Promise<AuditLogResponse> => {
     const params = Object.fromEntries(
       Object.entries(filters).filter(([, v]) => v !== undefined && v !== ''),

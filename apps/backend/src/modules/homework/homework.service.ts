@@ -4,7 +4,7 @@ import { JwtPayload } from '@eduplatform/types';
 import { CreateHomeworkDto, UpdateHomeworkDto, SubmitHomeworkDto, GradeSubmissionDto } from './dto/homework.dto';
 import { AuditService } from '@/common/audit/audit.service';
 import { NotificationsService } from '@/modules/notifications/notifications.service';
-import { branchFilter } from '@/common/utils/branch-filter.util';
+import { buildTenantWhere } from '@/common/utils/tenant-scope.util';
 
 @Injectable()
 export class HomeworkService {
@@ -14,8 +14,8 @@ export class HomeworkService {
     @Optional() private readonly notificationsService: NotificationsService,
   ) {}
 
-  async findAll(currentUser: JwtPayload, classId?: string, subjectId?: string, branchCtx?: string | null) {
-    const where: any = { ...branchFilter(currentUser, branchCtx) };
+  async findAll(currentUser: JwtPayload, classId?: string, subjectId?: string) {
+    const where: any = { ...buildTenantWhere(currentUser) };
     if (classId) where.classId = classId;
     if (subjectId) where.subjectId = subjectId;
 
@@ -29,9 +29,9 @@ export class HomeworkService {
     });
   }
 
-  async findOne(id: string, currentUser: JwtPayload, branchCtx?: string | null) {
+  async findOne(id: string, currentUser: JwtPayload) {
     const homework = await this.prisma.homework.findFirst({
-      where: { id, ...branchFilter(currentUser, branchCtx) },
+      where: { id, ...buildTenantWhere(currentUser) },
       include: {
         class: { select: { id: true, name: true } },
         subject: { select: { id: true, name: true } },
@@ -56,7 +56,7 @@ export class HomeworkService {
         ...dto,
         dueDate: new Date(dto.dueDate),
         schoolId: currentUser.schoolId!,
-        branchId: cls?.branchId ?? null,
+        branchId: cls!.branchId,
       },
       include: {
         class: { select: { id: true, name: true } },
@@ -104,7 +104,7 @@ export class HomeworkService {
   }
 
   async update(id: string, dto: UpdateHomeworkDto, currentUser: JwtPayload) {
-    const homework = await this.prisma.homework.findFirst({ where: { id, ...branchFilter(currentUser) } });
+    const homework = await this.prisma.homework.findFirst({ where: { id, ...buildTenantWhere(currentUser) } });
     if (!homework) throw new NotFoundException('Uyga vazifa topilmadi');
 
     const updated = await this.prisma.homework.update({
@@ -133,7 +133,7 @@ export class HomeworkService {
   }
 
   async remove(id: string, currentUser: JwtPayload) {
-    const homework = await this.prisma.homework.findFirst({ where: { id, ...branchFilter(currentUser) } });
+    const homework = await this.prisma.homework.findFirst({ where: { id, ...buildTenantWhere(currentUser) } });
     if (!homework) throw new NotFoundException('Uyga vazifa topilmadi');
     await this.prisma.homework.delete({ where: { id } });
 
@@ -150,7 +150,7 @@ export class HomeworkService {
   }
 
   async submit(id: string, dto: SubmitHomeworkDto, currentUser: JwtPayload) {
-    const homework = await this.prisma.homework.findFirst({ where: { id, ...branchFilter(currentUser) } });
+    const homework = await this.prisma.homework.findFirst({ where: { id, ...buildTenantWhere(currentUser) } });
     if (!homework) throw new NotFoundException('Uyga vazifa topilmadi');
 
     // Upsert: update if already submitted, create otherwise
@@ -184,7 +184,7 @@ export class HomeworkService {
 
   async grade(homeworkId: string, submissionId: string, dto: GradeSubmissionDto, currentUser: JwtPayload) {
     const homework = await this.prisma.homework.findFirst({
-      where: { id: homeworkId, ...branchFilter(currentUser) },
+      where: { id: homeworkId, ...buildTenantWhere(currentUser) },
       include: { subject: { select: { name: true } } },
     });
     if (!homework) throw new NotFoundException('Uyga vazifa topilmadi');
@@ -216,8 +216,8 @@ export class HomeworkService {
     return updated;
   }
 
-  async getMySubmission(homeworkId: string, currentUser: JwtPayload, branchCtx?: string | null) {
-    const homework = await this.prisma.homework.findFirst({ where: { id: homeworkId, ...branchFilter(currentUser, branchCtx) } });
+  async getMySubmission(homeworkId: string, currentUser: JwtPayload) {
+    const homework = await this.prisma.homework.findFirst({ where: { id: homeworkId, ...buildTenantWhere(currentUser) } });
     if (!homework) throw new NotFoundException('Uyga vazifa topilmadi');
 
     const submission = await this.prisma.homeworkSubmission.findFirst({

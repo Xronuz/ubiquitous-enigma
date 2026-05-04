@@ -8,8 +8,8 @@ export interface AuthUser {
   firstName: string;
   lastName: string;
   role: string;
-  schoolId: string | null;
-  branchId: string | null;  // JWT dan kelgan, foydalanuvchi tegishli filial
+  schoolId: string;
+  branchId: string;  // JWT dan kelgan, har doim majburiy
 }
 
 interface AuthState {
@@ -20,11 +20,10 @@ interface AuthState {
   _hasHydrated: boolean;
 
   /**
-   * activeBranchId — director/admin tomonidan tanlangan "aktiv filial"
-   * (user.branchId dan farqli: bu foydalanuvchining o'zi tanlagan ko'rinish filtri).
-   * NULL = barcha filiallarni ko'rish (school-wide view).
+   * activeBranchId — faqat UI filtri uchun. Har doim user.branchId ga teng.
+   * "Barcha filiallar" ko'rinishi yo'q.
    */
-  activeBranchId: string | null;
+  activeBranchId: string;
 
   setAuth: (user: AuthUser, tokens: TokenPair) => void;
   restoreAuth: (user: AuthUser) => void;
@@ -43,7 +42,7 @@ export const useAuthStore = create<AuthState>()(
       refreshToken: null,
       isAuthenticated: false,
       _hasHydrated: false,
-      activeBranchId: null,
+      activeBranchId: '',
 
       setHasHydrated: (state) => set({ _hasHydrated: state }),
 
@@ -56,7 +55,7 @@ export const useAuthStore = create<AuthState>()(
           refreshToken: tokens.refreshToken,
           isAuthenticated: true,
           // Login bo'lganda activeBranchId ni user.branchId ga set qil
-          activeBranchId: user.branchId ?? null,
+          activeBranchId: user.branchId,
         });
       },
 
@@ -64,7 +63,7 @@ export const useAuthStore = create<AuthState>()(
         set({
           user,
           isAuthenticated: true,
-          activeBranchId: user.branchId ?? null,
+          activeBranchId: user.branchId,
         });
       },
 
@@ -79,7 +78,7 @@ export const useAuthStore = create<AuthState>()(
           accessToken: null,
           refreshToken: null,
           isAuthenticated: false,
-          activeBranchId: null,
+          activeBranchId: '',
         });
         if (typeof window !== 'undefined') {
           localStorage.removeItem('auth-storage');

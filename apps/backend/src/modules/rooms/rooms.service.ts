@@ -5,7 +5,7 @@
  * Conflict detector room-scoped tekshirish uchun roomId ishlatadi.
  *
  * Rollar:
- *   - school_admin / director  → barcha filiallarning xonalarini ko'radi/boshqaradi
+ *   - director  → barcha filiallarning xonalarini ko'radi/boshqaradi
  *   - branch_admin / vice_principal → faqat o'z filialining xonalarini boshqaradi
  *   - teacher va boshqalar      → faqat ko'rish (read-only)
  */
@@ -98,7 +98,7 @@ export class UpdateRoomDto {
 
 // ─── Service ─────────────────────────────────────────────────────────────────
 
-const SCHOOL_WIDE_ROLES = new Set(['super_admin', 'school_admin', 'director']);
+const SCHOOL_WIDE_ROLES = new Set(['super_admin', 'director']);
 
 @Injectable()
 export class RoomsService {

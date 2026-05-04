@@ -55,7 +55,7 @@ export default function MeetingsPage() {
   const [page, setPage] = useState(1);
   const [filterStatus, setFilterStatus] = useState<MeetingStatus | ''>('');
 
-  const canManage = ['school_admin', 'vice_principal'].includes(user?.role ?? '');
+  const canManage = ['director', 'vice_principal'].includes(user?.role ?? '');
 
   // ── Queries ─────────────────────────────────────────────────────────────────
   const { data: meetingsData, isLoading, error } = useQuery({

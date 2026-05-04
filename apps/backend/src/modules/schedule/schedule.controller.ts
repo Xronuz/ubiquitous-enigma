@@ -7,7 +7,6 @@ import { RolesGuard } from '@/common/guards/roles.guard';
 import { ScheduleService } from './schedule.service';
 import { CreateScheduleDto } from './dto/create-schedule.dto';
 import { CurrentUser } from '@/common/decorators/current-user.decorator';
-import { BranchContext } from '@/common/decorators/branch-context.decorator';
 import { Roles } from '@/common/decorators/roles.decorator';
 import { JwtPayload, UserRole } from '@eduplatform/types';
 
@@ -48,9 +47,8 @@ export class ScheduleController {
   @ApiOperation({ summary: 'Bugungi darslar' })
   getToday(
     @CurrentUser() user: JwtPayload,
-    @BranchContext() branchCtx: string | null,
   ) {
-    return this.scheduleService.getToday(user, branchCtx);
+    return this.scheduleService.getToday(user);
   }
 
   @Get('week')
@@ -58,10 +56,9 @@ export class ScheduleController {
   @ApiQuery({ name: 'classId', required: false })
   getWeek(
     @CurrentUser() user: JwtPayload,
-    @BranchContext() branchCtx: string | null,
     @Query('classId') classId?: string,
   ) {
-    return this.scheduleService.getWeek(user, classId, branchCtx);
+    return this.scheduleService.getWeek(user, classId);
   }
 
   @Get('class/:classId')
@@ -74,14 +71,14 @@ export class ScheduleController {
   }
 
   @Post()
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.BRANCH_ADMIN)
+  @Roles(UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.BRANCH_ADMIN)
   @ApiOperation({ summary: 'Jadvalga dars qo\'shish' })
   create(@Body() dto: CreateScheduleDto, @CurrentUser() user: JwtPayload) {
     return this.scheduleService.create(dto, user);
   }
 
   @Put(':id')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.BRANCH_ADMIN)
+  @Roles(UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.BRANCH_ADMIN)
   @ApiOperation({ summary: 'Darsni yangilash' })
   update(
     @Param('id') id: string,
@@ -92,18 +89,17 @@ export class ScheduleController {
   }
 
   @Delete(':id')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.BRANCH_ADMIN)
+  @Roles(UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.BRANCH_ADMIN)
   @ApiOperation({ summary: 'Darsni jadvaldan o\'chirish' })
   remove(
     @Param('id') id: string,
     @CurrentUser() user: JwtPayload,
-    @BranchContext() branchCtx: string | null,
   ) {
-    return this.scheduleService.remove(id, user, branchCtx);
+    return this.scheduleService.remove(id, user);
   }
 
   @Get('teacher/:teacherId/cross-branch')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.BRANCH_ADMIN, UserRole.VICE_PRINCIPAL)
+  @Roles(UserRole.DIRECTOR, UserRole.BRANCH_ADMIN, UserRole.VICE_PRINCIPAL)
   @ApiOperation({ summary: "O'qituvchining barcha filiallardagi darslarini olish (UI greyed-out uchun)" })
   @ApiQuery({ name: 'viewerBranchId', required: false })
   getTeacherCrossBranch(

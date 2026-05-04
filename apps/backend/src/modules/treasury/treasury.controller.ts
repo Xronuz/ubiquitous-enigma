@@ -19,8 +19,8 @@ class SetFinanceTypeDto {
   financeType: 'CENTRALIZED' | 'DECENTRALIZED';
 }
 
-const MANAGERS = [UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR];
-const VIEWERS  = [UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.BRANCH_ADMIN, UserRole.ACCOUNTANT];
+const MANAGERS = [UserRole.DIRECTOR];
+const VIEWERS  = [UserRole.DIRECTOR, UserRole.BRANCH_ADMIN, UserRole.ACCOUNTANT];
 
 @ApiTags('treasury')
 @ApiBearerAuth('JWT')
@@ -77,7 +77,7 @@ export class TreasuryController {
   }
 
   @Patch('finance-type')
-  @Roles(UserRole.SCHOOL_ADMIN)
+  @Roles(UserRole.DIRECTOR)
   @ApiOperation({ summary: 'Maktab moliya rejimini o\'zgartirish (CENTRALIZED/DECENTRALIZED)' })
   setFinanceType(@Body() dto: SetFinanceTypeDto, @CurrentUser() user: JwtPayload) {
     return this.svc.setFinanceType(user.schoolId!, dto.financeType, user);

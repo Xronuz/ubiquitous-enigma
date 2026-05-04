@@ -15,7 +15,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@/common/prisma/prisma.service';
 import { JwtPayload } from '@eduplatform/types';
-import { branchFilter, SCHOOL_WIDE_ROLES } from '@/common/utils/branch-filter.util';
+import { buildTenantWhere } from '@/common/utils/tenant-scope.util';
 import ExcelJS from 'exceljs';
 
 @Injectable()
@@ -206,13 +206,11 @@ export class AnalyticsService {
    */
   async getBranchComparison(currentUser: JwtPayload) {
     const schoolId = currentUser.schoolId!;
-    const isScoped = !SCHOOL_WIDE_ROLES.has(currentUser.role);
-
     const branches = await this.prisma.branch.findMany({
       where: {
         schoolId,
         isActive: true,
-        ...(isScoped && currentUser.branchId ? { id: currentUser.branchId } : {}),
+        id: currentUser.branchId!,
       },
       select: { id: true, name: true, code: true },
       orderBy: { name: 'asc' },
@@ -372,8 +370,8 @@ export class AnalyticsService {
    * Dashboard "Pulse" widget uchun: bugungi real vaqt ma'lumotlari.
    * Barcha hisob parallel — $transaction orqali.
    */
-  async getSchoolPulse(currentUser: JwtPayload, branchCtx?: string | null) {
-    const filter = branchFilter(currentUser, branchCtx);
+  async getSchoolPulse(currentUser: JwtPayload) {
+    const filter = buildTenantWhere(currentUser);
     const today    = new Date();
     const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
     const todayEnd   = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
@@ -470,8 +468,8 @@ export class AnalyticsService {
    *   - Ochiq smena > 24 soat
    *   - Konversiya rate < 10%
    */
-  async getSmartAlerts(currentUser: JwtPayload, branchCtx?: string | null) {
-    const filter = branchFilter(currentUser, branchCtx);
+  async getSmartAlerts(currentUser: JwtPayload) {
+    const filter = buildTenantWhere(currentUser);
     const alerts: {
       type:     'warning' | 'danger' | 'info';
       category: string;
@@ -531,10 +529,10 @@ export class AnalyticsService {
     // ─ 3. Today attendance < 70% (per branch) — N+1 fix ─────────────────
     // Before: N branches × 2 serial queries = O(branches) DB round-trips
     // After:  1 groupBy query → aggregate in JS
-    // If branchCtx is set, only check that branch. Otherwise check all branches.
-    const branches = branchCtx
+    // If user has a specific branch, only check that branch. Otherwise check all branches.
+    const branches = currentUser.branchId
       ? await this.prisma.branch.findMany({
-          where: { id: branchCtx, schoolId: currentUser.schoolId!, isActive: true },
+          where: { id: currentUser.branchId, schoolId: currentUser.schoolId!, isActive: true },
           select: { id: true, name: true },
         })
       : await this.prisma.branch.findMany({

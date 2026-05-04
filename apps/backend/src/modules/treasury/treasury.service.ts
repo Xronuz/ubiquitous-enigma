@@ -10,7 +10,6 @@ import { CreateTreasuryDto, UpdateTreasuryDto } from './dto/treasury.dto';
 
 const SCHOOL_WIDE_ROLES = new Set<string>([
   UserRole.SUPER_ADMIN,
-  UserRole.SCHOOL_ADMIN,
   UserRole.DIRECTOR,
 ]);
 
@@ -42,9 +41,9 @@ export class TreasuryService {
     if (!school) throw new NotFoundException('Maktab topilmadi');
 
     if (school.financeType === 'CENTRALIZED') {
-      // Markaziy g'azna — branchId = null, type = CASH, isActive = true
+      // Markaziy g'azna — faqat birinchi faol g'aznani qaytaradi
       return this.prisma.treasury.findFirst({
-        where: { schoolId, branchId: null, isActive: true },
+        where: { schoolId, isActive: true },
       });
     }
 
@@ -100,7 +99,7 @@ export class TreasuryService {
 
     // Xuddi shu nom bilan g'azna mavjudligini tekshirish
     const existing = await this.prisma.treasury.findFirst({
-      where: { schoolId, branchId: dto.branchId ?? null, name: dto.name },
+      where: { schoolId, branchId: dto.branchId ?? currentUser.branchId!, name: dto.name },
     });
     if (existing) {
       throw new ConflictException(`"${dto.name}" nomli g'azna allaqachon mavjud`);
@@ -109,7 +108,7 @@ export class TreasuryService {
     return this.prisma.treasury.create({
       data: {
         schoolId,
-        branchId: dto.branchId ?? null,
+        branchId: dto.branchId ?? currentUser.branchId!,
         name: dto.name,
         type: (dto.type as any) ?? 'CASH',
         currency: dto.currency ?? 'UZS',

@@ -24,7 +24,7 @@ export class SubjectsController {
 
   @Get()
   @Roles(
-    UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.BRANCH_ADMIN,
+    UserRole.DIRECTOR, UserRole.BRANCH_ADMIN,
     UserRole.VICE_PRINCIPAL,
     UserRole.TEACHER,
     UserRole.CLASS_TEACHER,
@@ -36,21 +36,21 @@ export class SubjectsController {
   }
 
   @Post()
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL)
+  @Roles(UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL)
   @ApiOperation({ summary: 'Fan qo\'shish' })
   create(@Body() dto: CreateSubjectDto, @CurrentUser() user: JwtPayload) {
     return this.subjectsService.create(dto, user);
   }
 
   @Put(':id')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL)
+  @Roles(UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL)
   @ApiOperation({ summary: 'Fanni yangilash' })
   update(@Param('id') id: string, @Body() dto: UpdateSubjectDto, @CurrentUser() user: JwtPayload) {
     return this.subjectsService.update(id, dto, user);
   }
 
   @Delete(':id')
-  @Roles(UserRole.SCHOOL_ADMIN)
+  @Roles(UserRole.DIRECTOR)
   @ApiOperation({ summary: 'Fanni o\'chirish' })
   remove(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
     return this.subjectsService.remove(id, user);

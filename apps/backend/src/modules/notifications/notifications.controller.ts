@@ -5,7 +5,6 @@ import { RolesGuard } from '@/common/guards/roles.guard';
 import { NotificationsService, SendNotificationDto } from './notifications.service';
 import { NotificationQueueService } from './notification-queue.service';
 import { CurrentUser } from '@/common/decorators/current-user.decorator';
-import { BranchContext } from '@/common/decorators/branch-context.decorator';
 import { Roles } from '@/common/decorators/roles.decorator';
 import { JwtPayload, UserRole } from '@eduplatform/types';
 
@@ -20,32 +19,30 @@ export class NotificationsController {
   ) {}
 
   @Post()
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.CLASS_TEACHER, UserRole.TEACHER)
+  @Roles(UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.CLASS_TEACHER, UserRole.TEACHER)
   @ApiOperation({ summary: 'Bildirishnoma yuborish (yakka)' })
-  send(@Body() dto: SendNotificationDto, @CurrentUser() user: JwtPayload, @BranchContext() branchCtx: string | null) {
-    return this.notificationsService.send(dto, user, branchCtx);
+  send(@Body() dto: SendNotificationDto, @CurrentUser() user: JwtPayload) {
+    return this.notificationsService.send(dto, user);
   }
 
   @Post('broadcast')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL)
+  @Roles(UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL)
   @ApiOperation({ summary: "E'lon: rol/guruh bo'yicha toplu bildirishnoma (direktor/admin)" })
   broadcast(
     @Body() dto: { targetGroup: string; title: string; body: string },
     @CurrentUser() user: JwtPayload,
-    @BranchContext() branchCtx: string | null,
   ) {
-    return this.notificationsService.broadcast(dto, user, branchCtx);
+    return this.notificationsService.broadcast(dto, user);
   }
 
   @Get()
   @ApiOperation({ summary: 'O\'z bildirishnomalar' })
   getMyNotifications(
     @CurrentUser('sub') userId: string,
-    @BranchContext() branchCtx: string | null,
     @Query('page') page = 1,
     @Query('limit') limit = 20,
   ) {
-    return this.notificationsService.getMyNotifications(userId, +page, +limit, branchCtx);
+    return this.notificationsService.getMyNotifications(userId, +page, +limit);
   }
 
   @Put(':id/read')
@@ -76,8 +73,8 @@ export class NotificationsController {
   }
 
   @Get('queue-stats')
-  @Roles(UserRole.SUPER_ADMIN, UserRole.SCHOOL_ADMIN)
-  @ApiOperation({ summary: 'Notification queue statistikasi (super_admin/school_admin)' })
+  @Roles(UserRole.SUPER_ADMIN, UserRole.DIRECTOR)
+  @ApiOperation({ summary: 'Notification queue statistikasi (director)' })
   getQueueStats() {
     return this.queueService.getQueueStats();
   }

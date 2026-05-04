@@ -16,56 +16,56 @@ export class LibraryController {
   constructor(private readonly libraryService: LibraryService) {}
 
   @Get('stats')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.LIBRARIAN)
+  @Roles(UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.LIBRARIAN)
   getStats(@CurrentUser() user: JwtPayload) {
     return this.libraryService.getStats(user);
   }
 
   @Get('books')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.LIBRARIAN, UserRole.TEACHER, UserRole.CLASS_TEACHER, UserRole.STUDENT)
+  @Roles(UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.LIBRARIAN, UserRole.TEACHER, UserRole.CLASS_TEACHER, UserRole.STUDENT)
   getBooks(@CurrentUser() user: JwtPayload, @Query('search') search?: string) {
     return this.libraryService.getBooks(user, search);
   }
 
   @Post('books')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.LIBRARIAN)
+  @Roles(UserRole.DIRECTOR, UserRole.LIBRARIAN)
   createBook(@Body() dto: CreateBookDto, @CurrentUser() user: JwtPayload) {
     return this.libraryService.createBook(dto, user);
   }
 
   @Put('books/:id')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.LIBRARIAN)
+  @Roles(UserRole.DIRECTOR, UserRole.LIBRARIAN)
   updateBook(@Param('id') id: string, @Body() dto: Partial<CreateBookDto>, @CurrentUser() user: JwtPayload) {
     return this.libraryService.updateBook(id, dto, user);
   }
 
   @Delete('books/:id')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.LIBRARIAN)
+  @Roles(UserRole.DIRECTOR, UserRole.LIBRARIAN)
   removeBook(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
     return this.libraryService.removeBook(id, user);
   }
 
   @Get('loans')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.LIBRARIAN)
+  @Roles(UserRole.DIRECTOR, UserRole.LIBRARIAN)
   getLoans(@CurrentUser() user: JwtPayload, @Query('active') active?: string) {
     const activeFilter = active === 'true' ? true : active === 'false' ? false : undefined;
     return this.libraryService.getLoans(user, activeFilter);
   }
 
   @Post('loans')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.LIBRARIAN)
+  @Roles(UserRole.DIRECTOR, UserRole.LIBRARIAN)
   loanBook(@Body() dto: LoanBookDto, @CurrentUser() user: JwtPayload) {
     return this.libraryService.loanBook(dto, user);
   }
 
   @Put('loans/:id/return')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.LIBRARIAN)
+  @Roles(UserRole.DIRECTOR, UserRole.LIBRARIAN)
   returnBook(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
     return this.libraryService.returnBook(id, user);
   }
 
   @Get('loans/export/pdf')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.LIBRARIAN)
+  @Roles(UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.LIBRARIAN)
   @ApiOperation({ summary: 'Kitob berish tarixi PDF eksport' })
   @ApiQuery({ name: 'active', required: false, description: 'true = qaytarilmaganlar, false = qaytarilganlar' })
   async exportLoansPdf(

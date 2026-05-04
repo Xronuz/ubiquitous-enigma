@@ -115,7 +115,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @UseGuards(JwtAuthGuard, RolesGuard)
   @ApiBearerAuth('JWT')
-  @Roles(UserRole.SUPER_ADMIN, UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.BRANCH_ADMIN)
+  @Roles(UserRole.SUPER_ADMIN, UserRole.DIRECTOR, UserRole.BRANCH_ADMIN)
   @ApiOperation({ summary: 'Aktiv filialni almashtirish (director/admin)' })
   @ApiResponse({ status: 200, description: 'Yangi tokenlar qaytarildi' })
   async switchBranch(@Body() dto: SwitchBranchDto, @CurrentUser() user: JwtPayload, @Res({ passthrough: true }) res: Response) {

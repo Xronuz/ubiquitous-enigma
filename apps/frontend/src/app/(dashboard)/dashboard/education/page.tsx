@@ -14,10 +14,10 @@ import AcademicCalendarPage from '../academic-calendar/page';
 import SubjectsPage         from '../subjects/page';
 
 const TABS = [
-  { id: 'classes',  label: 'Sinflar',          roles: ['director', 'school_admin', 'vice_principal', 'teacher', 'class_teacher'] },
-  { id: 'schedule', label: 'Dars jadvali',      roles: ['director', 'school_admin', 'vice_principal', 'teacher', 'class_teacher'] },
-  { id: 'calendar', label: 'Akademik kalendar', roles: ['director', 'school_admin', 'vice_principal', 'teacher', 'class_teacher'] },
-  { id: 'subjects', label: 'Fanlar',            roles: ['director', 'school_admin', 'vice_principal'] },
+  { id: 'classes',  label: 'Sinflar',          roles: ['director', 'vice_principal', 'teacher', 'class_teacher'] },
+  { id: 'schedule', label: 'Dars jadvali',      roles: ['director', 'vice_principal', 'teacher', 'class_teacher'] },
+  { id: 'calendar', label: 'Akademik kalendar', roles: ['director', 'vice_principal', 'teacher', 'class_teacher'] },
+  { id: 'subjects', label: 'Fanlar',            roles: ['director', 'vice_principal'] },
 ];
 
 // Per-tab header actions (dispatches custom events — each child page listens)

@@ -17,13 +17,12 @@ import {
   UpdatePayrollItemDto,
 } from './payroll.service';
 import { CurrentUser } from '@/common/decorators/current-user.decorator';
-import { BranchContext } from '@/common/decorators/branch-context.decorator';
 import { Roles } from '@/common/decorators/roles.decorator';
 import { JwtPayload, UserRole } from '@eduplatform/types';
 
-const MANAGERS = [UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.ACCOUNTANT];
+const MANAGERS = [UserRole.DIRECTOR, UserRole.ACCOUNTANT];
 const ALL_STAFF = [
-  UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.TEACHER,
+  UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.TEACHER,
   UserRole.CLASS_TEACHER, UserRole.ACCOUNTANT, UserRole.LIBRARIAN,
 ];
 
@@ -67,8 +66,8 @@ export class PayrollController {
   @Get('staff')
   @Roles(...MANAGERS)
   @ApiOperation({ summary: 'Barcha xodimlar maosh konfiguratsiyasi' })
-  getAllSalaryConfigs(@CurrentUser() user: JwtPayload, @BranchContext() branchCtx: string | null) {
-    return this.service.getAllSalaryConfigs(user, branchCtx);
+  getAllSalaryConfigs(@CurrentUser() user: JwtPayload) {
+    return this.service.getAllSalaryConfigs(user);
   }
 
   @Get('staff/unconfigured')
@@ -84,9 +83,8 @@ export class PayrollController {
   createSalaryConfig(
     @Body() dto: CreateStaffSalaryDto,
     @CurrentUser() user: JwtPayload,
-    @BranchContext() branchCtx: string | null,
   ) {
-    return this.service.createSalaryConfig(dto, user, branchCtx);
+    return this.service.createSalaryConfig(dto, user);
   }
 
   @Put('staff/:id')
@@ -96,21 +94,19 @@ export class PayrollController {
     @Param('id') id: string,
     @Body() dto: UpdateStaffSalaryDto,
     @CurrentUser() user: JwtPayload,
-    @BranchContext() branchCtx: string | null,
   ) {
-    return this.service.updateSalaryConfig(id, dto, user, branchCtx);
+    return this.service.updateSalaryConfig(id, dto, user);
   }
 
   @Delete('staff/:id')
-  @Roles(UserRole.SCHOOL_ADMIN)
+  @Roles(UserRole.DIRECTOR)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "Maosh konfiguratsiyasini o'chirish" })
   deleteSalaryConfig(
     @Param('id') id: string,
     @CurrentUser() user: JwtPayload,
-    @BranchContext() branchCtx: string | null,
   ) {
-    return this.service.deleteSalaryConfig(id, user, branchCtx);
+    return this.service.deleteSalaryConfig(id, user);
   }
 
   // ── Advances ──────────────────────────────────────────────────────────────
@@ -195,7 +191,7 @@ export class PayrollController {
   }
 
   @Put('monthly/:id/approve')
-  @Roles(UserRole.SCHOOL_ADMIN)
+  @Roles(UserRole.DIRECTOR)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Oylik hisob-kitobni tasdiqlash' })
   approvePayroll(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
@@ -211,7 +207,7 @@ export class PayrollController {
   }
 
   @Delete('monthly/:id')
-  @Roles(UserRole.SCHOOL_ADMIN)
+  @Roles(UserRole.DIRECTOR)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "Hisob-kitobni o'chirish (faqat draft)" })
   deletePayroll(@Param('id') id: string, @CurrentUser() user: JwtPayload) {

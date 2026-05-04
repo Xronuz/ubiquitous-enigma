@@ -41,7 +41,7 @@ export function TreasuryPanel() {
     staleTime: 60_000,
   });
 
-  // Moliya rejimini o'zgartirish (faqat school_admin)
+  // Moliya rejimini o'zgartirish (faqat director)
   const financeTypeMutation = useMutation({
     mutationFn: (ft: FinanceType) => treasuryApi.setFinanceType(ft),
     onSuccess: () => {
@@ -70,7 +70,7 @@ export function TreasuryPanel() {
   if (!summary) return null;
 
   const isDecentralized = summary.financeType === 'DECENTRALIZED';
-  const canChangePolicy = user?.role === 'school_admin';
+  const canChangePolicy = user?.role === 'director';
 
   return (
     <div className="space-y-4">
@@ -98,7 +98,7 @@ export function TreasuryPanel() {
                 )}
               </Badge>
 
-              {/* Policy toggle — faqat school_admin */}
+              {/* Policy toggle — faqat director */}
               {canChangePolicy && (
                 <div className="flex items-center gap-1.5">
                   <Switch

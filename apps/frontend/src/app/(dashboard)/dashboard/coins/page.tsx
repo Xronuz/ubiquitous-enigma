@@ -512,7 +512,7 @@ export default function CoinsPage() {
   const qc = useQueryClient();
 
   const isStudent = user?.role === 'student';
-  const isAdmin   = ['school_admin', 'vice_principal', 'director'].includes(user?.role ?? '');
+  const isAdmin   = ['vice_principal', 'director'].includes(user?.role ?? '');
 
   // Student data
   const { data: balanceData, isLoading: balLoading } = useQuery({

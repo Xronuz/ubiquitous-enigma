@@ -73,6 +73,7 @@ export class FeeStructuresService {
     const fee = await this.prisma.feeStructure.create({
       data: {
         schoolId: currentUser.schoolId!,
+        branchId: currentUser.branchId!,
         name: dto.name,
         description: dto.description,
         amount: dto.amount,

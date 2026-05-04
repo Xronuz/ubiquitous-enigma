@@ -843,7 +843,7 @@ export default function CrmPage() {
     return map;
   }, [allLeads]);
 
-  const canManage = ['school_admin', 'director', 'branch_admin', 'vice_principal', 'accountant'].includes(user?.role ?? '');
+  const canManage = ['director', 'branch_admin', 'vice_principal', 'accountant'].includes(user?.role ?? '');
 
   return (
     <div className="space-y-5">

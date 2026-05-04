@@ -33,7 +33,7 @@ export class SubjectsService {
 
   async create(dto: CreateSubjectDto, currentUser: JwtPayload) {
     return this.prisma.subject.create({
-      data: { ...dto, schoolId: currentUser.schoolId! },
+      data: { ...dto, schoolId: currentUser.schoolId!, branchId: currentUser.branchId! },
       include: { teacher: { select: { id: true, firstName: true, lastName: true } } },
     });
   }

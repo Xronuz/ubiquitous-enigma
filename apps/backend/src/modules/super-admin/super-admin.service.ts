@@ -106,6 +106,16 @@ export class SuperAdminService {
       },
     });
 
+    // Auto-create default "Main Campus" branch
+    const mainBranch = await this.prisma.branch.create({
+      data: {
+        schoolId: school.id,
+        name: 'Main Campus',
+        code: 'MAIN',
+        isActive: true,
+      },
+    });
+
     // Enable all core modules by default
     await this.prisma.schoolModule.createMany({
       data: CORE_MODULES.map((moduleName) => ({
@@ -115,7 +125,7 @@ export class SuperAdminService {
       })),
     });
 
-    return school;
+    return { ...school, mainBranchId: mainBranch.id };
   }
 
   async updateSchool(id: string, dto: Partial<CreateSchoolDto>) {

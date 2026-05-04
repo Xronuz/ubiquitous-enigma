@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@/common/prisma/prisma.service';
 import { JwtPayload } from '@eduplatform/types';
-import { branchFilter } from '@/common/utils/branch-filter.util';
+import { buildTenantWhere } from '@/common/utils/tenant-scope.util';
 import { TreasuryService } from '@/modules/treasury/treasury.service';
 
 @Injectable()
@@ -21,8 +21,8 @@ export class FinanceService {
 
   // ── Dashboard stats ───────────────────────────────────────────────────────
 
-  async getDashboardStats(currentUser: JwtPayload, branchCtx: string | null = null) {
-    const filter = branchFilter(currentUser, branchCtx);
+  async getDashboardStats(currentUser: JwtPayload) {
+    const filter = buildTenantWhere(currentUser);
     const now = new Date();
     const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const thisMonthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
@@ -115,8 +115,8 @@ export class FinanceService {
 
   // ── Monthly revenue chart (12 months) ────────────────────────────────────
 
-  async getMonthlyRevenue(currentUser: JwtPayload, branchCtx: string | null = null, months = 12) {
-    const filter = branchFilter(currentUser, branchCtx);
+  async getMonthlyRevenue(currentUser: JwtPayload, months = 12) {
+    const filter = buildTenantWhere(currentUser);
     const now = new Date();
     const result: { year: number; month: number; label: string; revenue: number; count: number }[] = [];
 
@@ -147,8 +147,8 @@ export class FinanceService {
 
   // ── Debtors list (overdue / pending past due date) ────────────────────────
 
-  async getDebtors(currentUser: JwtPayload, branchCtx: string | null = null) {
-    const filter = branchFilter(currentUser, branchCtx);
+  async getDebtors(currentUser: JwtPayload) {
+    const filter = buildTenantWhere(currentUser);
     const now = new Date();
 
     const overduePayments = await this.prisma.payment.findMany({

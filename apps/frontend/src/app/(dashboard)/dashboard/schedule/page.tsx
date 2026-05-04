@@ -508,7 +508,7 @@ export default function SchedulePage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const canManage = ['school_admin', 'vice_principal'].includes(user?.role ?? '');
+  const canManage = ['director', 'vice_principal'].includes(user?.role ?? '');
   const isStudent = user?.role === 'student' || user?.role === 'parent';
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 

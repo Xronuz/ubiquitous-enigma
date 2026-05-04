@@ -28,7 +28,6 @@ export function getInitials(firstName: string, lastName: string) {
 export function getRoleLabel(role: string): string {
   const labels: Record<string, string> = {
     super_admin: 'Super Admin',
-    school_admin: 'Direktor',
     director: 'Maktab direktori',
     branch_admin: 'Filial boshqaruvchisi',
     vice_principal: 'Mudir o\'rinbosari',

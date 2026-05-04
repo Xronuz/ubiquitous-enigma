@@ -10,13 +10,13 @@ import { JwtPayload, UserRole } from '@eduplatform/types';
 import { RoomsService, CreateRoomDto, UpdateRoomDto } from './rooms.service';
 
 const ROOM_READERS = [
-  UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR,
+  UserRole.DIRECTOR,
   UserRole.BRANCH_ADMIN, UserRole.VICE_PRINCIPAL,
   UserRole.TEACHER, UserRole.CLASS_TEACHER,
 ];
 
 const ROOM_MANAGERS = [
-  UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR,
+  UserRole.DIRECTOR,
   UserRole.BRANCH_ADMIN, UserRole.VICE_PRINCIPAL,
 ];
 

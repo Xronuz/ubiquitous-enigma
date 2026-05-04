@@ -6,7 +6,7 @@ import { JwtPayload } from '@eduplatform/types';
 import { CreateExamDto, UpdateExamDto } from './dto/create-exam.dto';
 import { AuditService } from '@/common/audit/audit.service';
 import { EventsGateway } from '@/modules/gateway/events.gateway';
-import { branchFilter } from '@/common/utils/branch-filter.util';
+import { buildTenantWhere } from '@/common/utils/tenant-scope.util';
 
 export class BulkResultItemDto {
   @IsUUID()
@@ -57,8 +57,8 @@ export class ExamsService {
     @Optional() private readonly eventsGateway: EventsGateway,
   ) {}
 
-  async findAll(currentUser: JwtPayload, classId?: string, subjectId?: string, branchCtx?: string | null) {
-    const where: any = { ...branchFilter(currentUser, branchCtx) };
+  async findAll(currentUser: JwtPayload, classId?: string, subjectId?: string) {
+    const where: any = { ...buildTenantWhere(currentUser) };
     if (classId) where.classId = classId;
     if (subjectId) where.subjectId = subjectId;
 
@@ -72,9 +72,9 @@ export class ExamsService {
     });
   }
 
-  async findOne(id: string, currentUser: JwtPayload, branchCtx?: string | null) {
+  async findOne(id: string, currentUser: JwtPayload) {
     const exam = await this.prisma.exam.findFirst({
-      where: { id, ...branchFilter(currentUser, branchCtx) },
+      where: { id, ...buildTenantWhere(currentUser) },
       include: {
         class: { select: { id: true, name: true } },
         subject: { select: { id: true, name: true } },
@@ -96,7 +96,7 @@ export class ExamsService {
         scheduledAt: new Date(dto.scheduledAt),
         frequency: dto.frequency as any,
         schoolId: currentUser.schoolId!,
-        branchId: cls?.branchId ?? null,
+        branchId: cls!.branchId,
         isPublished: false,
       },
       include: {
@@ -118,7 +118,7 @@ export class ExamsService {
   }
 
   async update(id: string, dto: UpdateExamDto, currentUser: JwtPayload) {
-    const exam = await this.prisma.exam.findFirst({ where: { id, ...branchFilter(currentUser) } });
+    const exam = await this.prisma.exam.findFirst({ where: { id, ...buildTenantWhere(currentUser) } });
     if (!exam) throw new NotFoundException('Imtihon topilmadi');
 
     const updated = await this.prisma.exam.update({
@@ -148,7 +148,7 @@ export class ExamsService {
   }
 
   async remove(id: string, currentUser: JwtPayload) {
-    const exam = await this.prisma.exam.findFirst({ where: { id, ...branchFilter(currentUser) } });
+    const exam = await this.prisma.exam.findFirst({ where: { id, ...buildTenantWhere(currentUser) } });
     if (!exam) throw new NotFoundException('Imtihon topilmadi');
     await this.prisma.exam.delete({ where: { id } });
 
@@ -165,7 +165,7 @@ export class ExamsService {
   }
 
   async publish(id: string, currentUser: JwtPayload) {
-    const exam = await this.prisma.exam.findFirst({ where: { id, ...branchFilter(currentUser) } });
+    const exam = await this.prisma.exam.findFirst({ where: { id, ...buildTenantWhere(currentUser) } });
     if (!exam) throw new NotFoundException('Imtihon topilmadi');
 
     return this.prisma.exam.update({
@@ -245,9 +245,17 @@ export class ExamsService {
     const date = new Date(scheduledAt);
     const freq = frequency as any;
 
+    // Fetch branchIds for each class
+    const classes = await this.prisma.class.findMany({
+      where: { id: { in: classIds }, schoolId },
+      select: { id: true, branchId: true },
+    });
+    const classBranchMap = new Map(classes.map(c => [c.id, c.branchId]));
+
     const data = classIds.flatMap((classId) =>
       subjectIds.map((subjectId) => ({
         schoolId,
+        branchId: classBranchMap.get(classId)!,
         classId,
         subjectId,
         title,
@@ -311,6 +319,7 @@ export class ExamsService {
     await this.prisma.grade.createMany({
       data: dto.results.map(r => ({
         schoolId: currentUser.schoolId!,
+        branchId: exam.branchId,
         classId: exam.classId,
         subjectId: exam.subjectId,
         studentId: r.studentId,
@@ -351,6 +360,7 @@ export class ExamsService {
         await this.prisma.notification.create({
           data: {
             schoolId: currentUser.schoolId!,
+            branchId: currentUser.branchId!,
             recipientId: result.studentId,
             title: notifTitle,
             body: notifBody,
@@ -375,6 +385,7 @@ export class ExamsService {
           await this.prisma.notification.create({
             data: {
               schoolId: currentUser.schoolId!,
+              branchId: currentUser.branchId!,
               recipientId: parentId,
               title: parentTitle,
               body: parentBody,

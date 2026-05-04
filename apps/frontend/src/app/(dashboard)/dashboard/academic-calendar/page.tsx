@@ -44,7 +44,7 @@ export default function AcademicCalendarPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const canManage = ['school_admin', 'vice_principal'].includes(user?.role ?? '');
+  const canManage = ['director', 'vice_principal'].includes(user?.role ?? '');
 
   const now = new Date();
   const [viewYear, setViewYear]   = useState(now.getFullYear());

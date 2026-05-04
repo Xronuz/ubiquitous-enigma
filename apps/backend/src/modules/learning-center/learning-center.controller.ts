@@ -8,7 +8,6 @@ import {
   CreateCourseMaterialDto, UpdateCourseMaterialDto,
 } from './learning-center.service';
 import { CurrentUser } from '@/common/decorators/current-user.decorator';
-import { BranchContext } from '@/common/decorators/branch-context.decorator';
 import { Roles } from '@/common/decorators/roles.decorator';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
@@ -24,7 +23,7 @@ export class LearningCenterController {
   // ── Stats ─────────────────────────────────────────────────────────────────
 
   @Get('stats')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.TEACHER, UserRole.CLASS_TEACHER)
+  @Roles(UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.TEACHER, UserRole.CLASS_TEACHER)
   @ApiOperation({ summary: 'O\'quv markazi statistikasi' })
   getStats(@CurrentUser() user: JwtPayload) {
     return this.service.getStats(user);
@@ -43,7 +42,7 @@ export class LearningCenterController {
 
   @Get('courses')
   @Roles(
-    UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.BRANCH_ADMIN, UserRole.VICE_PRINCIPAL,
+    UserRole.DIRECTOR, UserRole.BRANCH_ADMIN, UserRole.VICE_PRINCIPAL,
     UserRole.TEACHER, UserRole.CLASS_TEACHER,
     UserRole.STUDENT,
   )
@@ -51,39 +50,36 @@ export class LearningCenterController {
   @ApiQuery({ name: 'search', required: false })
   getCourses(
     @CurrentUser() user: JwtPayload,
-    @BranchContext() branchCtx: string | null,
     @Query('search') search?: string,
   ) {
-    return this.service.getCourses(user, branchCtx, search);
+    return this.service.getCourses(user, search);
   }
 
   @Get('courses/:id')
   @Roles(
-    UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.BRANCH_ADMIN, UserRole.VICE_PRINCIPAL,
+    UserRole.DIRECTOR, UserRole.BRANCH_ADMIN, UserRole.VICE_PRINCIPAL,
     UserRole.TEACHER, UserRole.CLASS_TEACHER,
   )
   @ApiOperation({ summary: 'Kurs tafsilotlari (o\'quvchilar bilan)' })
   getCourseById(
     @Param('id') id: string,
     @CurrentUser() user: JwtPayload,
-    @BranchContext() branchCtx: string | null,
   ) {
-    return this.service.getCourseById(id, user, branchCtx);
+    return this.service.getCourseById(id, user);
   }
 
   @Post('courses')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.BRANCH_ADMIN, UserRole.VICE_PRINCIPAL)
+  @Roles(UserRole.DIRECTOR, UserRole.BRANCH_ADMIN, UserRole.VICE_PRINCIPAL)
   @ApiOperation({ summary: 'Yangi kurs yaratish' })
   createCourse(
     @Body() dto: CreateCourseDto,
     @CurrentUser() user: JwtPayload,
-    @BranchContext() branchCtx: string | null,
   ) {
-    return this.service.createCourse(dto, user, branchCtx);
+    return this.service.createCourse(dto, user);
   }
 
   @Put('courses/:id')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.TEACHER, UserRole.CLASS_TEACHER)
+  @Roles(UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.TEACHER, UserRole.CLASS_TEACHER)
   @ApiOperation({ summary: 'Kursni yangilash' })
   updateCourse(
     @Param('id') id: string,
@@ -94,7 +90,7 @@ export class LearningCenterController {
   }
 
   @Delete('courses/:id')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL)
+  @Roles(UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL)
   @ApiOperation({ summary: 'Kursni o\'chirish' })
   removeCourse(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
     return this.service.removeCourse(id, user);
@@ -103,7 +99,7 @@ export class LearningCenterController {
   // ── Enrollments ───────────────────────────────────────────────────────────
 
   @Post('courses/:id/enroll')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.TEACHER, UserRole.CLASS_TEACHER)
+  @Roles(UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.TEACHER, UserRole.CLASS_TEACHER)
   @ApiOperation({ summary: 'O\'quvchini kursga ro\'yxatdan o\'tkazish' })
   enrollStudent(
     @Param('id') courseId: string,
@@ -114,7 +110,7 @@ export class LearningCenterController {
   }
 
   @Put('courses/:id/enrollments/:enrollmentId')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.TEACHER, UserRole.CLASS_TEACHER)
+  @Roles(UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL, UserRole.TEACHER, UserRole.CLASS_TEACHER)
   @ApiOperation({ summary: 'Ro\'yxatga olishni yangilash (baho, holat)' })
   updateEnrollment(
     @Param('id') courseId: string,
@@ -126,7 +122,7 @@ export class LearningCenterController {
   }
 
   @Delete('courses/:id/enrollments/:enrollmentId')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL)
+  @Roles(UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL)
   @ApiOperation({ summary: 'O\'quvchini kursdan chiqarish' })
   removeEnrollment(
     @Param('id') courseId: string,
@@ -144,7 +140,7 @@ export class LearningCenterController {
    */
   @Get('courses/:id/materials')
   @Roles(
-    UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.BRANCH_ADMIN,
+    UserRole.DIRECTOR, UserRole.BRANCH_ADMIN,
     UserRole.VICE_PRINCIPAL, UserRole.TEACHER, UserRole.CLASS_TEACHER,
     UserRole.STUDENT,
   )
@@ -155,7 +151,7 @@ export class LearningCenterController {
 
   @Post('courses/:id/materials')
   @Roles(
-    UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.BRANCH_ADMIN,
+    UserRole.DIRECTOR, UserRole.BRANCH_ADMIN,
     UserRole.VICE_PRINCIPAL, UserRole.TEACHER, UserRole.CLASS_TEACHER,
   )
   @ApiOperation({ summary: 'Kursga material qo\'shish' })
@@ -169,7 +165,7 @@ export class LearningCenterController {
 
   @Put('courses/:id/materials/:materialId')
   @Roles(
-    UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.BRANCH_ADMIN,
+    UserRole.DIRECTOR, UserRole.BRANCH_ADMIN,
     UserRole.VICE_PRINCIPAL, UserRole.TEACHER, UserRole.CLASS_TEACHER,
   )
   @ApiOperation({ summary: 'Materialni yangilash' })
@@ -184,7 +180,7 @@ export class LearningCenterController {
 
   @Delete('courses/:id/materials/:materialId')
   @Roles(
-    UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR, UserRole.BRANCH_ADMIN,
+    UserRole.DIRECTOR, UserRole.BRANCH_ADMIN,
     UserRole.VICE_PRINCIPAL, UserRole.TEACHER, UserRole.CLASS_TEACHER,
   )
   @ApiOperation({ summary: 'Materialni o\'chirish' })

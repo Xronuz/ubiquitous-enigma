@@ -44,7 +44,7 @@ const ADMIN_TAB: Tab = { key: 'tizim', label: 'Tizim', icon: Settings };
 
 const ROLE_DESCRIPTIONS: Record<string, string> = {
   [UserRole.SUPER_ADMIN]: 'Butun platforma ustidan to\'liq nazorat',
-  [UserRole.SCHOOL_ADMIN]: 'Maktab bo\'yicha barcha operatsiyalarni boshqarish',
+  [UserRole.DIRECTOR]: 'Maktab bo\'yicha barcha operatsiyalarni boshqarish',
   [UserRole.VICE_PRINCIPAL]: 'Maktab mudir o\'rinbosari vakolatlari',
   [UserRole.TEACHER]: 'Dars jadvali, baholar va vazifalarni boshqarish',
   [UserRole.CLASS_TEACHER]: 'Sinf rahbari — davomatni kuzatish va ota-onalar bilan aloqa',
@@ -56,7 +56,7 @@ const ROLE_DESCRIPTIONS: Record<string, string> = {
 
 const ROLE_BADGE_COLORS: Record<string, string> = {
   [UserRole.SUPER_ADMIN]: 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300',
-  [UserRole.SCHOOL_ADMIN]: 'bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300',
+  [UserRole.DIRECTOR]: 'bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300',
   [UserRole.VICE_PRINCIPAL]: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300',
   [UserRole.TEACHER]: 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300',
   [UserRole.CLASS_TEACHER]: 'bg-teal-100 text-teal-700 border-teal-200 dark:bg-teal-900/30 dark:text-teal-300',
@@ -73,7 +73,7 @@ export default function SettingsPage() {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<TabKey>('profil');
 
-  const isAdmin = user?.role === UserRole.SCHOOL_ADMIN || user?.role === UserRole.SUPER_ADMIN;
+  const isAdmin = user?.role === UserRole.DIRECTOR || user?.role === UserRole.SUPER_ADMIN;
   const TABS = isAdmin ? [...BASE_TABS, ADMIN_TAB] : BASE_TABS;
 
   // ── SystemConfig state ──

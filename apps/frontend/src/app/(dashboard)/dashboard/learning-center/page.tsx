@@ -60,7 +60,7 @@ export default function LearningCenterPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const canManage = ['school_admin', 'vice_principal'].includes(user?.role ?? '');
+  const canManage = ['director', 'vice_principal'].includes(user?.role ?? '');
   const isTeacher = ['teacher', 'class_teacher'].includes(user?.role ?? '');
   const isStudent = user?.role === 'student';
 

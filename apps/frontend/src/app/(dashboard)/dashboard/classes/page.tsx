@@ -34,7 +34,7 @@ export default function ClassesPage() {
   const { user , activeBranchId } = useAuthStore();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const canManage = ['school_admin', 'director', 'vice_principal'].includes(user?.role ?? '');
+  const canManage = ['director', 'vice_principal'].includes(user?.role ?? '');
 
   const [open, setOpen] = useState(false);
   const [editClass, setEditClass] = useState<any | null>(null);
@@ -54,7 +54,7 @@ export default function ClassesPage() {
   const { data: branchesData } = useQuery({
     queryKey: ['branches', user?.schoolId],
     queryFn: () => branchesApi.getAll(),
-    enabled: open && !!user?.schoolId && ['super_admin', 'school_admin', 'director'].includes(user?.role ?? ''),
+    enabled: open && !!user?.schoolId && ['super_admin', 'director'].includes(user?.role ?? ''),
   });
   const branchesList = Array.isArray(branchesData) ? branchesData : (branchesData as any)?.data ?? [];
   const teachers = (usersData?.data ?? []).filter((u: any) =>

@@ -12,7 +12,7 @@ import { RolesGuard } from '@/common/guards/roles.guard';
 import { JwtPayload, UserRole } from '@eduplatform/types';
 
 const SHIFT_ROLES = [
-  UserRole.SCHOOL_ADMIN, UserRole.DIRECTOR,
+  UserRole.DIRECTOR,
   UserRole.BRANCH_ADMIN, UserRole.ACCOUNTANT,
 ];
 
@@ -38,7 +38,7 @@ export class FinancialShiftsController {
   @Roles(...SHIFT_ROLES)
   @ApiOperation({ summary: "Joriy foydalanuvchi uchun ochiq smena (yo'q bo'lsa null)" })
   getActive(@CurrentUser() user: JwtPayload) {
-    return this.svc.getActiveShift(user.schoolId!, user.branchId);
+    return this.svc.getActiveShift(user.schoolId!, user.branchId!);
   }
 
   @Get(':id')

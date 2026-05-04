@@ -4,7 +4,7 @@ import { RedisService } from '@/common/redis/redis.service';
 import { JwtPayload } from '@eduplatform/types';
 import { CreateClassDto } from './dto/create-class.dto';
 import { PartialType } from '@nestjs/swagger';
-import { branchFilter } from '@/common/utils/branch-filter.util';
+import { buildTenantWhere } from '@/common/utils/tenant-scope.util';
 
 const CLASS_TTL = 10 * 60; // 10 minutes
 
@@ -15,8 +15,8 @@ export class ClassesService {
     private readonly redis: RedisService,
   ) {}
 
-  private cacheKey(schoolId: string, branchCtx: string | null, suffix: string) {
-    return `classes:${schoolId}:${branchCtx ?? 'all'}:${suffix}`;
+  private cacheKey(schoolId: string, branchId: string | null | undefined, suffix: string) {
+    return `classes:${schoolId}:${branchId ?? 'all'}:${suffix}`;
   }
 
   private async invalidate(schoolId: string) {
@@ -25,10 +25,10 @@ export class ClassesService {
   }
 
   /** Class teacher o'z sinfini oladi (classTeacherId === currentUser.sub) */
-  async findMyClass(currentUser: JwtPayload, branchCtx: string | null = null) {
+  async findMyClass(currentUser: JwtPayload) {
     const cls = await this.prisma.class.findFirst({
       where: {
-        ...branchFilter(currentUser, branchCtx),
+        ...buildTenantWhere(currentUser),
         classTeacherId: currentUser.sub,
       },
       include: {
@@ -43,14 +43,14 @@ export class ClassesService {
     return cls ?? null;
   }
 
-  async findAll(currentUser: JwtPayload, branchCtx: string | null = null) {
+  async findAll(currentUser: JwtPayload) {
     const schoolId = currentUser.schoolId!;
-    const key = this.cacheKey(schoolId, branchCtx, 'all');
+    const key = this.cacheKey(schoolId, currentUser.branchId, 'all');
     const cached = await this.redis.getJson<any[]>(key);
     if (cached) return cached;
 
     const result = await this.prisma.class.findMany({
-      where: branchFilter(currentUser, branchCtx),
+      where: buildTenantWhere(currentUser),
       include: {
         classTeacher: { select: { id: true, firstName: true, lastName: true } },
         _count: { select: { students: true } },
@@ -61,14 +61,14 @@ export class ClassesService {
     return result;
   }
 
-  async findOne(id: string, currentUser: JwtPayload, branchCtx: string | null = null) {
+  async findOne(id: string, currentUser: JwtPayload) {
     const schoolId = currentUser.schoolId!;
-    const key = this.cacheKey(schoolId, branchCtx, `one:${id}`);
+    const key = this.cacheKey(schoolId, currentUser.branchId, `one:${id}`);
     const cached = await this.redis.getJson<any>(key);
     if (cached) return cached;
 
     const cls = await this.prisma.class.findFirst({
-      where: { id, ...branchFilter(currentUser, branchCtx) },
+      where: { id, ...buildTenantWhere(currentUser) },
       include: {
         classTeacher: { select: { id: true, firstName: true, lastName: true } },
         students: {
@@ -88,20 +88,20 @@ export class ClassesService {
     return cls;
   }
 
-  async create(dto: CreateClassDto, currentUser: JwtPayload, branchCtx: string | null = null) {
+  async create(dto: CreateClassDto, currentUser: JwtPayload) {
     const result = await this.prisma.class.create({
       data: {
         ...dto,
         schoolId: currentUser.schoolId!,
-        branchId: dto.branchId ?? branchCtx ?? currentUser.branchId ?? undefined,
+        branchId: dto.branchId ?? currentUser.branchId! ?? currentUser.branchId ?? undefined,
       },
     });
     await this.invalidate(currentUser.schoolId!);
     return result;
   }
 
-  async update(id: string, dto: Partial<CreateClassDto>, currentUser: JwtPayload, branchCtx: string | null = null) {
-    await this.findOne(id, currentUser, branchCtx);
+  async update(id: string, dto: Partial<CreateClassDto>, currentUser: JwtPayload) {
+    await this.findOne(id, currentUser);
 
     // If branchId changed, backfill denormalized branchId on related models
     if (dto.branchId !== undefined) {
@@ -109,7 +109,7 @@ export class ClassesService {
         where: { id },
         select: { branchId: true },
       });
-      if (oldClass && oldClass.branchId !== dto.branchId) {
+      if (oldClass && dto.branchId && oldClass.branchId !== dto.branchId) {
         await this.prisma.$transaction([
           this.prisma.attendance.updateMany({
             where: { classId: id },
@@ -135,13 +135,16 @@ export class ClassesService {
       }
     }
 
-    const result = await this.prisma.class.update({ where: { id }, data: dto });
+    const { branchId, ...rest } = dto as any;
+    const updateData: any = { ...rest };
+    if (branchId) updateData.branchId = branchId;
+    const result = await this.prisma.class.update({ where: { id }, data: updateData });
     await this.invalidate(currentUser.schoolId!);
     return result;
   }
 
-  async remove(id: string, currentUser: JwtPayload, branchCtx: string | null = null) {
-    await this.findOne(id, currentUser, branchCtx);
+  async remove(id: string, currentUser: JwtPayload) {
+    await this.findOne(id, currentUser);
     const studentCount = await this.prisma.classStudent.count({ where: { classId: id } });
     if (studentCount > 0) {
       throw new BadRequestException('Sinfda o\'quvchilar bor. Avval ularni chiqaring');
@@ -151,14 +154,14 @@ export class ClassesService {
     return { message: 'Sinf o\'chirildi' };
   }
 
-  async getStudents(classId: string, currentUser: JwtPayload, branchCtx: string | null = null) {
+  async getStudents(classId: string, currentUser: JwtPayload) {
     const schoolId = currentUser.schoolId!;
-    const key = this.cacheKey(schoolId, branchCtx, `students:${classId}`);
+    const key = this.cacheKey(schoolId, currentUser.branchId, `students:${classId}`);
     const cached = await this.redis.getJson<any[]>(key);
     if (cached) return cached;
 
     const records = await this.prisma.classStudent.findMany({
-      where: { classId, class: branchFilter(currentUser, branchCtx) },
+      where: { classId, class: buildTenantWhere(currentUser) },
       include: {
         student: {
           select: {
@@ -174,8 +177,8 @@ export class ClassesService {
     return result;
   }
 
-  async addStudent(classId: string, studentId: string, currentUser: JwtPayload, branchCtx: string | null = null) {
-    await this.findOne(classId, currentUser, branchCtx);
+  async addStudent(classId: string, studentId: string, currentUser: JwtPayload) {
+    await this.findOne(classId, currentUser);
 
     // Verify the target user is actually a student
     const student = await this.prisma.user.findFirst({
@@ -203,8 +206,8 @@ export class ClassesService {
     return result;
   }
 
-  async removeStudent(classId: string, studentId: string, currentUser: JwtPayload, branchCtx: string | null = null) {
-    await this.findOne(classId, currentUser, branchCtx);
+  async removeStudent(classId: string, studentId: string, currentUser: JwtPayload) {
+    await this.findOne(classId, currentUser);
     await this.prisma.classStudent.delete({
       where: { classId_studentId: { classId, studentId } },
     });
@@ -219,9 +222,8 @@ export class ClassesService {
   async promoteStudents(
     promotions: { fromClassId: string; toClassId: string }[],
     currentUser: JwtPayload,
-    branchCtx: string | null = null,
   ) {
-    const filter = branchFilter(currentUser, branchCtx);
+    const filter = buildTenantWhere(currentUser);
     let promoted = 0;
     const errors: string[] = [];
 

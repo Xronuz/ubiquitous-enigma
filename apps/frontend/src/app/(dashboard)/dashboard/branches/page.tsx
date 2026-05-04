@@ -29,7 +29,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { cn } from '@/lib/utils';
 
 // Faqat admin/director kirishi mumkin bo'lgan sahifa
-const ALLOWED_ROLES = ['school_admin', 'director'];
+const ALLOWED_ROLES = ['director'];
 
 // ─── Form state ───────────────────────────────────────────────────────────────
 interface BranchFormData {

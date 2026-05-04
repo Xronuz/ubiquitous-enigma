@@ -57,7 +57,7 @@ export class AuditService {
           userAgent: opts.userAgent,
         },
       });
-      // Real-time: school_admin dashboard'iga yangi audit log keldi signal
+      // Real-time: director dashboard'iga yangi audit log keldi signal
       if (opts.schoolId) {
         this.eventsGateway?.emitToSchool(opts.schoolId, 'audit:new', {
           action: opts.action,

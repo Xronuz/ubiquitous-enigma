@@ -80,7 +80,7 @@ export default function DisciplinePage() {
   const [searchStudent, setSearchStudent] = useState('');
   const [selectedStudents, setSelectedStudents] = useState<any[]>([]);
 
-  const canManage = ['school_admin', 'vice_principal', 'teacher', 'class_teacher'].includes(user?.role ?? '');
+  const canManage = ['director', 'vice_principal', 'teacher', 'class_teacher'].includes(user?.role ?? '');
 
   // ── Data queries ────────────────────────────────────────────────────────────
   const { data: classes = [] } = useQuery({
