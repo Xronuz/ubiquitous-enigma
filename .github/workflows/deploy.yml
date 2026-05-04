@@ -17,7 +17,7 @@ jobs:
       - name: Rebuild and restart
         run: |
           cd /opt/eduplatform
-          docker compose -f docker-compose.selfhost.yml up -d --build --no-deps backend nginx
+          docker compose -f docker-compose.selfhost.yml up -d --build --no-deps backend frontend nginx
 
       - name: Status
         run: |
