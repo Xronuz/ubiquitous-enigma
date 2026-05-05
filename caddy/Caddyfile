@@ -1,68 +1,68 @@
 # ═══════════════════════════════════════════════════════════════════════════════
-# EduPlatform — Caddyfile
+# EduPlatform — Caddyfile (HTTP rejimi)
+#
+# Hozir: auto_https off — faqat port 80, TLS yo'q
+# Keyinroq HTTPS yoqish uchun:
+#   1. Cloudflare DNS: platform.cybertron.uz → 185.197.249.26
+#   2. docker-compose da 443:443 portni ochish
+#   3. Bu fayldagi "auto_https off" ni o'chirish
 #
 # Saytlar:
-#   platform.cybertron.uz   → Maktab boshqaruv tizimi
-#                             (Docker: frontend:3000 + backend:3001)
+#   platform.cybertron.uz (va 185.197.249.26) → Maktab boshqaruv tizimi
+#   workload.cybertron.uz                      → PM2 loyiha (WORKLOAD_PORT)
 #
-#   workload.cybertron.uz   → PM2 da ishlaydigan loyiha
-#                             (Host: host.docker.internal:WORKLOAD_PORT)
-#
-# TLS / HTTPS:
-#   Caddy Let's Encrypt dan avtomatik sertifikat oladi.
-#   HTTP port 80 → HTTPS port 443 ga yo'naltirish ham avtomatik.
-#   /data volume ga sertifikatlar saqlanadi (docker-compose da mount qilingan).
-#
-# Rate limiting:
-#   Proxy darajasida: Caddy built-in yo'q (xcaddy bilan yoqish mumkin)
-#   Ilova darajasida: NestJS ThrottlerModule (THROTTLE_TTL/THROTTLE_LIMIT env)
-#
-# Konfiguratsiya o'zgaruvchilari (.env faylida o'rnating):
-#   WORKLOAD_PORT  — PM2 loyihasi porti (standart: 3500)
+# Rate limiting: NestJS ThrottlerModule (THROTTLE_TTL/THROTTLE_LIMIT)
 # ═══════════════════════════════════════════════════════════════════════════════
 
-# ─── Global sozlamalar ────────────────────────────────────────────────────────
 {
-    # HTTP/1.1, HTTP/2 va HTTP/3 (QUIC) ni qabul qilish
-    servers {
-        protocols h1 h2 h3
-    }
+    # HTTPS YOQILMAGAN — Let's Encrypt so'rov yo'q, 443 port bind yo'q
+    # DNS va 443 port tayyor bo'lgach bu qatorni o'chirib tashlang
+    auto_https off
 
-    # Let's Encrypt xato bildirishnomasi uchun email (ixtiyoriy, tavsiya etiladi)
-    # email admin@cybertron.uz
+    # HTTP/1.1 va HTTP/2 (HTTP/3 HTTPS kerak)
+    servers {
+        protocols h1 h2
+    }
 }
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# 1. MAKTAB BOSHQARUV TIZIMI — platform.cybertron.uz
+# MAKTAB BOSHQARUV TIZIMI — port 80
+# platform.cybertron.uz va 185.197.249.26 IP orqali ham ishlaydi
 # ═══════════════════════════════════════════════════════════════════════════════
-platform.cybertron.uz {
+:80 {
 
-    # ── Umumiy xavfsizlik sarlavhalari (barcha javoblarga qo'shiladi) ─────────
+    # ── Xavfsizlik sarlavhalari ──────────────────────────────────────────────
     header {
-        # Iframe orqali saytni boshqalardan ko'rsatishni bloklash
         X-Frame-Options             "SAMEORIGIN"
-        # MIME type sniffing hujumlaridan himoya
         X-Content-Type-Options      "nosniff"
-        # Eski brauzerlarda XSS filtrni yoqish
         X-XSS-Protection            "1; mode=block"
-        # Referer sarlavhasida faqat origin qoldirish
         Referrer-Policy             "strict-origin-when-cross-origin"
-        # HSTS: 1 yil davomida faqat HTTPS orqali muloqot
-        Strict-Transport-Security   "max-age=31536000; includeSubDomains"
-        # Server nomini yashirish (fingerprinting oldini olish)
+        # Server nomini yashirish
         -Server
     }
 
-    # ── Fayl yuklash hajmi limiti (rasm/hujjat uchun 50MB) ───────────────────
+    # ── Fayl yuklash hajmi limiti (50MB) ─────────────────────────────────────
     request_body {
         max_size 50MB
     }
 
-    # ── Siqish (zstd > gzip) ─────────────────────────────────────────────────
+    # ── Siqish ───────────────────────────────────────────────────────────────
     encode zstd gzip
 
+    # ── Workload loyihasi (PM2) ───────────────────────────────────────────────
+    # Host: workload.cybertron.uz → 172.17.0.1:WORKLOAD_PORT (docker bridge)
+    @workload host workload.cybertron.uz
+    handle @workload {
+        reverse_proxy 172.17.0.1:{$WORKLOAD_PORT:-3500} {
+            header_up X-Real-IP         {http.request.remote.host}
+            header_up X-Forwarded-For   {http.request.remote.host}
+            header_up X-Forwarded-Proto {http.request.scheme}
+            header_up Host              {http.request.host}
+        }
+    }
+
     # ─────────────────────────────────────────────────────────────────────────
-    # ROUTELAR (yuqoridan pastga — eng aniq avval)
+    # MAKTAB BOSHQARUV — qolgan barcha so'rovlar (IP va platform.cybertron.uz)
     # ─────────────────────────────────────────────────────────────────────────
 
     # ── 1. Health check ───────────────────────────────────────────────────────
@@ -71,8 +71,7 @@ platform.cybertron.uz {
         reverse_proxy backend:3001
     }
 
-    # ── 2. Auth endpointlar (/api/v1/auth/*) ─────────────────────────────────
-    # Rate limiting: NestJS ThrottlerModule tomonidan boshqariladi
+    # ── 2. Auth endpointlar — /api/v1/auth/* ─────────────────────────────────
     @auth path /api/v1/auth/*
     handle @auth {
         reverse_proxy backend:3001 {
@@ -80,13 +79,11 @@ platform.cybertron.uz {
             header_up X-Forwarded-For   {http.request.remote.host}
             header_up X-Forwarded-Proto {http.request.scheme}
             header_up Host              {http.request.host}
-            # Auth so'rovlari uchun vaqt chegarasi: 30 soniya
             timeout 30s
         }
     }
 
-    # ── 3. Umumiy API (/api/*) ────────────────────────────────────────────────
-    # Rate limiting: NestJS ThrottlerModule tomonidan boshqariladi
+    # ── 3. Umumiy API — /api/* ────────────────────────────────────────────────
     @api path /api/*
     handle @api {
         reverse_proxy backend:3001 {
@@ -98,8 +95,7 @@ platform.cybertron.uz {
         }
     }
 
-    # ── 4. WebSocket / Socket.io — real-time ulanish ─────────────────────────
-    # Xabar almashish, bildirishnomalar va h.k. uchun
+    # ── 4. WebSocket / Socket.io ─────────────────────────────────────────────
     @websocket {
         path    /socket.io/*
         header  Connection *Upgrade*
@@ -110,7 +106,6 @@ platform.cybertron.uz {
             header_up Connection {http.request.header.Connection}
             header_up Upgrade    {http.request.header.Upgrade}
             header_up Host       {http.request.host}
-            # WebSocket ulanishi uzoq ochiq turishi kerak — timeout o'chiriladi
             transport http {
                 read_timeout  0s
                 write_timeout 0s
@@ -118,14 +113,14 @@ platform.cybertron.uz {
         }
     }
 
-    # ── 5. Next.js statik fayllar — 1 yil kesh (immutable) ──────────────────
+    # ── 5. Next.js statik fayllar — 1 yil immutable kesh ────────────────────
     @static path /_next/static/*
     handle @static {
         header Cache-Control "public, max-age=31536000, immutable"
         reverse_proxy frontend:3000
     }
 
-    # ── 6. Next.js rasm optimizatsiyasi — 7 kun kesh ─────────────────────────
+    # ── 6. Rasm optimizatsiyasi — 7 kun kesh ─────────────────────────────────
     @images path /_next/image*
     handle @images {
         header Cache-Control "public, max-age=604800"
@@ -134,7 +129,7 @@ platform.cybertron.uz {
         }
     }
 
-    # ── 7. Yuklangan fayllar (rasm/PDF/hujjatlar) — 7 kun kesh ──────────────
+    # ── 7. Yuklangan fayllar — 7 kun kesh ────────────────────────────────────
     @uploads path /uploads/*
     handle @uploads {
         header Cache-Control "public, max-age=604800"
@@ -143,7 +138,7 @@ platform.cybertron.uz {
         }
     }
 
-    # ── 8. Frontend (Next.js) — barcha qolgan so'rovlar ─────────────────────
+    # ── 8. Frontend — catch-all ───────────────────────────────────────────────
     handle {
         reverse_proxy frontend:3000 {
             header_up X-Real-IP         {http.request.remote.host}
@@ -156,73 +151,7 @@ platform.cybertron.uz {
 
     # ── Loglash ──────────────────────────────────────────────────────────────
     log {
-        output file /var/log/caddy/platform.log {
-            roll_size 10mb
-            roll_keep 5
-        }
-        format json
-        level  INFO
-    }
-}
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# 2. WORKLOAD LOYIHASI — workload.cybertron.uz
-#
-# Bu loyiha server hostida PM2 orqali ishlaydi (Docker tashqarisida).
-# Caddy → host.docker.internal:WORKLOAD_PORT orqali yo'naltiradi.
-#
-# SOZLASH: Server .env faylida qo'shing:
-#   WORKLOAD_PORT=<pm2_loyiha_porti>   # masalan: 8080, 5000, 4000
-#
-# Linux da host.docker.internal ishlashi uchun docker-compose da:
-#   extra_hosts: ["host.docker.internal:host-gateway"]  (allaqachon qo'shilgan)
-# ═══════════════════════════════════════════════════════════════════════════════
-workload.cybertron.uz {
-
-    # ── Xavfsizlik sarlavhalari ──────────────────────────────────────────────
-    header {
-        X-Frame-Options             "SAMEORIGIN"
-        X-Content-Type-Options      "nosniff"
-        X-XSS-Protection            "1; mode=block"
-        Referrer-Policy             "strict-origin-when-cross-origin"
-        Strict-Transport-Security   "max-age=31536000"
-        -Server
-    }
-
-    # ── Siqish ───────────────────────────────────────────────────────────────
-    encode zstd gzip
-
-    # ── WebSocket qo'llab-quvvatlash (agar PM2 loyiha WebSocket ishlatsa) ────
-    @ws {
-        header Connection *Upgrade*
-        header Upgrade    websocket
-    }
-    handle @ws {
-        reverse_proxy host.docker.internal:{$WORKLOAD_PORT:-3500} {
-            header_up Connection {http.request.header.Connection}
-            header_up Upgrade    {http.request.header.Upgrade}
-            transport http {
-                read_timeout  0s
-                write_timeout 0s
-            }
-        }
-    }
-
-    # ── PM2 loyihasiga barcha so'rovlar ──────────────────────────────────────
-    # host.docker.internal = Docker konteyneridan host mashinasiga murojaat
-    # {$WORKLOAD_PORT:-3500} = WORKLOAD_PORT env o'zgaruvchisi, standart 3500
-    handle {
-        reverse_proxy host.docker.internal:{$WORKLOAD_PORT:-3500} {
-            header_up X-Real-IP         {http.request.remote.host}
-            header_up X-Forwarded-For   {http.request.remote.host}
-            header_up X-Forwarded-Proto {http.request.scheme}
-            header_up Host              {http.request.host}
-        }
-    }
-
-    # ── Loglash ──────────────────────────────────────────────────────────────
-    log {
-        output file /var/log/caddy/workload.log {
+        output file /var/log/caddy/access.log {
             roll_size 10mb
             roll_keep 5
         }

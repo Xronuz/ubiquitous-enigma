@@ -247,20 +247,18 @@ services:
     container_name: eduplatform-caddy
     restart: unless-stopped
     ports:
-      - "80:80"     # HTTP (Let's Encrypt ACME challenge + 443 ga redirect)
-      - "443:443"   # HTTPS (TLS)
-      - "443:443/udp"  # HTTP/3 (QUIC)
+      - "80:80"     # HTTP (asosiy port)
+      # 443: DNS + Cloudflare tayyor bo'lgach qo'shing:
+      # - "443:443"
+      # - "443:443/udp"  # HTTP/3 (QUIC)
     volumes:
       - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy_data:/data       # Let's Encrypt sertifikatlar (saqlanadi!)
+      - caddy_data:/data       # Caddy ma'lumotlar (kelajakda TLS sertifikatlar)
       - caddy_config:/config   # Caddy konfiguratsiya keshi
       - caddy_logs:/var/log/caddy
     environment:
       # PM2 loyiha porti — .env da o'rnating: WORKLOAD_PORT=8080
       WORKLOAD_PORT: ${WORKLOAD_PORT:-3500}
-    extra_hosts:
-      # Linux da host mashinasiga murojaat uchun (PM2 → workload.cybertron.uz)
-      - "host.docker.internal:host-gateway"
     depends_on:
       frontend:
         condition: service_healthy
