@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard, BookOpen, Users, TrendingUp,
@@ -56,6 +57,11 @@ const SECTION_MAP: Record<string, string> = {
   '/dashboard/canteen':           '/dashboard/resources',
   '/dashboard/transport':         '/dashboard/resources',
   '/dashboard/student/shop':      '/dashboard/student/shop',
+
+  // KPI / Analytics / Marketing
+  '/dashboard/kpi':               '/dashboard/kpi',
+  '/dashboard/ai-analytics':      '/dashboard/ai-analytics',
+  '/dashboard/marketing':         '/dashboard/marketing',
 
   // Comms
   '/dashboard/comms':             '/dashboard/comms',
@@ -383,21 +389,34 @@ export function Sidebar() {
     >
       {/* Logo row */}
       <div className={cn(
-        'flex h-[70px] shrink-0 items-center px-4 border-b border-slate-100/80 dark:border-slate-700/80',
-        expanded ? 'justify-between' : 'flex-col justify-center gap-2',
+        'flex h-[70px] shrink-0 items-center px-3 border-b border-slate-100/80 dark:border-slate-700/80',
+        expanded ? 'justify-between gap-2' : 'flex-col justify-center gap-1.5',
       )}>
-        <Link
-          href="/dashboard"
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-100/80 dark:border-emerald-800/50 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors"
-        >
-          <XeduMark size={22} />
+        <Link href="/dashboard" className="flex shrink-0 items-center justify-center">
+          {expanded ? (
+            /* Kengaygan holat: to'liq logo */
+            <Image
+              src="/xedu-logo-full.png"
+              alt="Xedu"
+              width={120}
+              height={40}
+              className="object-contain dark:brightness-90"
+              priority
+            />
+          ) : (
+            /* Qisqargan holat: faqat icon qismi */
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-100/80 dark:border-emerald-800/50 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors overflow-hidden">
+              <Image
+                src="/xedu-logo-full.png"
+                alt="Xedu"
+                width={52}
+                height={52}
+                className="object-cover object-left scale-[1.6] translate-x-[-4px]"
+                priority
+              />
+            </div>
+          )}
         </Link>
-
-        {expanded && (
-          <span className="flex-1 ml-2.5 text-[15px] font-bold text-slate-800 dark:text-slate-100 tracking-tight truncate">
-            Xedu
-          </span>
-        )}
 
         <button
           onClick={toggleSidebar}
