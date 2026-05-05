@@ -30,6 +30,8 @@ import { homeworkApi } from '@/lib/api/homework';
 import { subjectsApi } from '@/lib/api/subjects';
 import { gradesApi } from '@/lib/api/grades';
 import { coinsApi } from '@/lib/api/coins';
+import { kpiApi } from '@/lib/api/kpi';
+import { aiAnalyticsApi } from '@/lib/api/ai-analytics';
 import { leaveRequestsApi } from '@/lib/api/leave-requests';
 import { disciplineApi } from '@/lib/api/discipline';
 import { financeApi } from '@/lib/api/finance';
@@ -1613,7 +1615,9 @@ function DirectorDashboard() {
   const { data: pendingLeaves }= useQuery({ queryKey: ['leave-requests', 'pending', 'school-wide'], queryFn: () => leaveRequestsApi.getAll({ status: 'pending' }) });
   const { data: financeData }  = useQuery({ queryKey: ['finance', 'dashboard', 'school-wide'], queryFn: financeApi.getDashboard });
   const { data: pendingDiscipline } = useQuery({ queryKey: ['discipline', 'unresolved', 'school-wide'], queryFn: () => disciplineApi.getAll().catch(() => ({ data: [] })) });
-  const { data: coinStats } = useQuery({ queryKey: ['coins', 'admin', 'stats'], queryFn: () => coinsApi.getStudentBalances().catch(() => ({ data: [] })), staleTime: 60_000 });
+  const { data: coinStats }  = useQuery({ queryKey: ['coins', 'admin', 'stats'],    queryFn: () => coinsApi.getStudentBalances().catch(() => ({ data: [] })), staleTime: 60_000 });
+  const { data: kpiData }    = useQuery({ queryKey: ['kpi', 'dashboard', 'dir'],    queryFn: () => kpiApi.getDashboard().catch(() => ({ items: [] })),          staleTime: 60_000 });
+  const { data: aiSummary }  = useQuery({ queryKey: ['ai-analytics', 'dashboard', 'dir'], queryFn: () => aiAnalyticsApi.getDashboard().catch(() => null),       staleTime: 60_000 });
 
   const classList: any[]         = Array.isArray(classesData) ? classesData : (classesData as any)?.data ?? [];
   const allUsers: any[]          = (usersData as any)?.data ?? [];
@@ -1653,13 +1657,67 @@ function DirectorDashboard() {
         </p>
       </div>
 
-      {/* KPI row */}
+      {/* KPI row — 4 asosiy stat */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard title="Bugungi davomat" value={`${presentPct}%`}   description={`${totalStudents} ta o'quvchidan`} icon={ClipboardCheck} trend={presentPct >= 90 ? 'up' : 'down'} loading={attLoading} color="emerald" />
         <StatCard title="Sinflar soni"    value={classList.length}    description="Faol sinflar"                      icon={School}         color="blue"    />
         <StatCard title="O'qituvchilar"  value={teacherCount}        description="Faol xodimlar"                    icon={Users}          color="violet"  />
         <StatCard title="Oylik tushum"    value={formatCurrency((financeData as any)?.thisMonthRevenue ?? 0)} description="Joriy oy" icon={TrendingUp} color="amber" />
+      </div>
+
+      {/* EduCoin + KPI + AI — 3 ta kengaytirilgan karta */}
+      <div className="grid gap-4 sm:grid-cols-3">
+        {/* EduCoin */}
         <StatCard title="EduCoin aylanma" value={((coinStats as any)?.data?.length ?? 0).toLocaleString()} description="Faol o'quvchilar" icon={Coins} color="amber" href="/dashboard/coins" />
+
+        {/* KPI Summary */}
+        <a href="/dashboard/kpi"
+          className="group block rounded-[24px] bg-white p-7 transition-all duration-200 cursor-pointer hover:-translate-y-[2px] hover:shadow-[0_20px_48px_rgba(0,0,0,0.08)]"
+          style={{ border: '1px solid rgba(0,0,0,0.04)', boxShadow: '0 10px 30px rgba(0,0,0,0.04)' }}
+        >
+          <div className="flex items-start justify-between mb-4">
+            <p className="text-[10px] font-bold uppercase tracking-[0.12em]" style={{ color: C.muted }}>KPI bo'yicha</p>
+            <div className="h-10 w-10 rounded-2xl flex items-center justify-center shrink-0" style={{ background: '#EDE9FE' }}>
+              <BarChart2 className="h-[18px] w-[18px]" style={{ color: '#7C3AED' }} />
+            </div>
+          </div>
+          {(() => {
+            const items: any[] = (kpiData as any)?.items ?? [];
+            const avg = items.length ? Math.round(items.reduce((s: number, i: any) => s + (i.progress ?? 0), 0) / items.length) : 0;
+            return (
+              <>
+                <p className="text-[38px] font-black leading-none tracking-tight mb-3" style={{ color: C.text }}>{avg}%</p>
+                <p className="text-[12px] font-medium" style={{ color: C.muted }}>{items.length} ta metrika · o'rtacha bajarilish</p>
+              </>
+            );
+          })()}
+        </a>
+
+        {/* AI Analytics */}
+        <a href="/dashboard/ai-analytics"
+          className="group block rounded-[24px] bg-white p-7 transition-all duration-200 cursor-pointer hover:-translate-y-[2px] hover:shadow-[0_20px_48px_rgba(0,0,0,0.08)]"
+          style={{ border: '1px solid rgba(0,0,0,0.04)', boxShadow: '0 10px 30px rgba(0,0,0,0.04)' }}
+        >
+          <div className="flex items-start justify-between mb-4">
+            <p className="text-[10px] font-bold uppercase tracking-[0.12em]" style={{ color: C.muted }}>AI Tahlil</p>
+            <div className="h-10 w-10 rounded-2xl flex items-center justify-center shrink-0" style={{ background: '#DCFCE7' }}>
+              <Activity className="h-[18px] w-[18px]" style={{ color: '#16A34A' }} />
+            </div>
+          </div>
+          {(() => {
+            const ai: any = aiSummary;
+            const atRisk = (ai?.riskDistribution?.critical ?? 0) + (ai?.riskDistribution?.high ?? 0);
+            const total  = ai?.totalStudents ?? 0;
+            return (
+              <>
+                <p className="text-[38px] font-black leading-none tracking-tight mb-3" style={{ color: atRisk > 0 ? '#DC2626' : C.text }}>{atRisk}</p>
+                <p className="text-[12px] font-medium" style={{ color: C.muted }}>
+                  {total > 0 ? `${total} ta o'quvchidan xavf ostida` : "O'quvchilar tahlili"}
+                </p>
+              </>
+            );
+          })()}
+        </a>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
