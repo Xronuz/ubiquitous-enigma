@@ -57,8 +57,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         });
       })
       .catch(() => {
-        // Cookie ham yo'q — login sahifasiga yuboramiz (to'liq reload, middleware orqali)
-        window.location.href = '/login';
+        // /auth/clear clears httpOnly cookies server-side then redirects to /login.
+        // Direct '/login' would be overridden here and bypass cookie clearing, re-entering the loop.
+        window.location.href = '/auth/clear';
       })
       .finally(() => setIsRecovering(false));
   }, [_hasHydrated, isAuthenticated, restoreAuth]);
