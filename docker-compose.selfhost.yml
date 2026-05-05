@@ -35,9 +35,11 @@ x-backend-env: &backend-env
   JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?Set JWT_REFRESH_SECRET in .env}
   JWT_ACCESS_EXPIRES_IN: ${JWT_ACCESS_EXPIRES_IN:-15m}
   JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-7d}
-  ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-https://${SERVER_HOST:-localhost},http://${SERVER_HOST:-localhost}}
+  # HTTPS domenga o'tganda .env da o'rnating: ALLOWED_ORIGINS=https://platform.cybertron.uz
+  ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://${SERVER_HOST:-localhost}}
   PORT: "3001"
-  APP_URL: ${APP_URL:-https://${SERVER_HOST:-localhost}}
+  # HTTPS domenga o'tganda .env da o'rnating: APP_URL=https://platform.cybertron.uz
+  APP_URL: ${APP_URL:-http://${SERVER_HOST:-localhost}}
   LOG_LEVEL: ${LOG_LEVEL:-info}
   THROTTLE_TTL: ${THROTTLE_TTL:-60000}
   THROTTLE_LIMIT: ${THROTTLE_LIMIT:-100}
@@ -129,19 +131,19 @@ services:
         echo '  EduPlatform — DB Initialization' &&
         echo '════════════════════════════════════════' &&
         if [ \"$${RESET_DB:-false}\" = \"true\" ]; then
-          echo '⚠️  RESET_DB=true — DB to\\'liq qayta tiklanyapti...' &&
+          echo 'WARNING: RESET_DB=true — dropping and recreating database...' &&
           npx prisma migrate reset --force &&
-          echo '✅ Reset va migrate tugadi.';
+          echo 'Reset complete.';
         else
-          echo '⏳ Applying migrations...' &&
+          echo 'Applying migrations...' &&
           npx prisma migrate deploy &&
-          echo '⚡ Generating Prisma client...' &&
+          echo 'Generating Prisma client...' &&
           npx prisma generate &&
-          echo '✅ Migrations applied.';
+          echo 'Migrations applied.';
         fi &&
-        echo '🌱 Running seed (idempotent)...' &&
+        echo 'Seeding database (idempotent)...' &&
         npx prisma db seed &&
-        echo '🎉 DB ready!'
+        echo 'DB ready!'
       "
     environment:
       <<: *backend-env
@@ -198,8 +200,8 @@ services:
         # HTTPS domenga o'tganda .env da to'g'ridan to'g'ri o'rnating:
         #   NEXT_PUBLIC_API_URL=https://platform.cybertron.uz/api/v1
         #   NEXT_PUBLIC_WS_URL=https://platform.cybertron.uz
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://${SERVER_HOST:-localhost}/api/v1}
-        NEXT_PUBLIC_WS_URL: ${NEXT_PUBLIC_WS_URL:-http://${SERVER_HOST:-localhost}}
+        NEXT_PUBLIC_API_URL: http://${SERVER_HOST:-localhost}/api/v1
+        NEXT_PUBLIC_WS_URL: http://${SERVER_HOST:-localhost}
     container_name: eduplatform-frontend
     restart: unless-stopped
     environment:
@@ -210,8 +212,8 @@ services:
       # HTTPS domenga o'tganda .env da to'g'ridan to'g'ri o'rnating:
       #   NEXT_PUBLIC_API_URL=https://platform.cybertron.uz/api/v1
       #   NEXT_PUBLIC_WS_URL=https://platform.cybertron.uz
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://${SERVER_HOST:-localhost}/api/v1}
-      NEXT_PUBLIC_WS_URL: ${NEXT_PUBLIC_WS_URL:-http://${SERVER_HOST:-localhost}}
+      NEXT_PUBLIC_API_URL: http://${SERVER_HOST:-localhost}/api/v1
+      NEXT_PUBLIC_WS_URL: http://${SERVER_HOST:-localhost}
     depends_on:
       backend:
         condition: service_healthy
