@@ -121,11 +121,9 @@ function StatCard({
       )}
       style={{ border: '1px solid rgba(0,0,0,0.04)', boxShadow: '0 10px 30px rgba(0,0,0,0.04)' }}
     >
-      {/* Arrow indicator — clickable cardlarda top-right burchakda */}
+      {/* Arrow indicator — pastki o'ng burchak, icon bilan to'qnashmaydi */}
       {isClickable && (
-        <span className="absolute top-4 right-4 flex h-6 w-6 items-center justify-center rounded-full bg-slate-100/80 opacity-40 group-hover:opacity-100 group-hover:bg-slate-200 group-hover:scale-110 transition-all duration-200">
-          <ArrowUpRight className="h-3.5 w-3.5 text-slate-400 group-hover:text-slate-600" />
-        </span>
+        <ArrowUpRight className="absolute bottom-4 right-5 h-4 w-4 text-slate-300 opacity-50 group-hover:opacity-100 group-hover:text-slate-500 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all duration-200" />
       )}
 
       {/* Top row */}
@@ -134,10 +132,7 @@ function StatCard({
           {title}
         </p>
         <div
-          className={cn(
-            'h-10 w-10 rounded-2xl flex items-center justify-center shrink-0 transition-transform duration-200',
-            isClickable && 'group-hover:scale-110',
-          )}
+          className="h-10 w-10 rounded-2xl flex items-center justify-center shrink-0"
           style={{ background: cfg.bg }}
         >
           <Icon className="h-[18px] w-[18px]" style={{ color: cfg.icon }} />
@@ -1686,9 +1681,10 @@ function DirectorDashboard() {
 
         {/* KPI Summary */}
         <a href="/dashboard/kpi"
-          className="group block rounded-[24px] bg-white p-7 transition-all duration-200 cursor-pointer hover:-translate-y-[2px] hover:shadow-[0_20px_48px_rgba(0,0,0,0.08)]"
+          className="group relative block rounded-[24px] bg-white p-7 transition-all duration-200 cursor-pointer hover:-translate-y-[2px] hover:shadow-[0_20px_48px_rgba(0,0,0,0.08)]"
           style={{ border: '1px solid rgba(0,0,0,0.04)', boxShadow: '0 10px 30px rgba(0,0,0,0.04)' }}
         >
+          <ArrowUpRight className="absolute bottom-4 right-5 h-4 w-4 text-slate-300 opacity-50 group-hover:opacity-100 group-hover:text-slate-500 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all duration-200" />
           <div className="flex items-start justify-between mb-4">
             <p className="text-[10px] font-bold uppercase tracking-[0.12em]" style={{ color: C.muted }}>KPI bo'yicha</p>
             <div className="h-10 w-10 rounded-2xl flex items-center justify-center shrink-0" style={{ background: '#EDE9FE' }}>
@@ -1709,9 +1705,10 @@ function DirectorDashboard() {
 
         {/* AI Analytics */}
         <a href="/dashboard/ai-analytics"
-          className="group block rounded-[24px] bg-white p-7 transition-all duration-200 cursor-pointer hover:-translate-y-[2px] hover:shadow-[0_20px_48px_rgba(0,0,0,0.08)]"
+          className="group relative block rounded-[24px] bg-white p-7 transition-all duration-200 cursor-pointer hover:-translate-y-[2px] hover:shadow-[0_20px_48px_rgba(0,0,0,0.08)]"
           style={{ border: '1px solid rgba(0,0,0,0.04)', boxShadow: '0 10px 30px rgba(0,0,0,0.04)' }}
         >
+          <ArrowUpRight className="absolute bottom-4 right-5 h-4 w-4 text-slate-300 opacity-50 group-hover:opacity-100 group-hover:text-slate-500 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all duration-200" />
           <div className="flex items-start justify-between mb-4">
             <p className="text-[10px] font-bold uppercase tracking-[0.12em]" style={{ color: C.muted }}>AI Tahlil</p>
             <div className="h-10 w-10 rounded-2xl flex items-center justify-center shrink-0" style={{ background: '#DCFCE7' }}>
