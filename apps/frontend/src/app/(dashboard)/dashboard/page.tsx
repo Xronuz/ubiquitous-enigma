@@ -32,6 +32,7 @@ import { gradesApi } from '@/lib/api/grades';
 import { coinsApi } from '@/lib/api/coins';
 import { kpiApi } from '@/lib/api/kpi';
 import { aiAnalyticsApi } from '@/lib/api/ai-analytics';
+import { branchesApi } from '@/lib/api/branches';
 import { leaveRequestsApi } from '@/lib/api/leave-requests';
 import { disciplineApi } from '@/lib/api/discipline';
 import { financeApi } from '@/lib/api/finance';
@@ -1618,6 +1619,7 @@ function DirectorDashboard() {
   const { data: coinStats }  = useQuery({ queryKey: ['coins', 'admin', 'stats'],    queryFn: () => coinsApi.getStudentBalances().catch(() => ({ data: [] })), staleTime: 60_000 });
   const { data: kpiData }    = useQuery({ queryKey: ['kpi', 'dashboard', 'dir'],    queryFn: () => kpiApi.getDashboard().catch(() => ({ items: [] })),          staleTime: 60_000 });
   const { data: aiSummary }  = useQuery({ queryKey: ['ai-analytics', 'dashboard', 'dir'], queryFn: () => aiAnalyticsApi.getDashboard().catch(() => null),       staleTime: 60_000 });
+  const { data: branches, isLoading: branchesLoading } = useQuery({ queryKey: ['branches', 'director'], queryFn: () => branchesApi.getAll().catch(() => []), staleTime: 60_000 });
 
   const classList: any[]         = Array.isArray(classesData) ? classesData : (classesData as any)?.data ?? [];
   const allUsers: any[]          = (usersData as any)?.data ?? [];
@@ -1719,6 +1721,67 @@ function DirectorDashboard() {
           })()}
         </a>
       </div>
+
+      {/* ── Filiallar bo'yicha statistika (faqat Director) ── */}
+      <PCard>
+        <div className="flex items-center justify-between mb-5">
+          <div>
+            <p className="font-bold text-[15px]" style={{ color: C.text }}>Filiallar bo'yicha statistika</p>
+            <p className="text-xs mt-0.5" style={{ color: C.muted }}>Barcha filiallar umumiy holati</p>
+          </div>
+          <a href="/dashboard/branches" className="text-xs font-semibold" style={{ color: C.primary }}>Barchasi →</a>
+        </div>
+        {branchesLoading ? (
+          <div className="space-y-2">{[...Array(3)].map((_, i) => <Skeleton key={i} className="h-14 rounded-2xl" />)}</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b" style={{ borderColor: C.border }}>
+                  <th className="text-left py-2.5 px-3 text-[11px] font-bold uppercase tracking-wide" style={{ color: C.muted }}>Filial</th>
+                  <th className="text-center py-2.5 px-3 text-[11px] font-bold uppercase tracking-wide" style={{ color: C.muted }}>O'quvchilar</th>
+                  <th className="text-center py-2.5 px-3 text-[11px] font-bold uppercase tracking-wide" style={{ color: C.muted }}>O'qituvchilar</th>
+                  <th className="text-center py-2.5 px-3 text-[11px] font-bold uppercase tracking-wide" style={{ color: C.muted }}>Xodimlar</th>
+                  <th className="text-center py-2.5 px-3 text-[11px] font-bold uppercase tracking-wide" style={{ color: C.muted }}>Holati</th>
+                </tr>
+              </thead>
+              <tbody>
+                {((branches as any[]) ?? []).map((branch: any) => {
+                  const branchUsers = allUsers.filter((u: any) => u.branchId === branch.id);
+                  const bStudents   = branchUsers.filter((u: any) => u.role === 'student').length;
+                  const bTeachers   = branchUsers.filter((u: any) => ['teacher', 'class_teacher'].includes(u.role)).length;
+                  const bStaff      = branchUsers.filter((u: any) => !['student', 'teacher', 'class_teacher', 'parent'].includes(u.role)).length;
+                  return (
+                    <tr key={branch.id} className="border-b last:border-0 hover:bg-slate-50/60 transition-colors" style={{ borderColor: C.border }}>
+                      <td className="py-3 px-3">
+                        <p className="font-semibold text-[13px]" style={{ color: C.text }}>{branch.name}</p>
+                        {branch.address && <p className="text-[11px] mt-0.5 truncate max-w-[200px]" style={{ color: C.muted }}>{branch.address}</p>}
+                      </td>
+                      <td className="py-3 px-3 text-center">
+                        <span className="text-[13px] font-bold" style={{ color: C.text }}>{bStudents}</span>
+                      </td>
+                      <td className="py-3 px-3 text-center">
+                        <span className="text-[13px] font-bold" style={{ color: C.text }}>{bTeachers}</span>
+                      </td>
+                      <td className="py-3 px-3 text-center">
+                        <span className="text-[13px] font-bold" style={{ color: C.text }}>{bStaff}</span>
+                      </td>
+                      <td className="py-3 px-3 text-center">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold ${branch.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-600'}`}>
+                          {branch.isActive ? 'Faol' : 'Nofaol'}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+                {(!branches || (branches as any[]).length === 0) && (
+                  <tr><td colSpan={5} className="py-8 text-center text-sm" style={{ color: C.muted }}>Filiallar topilmadi</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </PCard>
 
       <div className="grid gap-4 lg:grid-cols-2">
         {/* Leave approval */}
