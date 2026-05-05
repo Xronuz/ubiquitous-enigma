@@ -19,55 +19,59 @@ jobs:
           git fetch origin main
           git reset --hard origin/main
 
-      # 2. Faqat imagelarni qayta build qilish — MA'LUMOTLAR O'CHIRILMAYDI
+      # 2. Containerlarni to'xtatish — MA'LUMOTLAR (volumes) O'CHIRILMAYDI
+      - name: Stop containers (preserve volumes)
+        run: |
+          cd /opt/eduplatform
+          docker compose -f docker-compose.selfhost.yml down --remove-orphans 2>/dev/null || true
+          echo "Containers stopped. Volumes preserved."
+
+      # 3. Imagelarni qayta build qilish va barcha servicelarni ishga tushirish
       - name: Build images and start all services
         run: |
           set -e
           cd /opt/eduplatform
           docker compose -f docker-compose.selfhost.yml up -d --build
 
-      # 3. Backend va frontend healthy bo'lishini kutish
-      - name: Wait for services to become healthy
+      # 4. Nginx port 80 dan javob berishini kutish (real external check)
+      - name: Wait for nginx on port 80
         run: |
           cd /opt/eduplatform
-
-          echo "Waiting for backend (up to 4 min)..."
-          for i in $(seq 1 48); do
-            if docker compose -f docker-compose.selfhost.yml exec -T backend \
-                wget -qO- http://localhost:3001/api/health >/dev/null 2>&1; then
-              echo "Backend is healthy after $((i * 5))s"
+          echo "Waiting for nginx on port 80 (up to 5 min)..."
+          for i in $(seq 1 60); do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:80/api/health 2>/dev/null || echo "000")
+            if [ "$STATUS" = "200" ] || [ "$STATUS" = "301" ] || [ "$STATUS" = "302" ] || [ "$STATUS" = "307" ]; then
+              echo "Nginx healthy — HTTP $STATUS after $((i * 5))s"
               break
             fi
-            if [ "$i" -eq 48 ]; then
-              echo "Backend did not become healthy in 4 minutes"
+            if [ "$i" -eq 60 ]; then
+              echo "ERROR: Nginx did not become healthy in 5 minutes (last HTTP status: $STATUS)"
+              echo ""
+              echo "=== PORT STATE ==="
+              ss -tlnp | grep ':80' || echo "(nothing listening on :80)"
+              echo ""
+              echo "=== NGINX LOGS ==="
+              docker compose -f docker-compose.selfhost.yml logs --tail=50 nginx 2>/dev/null || true
+              echo ""
+              echo "=== FRONTEND LOGS ==="
+              docker compose -f docker-compose.selfhost.yml logs --tail=30 frontend 2>/dev/null || true
+              echo ""
+              echo "=== BACKEND LOGS ==="
+              docker compose -f docker-compose.selfhost.yml logs --tail=30 backend 2>/dev/null || true
               exit 1
             fi
-            echo "  ${i}/48 - $((i * 5))s elapsed..."
+            echo "  ${i}/60 — HTTP ${STATUS} — $((i * 5))s elapsed..."
             sleep 5
           done
 
-          echo "Waiting for frontend (up to 90s)..."
-          for i in $(seq 1 18); do
-            if docker compose -f docker-compose.selfhost.yml exec -T frontend \
-                wget -qO- http://127.0.0.1:3000 >/dev/null 2>&1; then
-              echo "Frontend is healthy after $((i * 5))s"
-              break
-            fi
-            if [ "$i" -eq 18 ]; then
-              echo "Frontend did not become healthy in 90 seconds"
-              exit 1
-            fi
-            echo "  ${i}/18 - $((i * 5))s elapsed..."
-            sleep 5
-          done
-
-          echo "All services healthy."
-
-      # 4. Har doim ko'rsatiladigan holat
+      # 5. Har doim ko'rsatiladigan holat
       - name: Status and logs
         if: always()
         run: |
           cd /opt/eduplatform
+          echo "=== PORT 80 STATE ==="
+          ss -tlnp | grep ':80' || echo "(nothing listening on :80)"
+          echo ""
           echo "=== CONTAINERS ==="
           docker compose -f docker-compose.selfhost.yml ps
           echo ""
@@ -79,3 +83,6 @@ jobs:
           echo ""
           echo "=== FRONTEND LOGS (last 20) ==="
           docker compose -f docker-compose.selfhost.yml logs --tail=20 frontend 2>/dev/null || true
+          echo ""
+          echo "=== DISK USAGE ==="
+          docker system df 2>/dev/null || true
