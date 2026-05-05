@@ -7,7 +7,7 @@ import {
   AlertCircle, Globe, CheckCircle2, Building2, LayoutGrid,
   BookOpen, BookMarked, ClipboardCheck, Calendar, GraduationCap, ChevronRight,
   Rocket, X, Library, BookCopy, Hourglass, DollarSign, BarChart2, Coins,
-  CalendarOff, ShieldAlert, CalendarCheck, Activity, Bell, ArrowUpRight,
+  CalendarOff, ShieldAlert, CalendarCheck, Activity, Bell, ArrowUpRight, Server,
 } from 'lucide-react';
 import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid,
@@ -1012,6 +1012,67 @@ function AccountantDashboard() {
 }
 
 // ── Super Admin Dashboard ──────────────────────────────────────────────────────
+function SuperAdminServiceStatus() {
+  const { data: health, isLoading } = useQuery({
+    queryKey: ['health-mini'],
+    queryFn: async () => {
+      const r = await fetch(`${process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '') ?? 'http://localhost:3001'}/api/health`);
+      const body = await r.json();
+      return body.data ?? body;
+    },
+    refetchInterval: 30_000,
+    retry: 1,
+  });
+
+  const getStatus = (key: string) => {
+    if (isLoading) return 'loading';
+    if (!health) return 'unknown';
+    const info = health.info ?? {};
+    return info[key]?.status === 'up' ? 'ok' : health.status === 'ok' ? 'ok' : 'error';
+  };
+
+  const rows = [
+    { name: 'REST API Server', key: 'api',      detail: 'NestJS v10' },
+    { name: 'PostgreSQL 16',   key: 'database', detail: 'Prisma ORM' },
+    { name: 'Memory (Heap)',   key: 'memory_heap', detail: 'Max: 512 MB' },
+    { name: 'Redis 7',         key: 'redis',    detail: 'BullMQ + Cache' },
+  ];
+
+  const labels: Record<string, string> = { ok: 'Ishlayapti', error: 'Xato', loading: '...', unknown: "Noma'lum" };
+  const dot: Record<string, string> = {
+    ok: 'bg-green-500 shadow-green-400/50',
+    error: 'bg-red-500 shadow-red-400/50',
+    loading: 'bg-muted animate-pulse',
+    unknown: 'bg-yellow-400',
+  };
+  const badge: Record<string, string> = {
+    ok: 'bg-green-100 text-green-800',
+    error: 'bg-red-100 text-red-800',
+    loading: 'bg-muted text-muted-foreground',
+    unknown: 'bg-yellow-100 text-yellow-800',
+  };
+
+  return (
+    <div className="space-y-0">
+      {rows.map(({ name, key, detail }) => {
+        const s = getStatus(key);
+        return (
+          <div key={key} className="flex items-center justify-between py-2.5 border-b last:border-0">
+            <div className="flex items-center gap-2.5">
+              <div className={`h-2 w-2 rounded-full shadow-sm ${dot[s]}`} />
+              <span className="text-xs font-medium">{name}</span>
+              <span className="text-[11px] text-muted-foreground">{detail}</span>
+            </div>
+            <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${badge[s]}`}>
+              {labels[s]}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function SuperAdminDashboard() {
   const { data: stats, isLoading }          = useQuery({ queryKey: ['super-admin', 'stats'],   queryFn: superAdminApi.getStats });
   const { data: schools, isLoading: schoolsLoading } = useQuery({ queryKey: ['super-admin', 'schools'], queryFn: () => superAdminApi.getSchools({ limit: 5 }) });
@@ -1032,41 +1093,41 @@ function SuperAdminDashboard() {
         <StatCard title="Aktiv subscriptionlar" value={isLoading ? '...' : (stats?.activeSubscriptions ?? 0)} icon={CheckCircle2} description="To'lov qilayotgan maktablar" color="emerald" loading={isLoading} />
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <PCard>
-          <div className="flex items-center justify-between mb-5">
+      <div className="grid gap-4 md:grid-cols-3">
+        <PCard className="p-5">
+          <div className="flex items-center justify-between mb-4">
             <div>
-              <p className="font-bold text-[15px]" style={{ color: C.text }}>So'nggi maktablar</p>
+              <p className="font-bold text-[14px]" style={{ color: C.text }}>So'nggi maktablar</p>
               <p className="text-xs mt-0.5" style={{ color: C.muted }}>Platformdagi barcha maktablar</p>
             </div>
             <Link href="/dashboard/schools" className="text-xs font-semibold" style={{ color: C.primary }}>Barchasi →</Link>
           </div>
           {schoolsLoading ? (
-            <div className="space-y-2">{[...Array(3)].map((_, i) => <Skeleton key={i} className="h-12 rounded-2xl" />)}</div>
+            <div className="space-y-2">{[...Array(3)].map((_, i) => <Skeleton key={i} className="h-10 rounded-xl" />)}</div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               {(schools?.data ?? []).map((s: any) => (
-                <div key={s.id} className="flex items-center justify-between rounded-[14px] border p-3.5" style={{ borderColor: C.border }}>
+                <div key={s.id} className="flex items-center justify-between rounded-xl border p-2.5" style={{ borderColor: C.border }}>
                   <div>
-                    <p className="font-medium text-sm" style={{ color: C.text }}>{s.name}</p>
-                    <p className="text-xs" style={{ color: C.muted }}>{s.slug}</p>
+                    <p className="font-medium text-xs" style={{ color: C.text }}>{s.name}</p>
+                    <p className="text-[11px]" style={{ color: C.muted }}>{s.slug}</p>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5">
                     <Badge variant={s.isActive ? 'success' : 'destructive'}>{s.isActive ? 'Aktiv' : 'Bloklangan'}</Badge>
                     <Badge variant="secondary">{s._count?.users ?? 0} user</Badge>
                   </div>
                 </div>
               ))}
               {(!schools?.data || schools.data.length === 0) && (
-                <p className="py-6 text-center text-sm" style={{ color: C.muted }}>Maktablar yo'q</p>
+                <p className="py-4 text-center text-sm" style={{ color: C.muted }}>Maktablar yo'q</p>
               )}
             </div>
           )}
         </PCard>
 
-        <PCard>
-          <p className="font-bold text-[15px] mb-5" style={{ color: C.text }}>Tezkor harakatlar</p>
-          <div className="grid grid-cols-2 gap-3">
+        <PCard className="p-5">
+          <p className="font-bold text-[14px] mb-4" style={{ color: C.text }}>Tezkor harakatlar</p>
+          <div className="grid grid-cols-2 gap-2">
             {[
               { label: 'Yangi maktab',     href: '/dashboard/schools/new', icon: Building2,  iconColor: '#2563EB' },
               { label: 'Foydalanuvchilar', href: '/dashboard/users',       icon: Users,       iconColor: '#7C3AED' },
@@ -1074,16 +1135,24 @@ function SuperAdminDashboard() {
               { label: 'Sozlamalar',       href: '/dashboard/settings',    icon: Globe,       iconColor: C.primary },
             ].map(({ label, href, icon: Icon, iconColor }) => (
               <Link key={href} href={href}
-                className="flex flex-col items-center gap-2.5 rounded-[16px] border p-4 text-center transition-colors hover:bg-slate-50"
+                className="flex flex-col items-center gap-2 rounded-[14px] border p-3 text-center transition-colors hover:bg-slate-50"
                 style={{ borderColor: C.border }}
               >
-                <div className="h-10 w-10 rounded-xl flex items-center justify-center" style={{ background: C.bg }}>
-                  <Icon className="h-5 w-5" style={{ color: iconColor }} />
+                <div className="h-8 w-8 rounded-lg flex items-center justify-center" style={{ background: C.bg }}>
+                  <Icon className="h-4 w-4" style={{ color: iconColor }} />
                 </div>
-                <span className="text-xs font-semibold" style={{ color: C.text }}>{label}</span>
+                <span className="text-[11px] font-semibold leading-tight" style={{ color: C.text }}>{label}</span>
               </Link>
             ))}
           </div>
+        </PCard>
+
+        <PCard className="p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <Server className="h-4 w-4" style={{ color: C.primary }} />
+            <p className="font-bold text-[14px]" style={{ color: C.text }}>Servislar holati</p>
+          </div>
+          <SuperAdminServiceStatus />
         </PCard>
       </div>
     </div>
