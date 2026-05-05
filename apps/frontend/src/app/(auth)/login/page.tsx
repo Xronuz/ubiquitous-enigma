@@ -6,7 +6,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useTranslations } from 'next-intl';
-import { Eye, EyeOff, GraduationCap, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, Loader2 } from 'lucide-react';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -58,14 +59,15 @@ export default function LoginPage() {
 
       <div className="relative w-full max-w-[400px] animate-fade-up">
         {/* Logo bar */}
-        <div className="mb-8 flex flex-col items-center gap-3">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary shadow-glow-blue">
-            <GraduationCap className="h-7 w-7 text-primary-foreground" />
-          </div>
-          <div className="text-center">
-            <h1 className="text-2xl font-bold tracking-tight">EduPlatform</h1>
-            <p className="text-sm text-muted-foreground mt-1">Maktab boshqaruv tizimi</p>
-          </div>
+        <div className="mb-8 flex flex-col items-center">
+          <Image
+            src="/xedu-logo-social.png"
+            alt="Xedu"
+            width={200}
+            height={200}
+            className="object-contain mix-blend-multiply dark:mix-blend-normal"
+            priority
+          />
         </div>
 
         <Card className="shadow-elevated">
