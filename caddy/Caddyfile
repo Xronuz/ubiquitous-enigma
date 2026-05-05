@@ -1,0 +1,262 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# EduPlatform — Caddyfile
+#
+# Saytlar:
+#   platform.cybertron.uz   → Maktab boshqaruv tizimi
+#                             (Docker: frontend:3000 + backend:3001)
+#
+#   workload.cybertron.uz   → PM2 da ishlaydigan loyiha
+#                             (Host: host.docker.internal:WORKLOAD_PORT)
+#
+# TLS / HTTPS:
+#   Caddy Let's Encrypt dan avtomatik sertifikat oladi.
+#   HTTP port 80 → HTTPS port 443 ga yo'naltirish ham avtomatik.
+#   /data volume ga sertifikatlar saqlanadi (docker-compose da mount qilingan).
+#
+# Konfiguratsiya o'zgaruvchilari (.env faylida o'rnating):
+#   WORKLOAD_PORT  — PM2 loyihasi porti (standart: 3500)
+#
+# Rate limiting:
+#   auth_zone   → /api/v1/auth/*  : 30  so'rov/daqiqa (brute-force himoya)
+#   api_zone    → /api/*          : 60  so'rov/daqiqa
+#   static_zone → /_next/static/* : 200 so'rov/daqiqa
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# ─── Global sozlamalar ────────────────────────────────────────────────────────
+{
+    # rate_limit direktivini reverse_proxy dan oldin bajarish (muhim!)
+    order rate_limit before reverse_proxy
+
+    # HTTP/1.1, HTTP/2 va HTTP/3 (QUIC) ni qabul qilish
+    servers {
+        protocols h1 h2 h3
+    }
+
+    # Let's Encrypt xato bildirishnomasi uchun email (ixtiyoriy, tavsiya etiladi)
+    # email admin@cybertron.uz
+}
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 1. MAKTAB BOSHQARUV TIZIMI — platform.cybertron.uz
+# ═══════════════════════════════════════════════════════════════════════════════
+platform.cybertron.uz {
+
+    # ── Umumiy xavfsizlik sarlavhalari (barcha javoblarga qo'shiladi) ─────────
+    header {
+        # Iframe orqali saytni boshqalardan ko'rsatishni bloklash
+        X-Frame-Options             "SAMEORIGIN"
+        # MIME type sniffing hujumlaridan himoya
+        X-Content-Type-Options      "nosniff"
+        # Eski brauzerlarda XSS filtrni yoqish
+        X-XSS-Protection            "1; mode=block"
+        # Referer sarlavhasida faqat origin qoldirish
+        Referrer-Policy             "strict-origin-when-cross-origin"
+        # HSTS: 1 yil davomida faqat HTTPS orqali muloqot
+        Strict-Transport-Security   "max-age=31536000; includeSubDomains"
+        # Server nomini yashirish (fingerprinting oldini olish)
+        -Server
+    }
+
+    # ── Fayl yuklash hajmi limiti (rasm/hujjat uchun 50MB) ───────────────────
+    request_body {
+        max_size 50MB
+    }
+
+    # ── Siqish (zstd > brotli > gzip — brauzerni qo'llab-quvvatlash tartibida) ─
+    encode zstd gzip
+
+    # ─────────────────────────────────────────────────────────────────────────
+    # ROUTELAR (yuqoridan pastga — eng aniq avval)
+    # ─────────────────────────────────────────────────────────────────────────
+
+    # ── 1. Health check (logdan o'tkazilmaydi, rate limit yo'q) ──────────────
+    @health path /api/health
+    handle @health {
+        reverse_proxy backend:3001
+    }
+
+    # ── 2. Auth endpointlar — QATTIQ limit (30 so'rov/daqiqa) ───────────────
+    # /api/v1/auth/login, /api/v1/auth/refresh va h.k.
+    # Brute-force va credential stuffing hujumlaridan himoya
+    @auth path /api/v1/auth/*
+    handle @auth {
+        rate_limit {
+            zone auth_zone {
+                key    {http.request.remote.host}
+                events 30
+                window 1m
+            }
+        }
+        reverse_proxy backend:3001 {
+            header_up X-Real-IP         {http.request.remote.host}
+            header_up X-Forwarded-For   {http.request.remote.host}
+            header_up X-Forwarded-Proto {http.request.scheme}
+            header_up Host              {http.request.host}
+            # Auth so'rovlari uchun vaqt chegarasi
+            timeout 30s
+        }
+    }
+
+    # ── 3. Umumiy API — (60 so'rov/daqiqa) ──────────────────────────────────
+    # /api/v1/* barcha endpointlar (auth dan tashqari)
+    @api path /api/*
+    handle @api {
+        rate_limit {
+            zone api_zone {
+                key    {http.request.remote.host}
+                events 60
+                window 1m
+            }
+        }
+        reverse_proxy backend:3001 {
+            header_up X-Real-IP         {http.request.remote.host}
+            header_up X-Forwarded-For   {http.request.remote.host}
+            header_up X-Forwarded-Proto {http.request.scheme}
+            header_up Host              {http.request.host}
+            # API so'rovlari uchun biroz ko'proq vaqt
+            timeout 60s
+        }
+    }
+
+    # ── 4. WebSocket / Socket.io — real-time ulanish ─────────────────────────
+    # Xabar almashish, bildirishnomalar va h.k. uchun
+    @websocket {
+        path    /socket.io/*
+        header  Connection *Upgrade*
+        header  Upgrade    websocket
+    }
+    handle @websocket {
+        reverse_proxy backend:3001 {
+            header_up Connection {http.request.header.Connection}
+            header_up Upgrade    {http.request.header.Upgrade}
+            header_up Host       {http.request.host}
+            # WebSocket ulanishi uzoq ochiq turishi kerak — timeout o'chiriladi
+            transport http {
+                read_timeout  0s
+                write_timeout 0s
+            }
+        }
+    }
+
+    # ── 5. Next.js statik fayllar — 1 yil kesh (immutable) ──────────────────
+    # /_next/static/* — JS chunk-lar, CSS, fontlar
+    # "immutable" = brauzer serverdan so'ramasdan to'g'ridan keshdan oladi
+    @static path /_next/static/*
+    handle @static {
+        header Cache-Control "public, max-age=31536000, immutable"
+        rate_limit {
+            zone static_zone {
+                key    {http.request.remote.host}
+                events 200
+                window 1m
+            }
+        }
+        reverse_proxy frontend:3000
+    }
+
+    # ── 6. Next.js rasm optimizatsiyasi — 7 kun kesh ─────────────────────────
+    @images path /_next/image*
+    handle @images {
+        header Cache-Control "public, max-age=604800"
+        reverse_proxy frontend:3000 {
+            header_up Host {http.request.host}
+        }
+    }
+
+    # ── 7. Yuklangan fayllar (rasm/PDF/hujjatlar) — 7 kun kesh ──────────────
+    @uploads path /uploads/*
+    handle @uploads {
+        header Cache-Control "public, max-age=604800"
+        reverse_proxy backend:3001 {
+            header_up Host {http.request.host}
+        }
+    }
+
+    # ── 8. Frontend (Next.js) — barcha qolgan so'rovlar ─────────────────────
+    # Sahifalar, /auth/login, /dashboard, va h.k.
+    handle {
+        reverse_proxy frontend:3000 {
+            header_up X-Real-IP         {http.request.remote.host}
+            header_up X-Forwarded-For   {http.request.remote.host}
+            header_up X-Forwarded-Proto {http.request.scheme}
+            header_up Host              {http.request.host}
+            timeout 30s
+        }
+    }
+
+    # ── Loglash ──────────────────────────────────────────────────────────────
+    log {
+        output file /var/log/caddy/platform.log {
+            roll_size 10mb
+            roll_keep 5
+        }
+        format json
+        level  INFO
+    }
+}
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 2. WORKLOAD LOYIHASI — workload.cybertron.uz
+#
+# Bu loyiha server hostida PM2 orqali ishlaydi (Docker tashqarisida).
+# Caddy → host.docker.internal:WORKLOAD_PORT orqali yo'naltiradi.
+#
+# SOZLASH: Server .env faylida qo'shing:
+#   WORKLOAD_PORT=<pm2_loyiha_porti>   # masalan: 8080, 5000, 4000
+#
+# Linux da host.docker.internal ishlashi uchun docker-compose da:
+#   extra_hosts: ["host.docker.internal:host-gateway"]  (allaqachon qo'shilgan)
+# ═══════════════════════════════════════════════════════════════════════════════
+workload.cybertron.uz {
+
+    # ── Xavfsizlik sarlavhalari ──────────────────────────────────────────────
+    header {
+        X-Frame-Options             "SAMEORIGIN"
+        X-Content-Type-Options      "nosniff"
+        X-XSS-Protection            "1; mode=block"
+        Referrer-Policy             "strict-origin-when-cross-origin"
+        Strict-Transport-Security   "max-age=31536000"
+        -Server
+    }
+
+    # ── Siqish ───────────────────────────────────────────────────────────────
+    encode zstd gzip
+
+    # ── WebSocket qo'llab-quvvatlash (agar PM2 loyiha WebSocket ishlatsa) ────
+    @ws {
+        header Connection *Upgrade*
+        header Upgrade    websocket
+    }
+    handle @ws {
+        reverse_proxy host.docker.internal:{$WORKLOAD_PORT:-3500} {
+            header_up Connection {http.request.header.Connection}
+            header_up Upgrade    {http.request.header.Upgrade}
+            transport http {
+                read_timeout  0s
+                write_timeout 0s
+            }
+        }
+    }
+
+    # ── PM2 loyihasiga barcha so'rovlar ──────────────────────────────────────
+    # host.docker.internal = Docker konteyneridan host mashinasiga murojaat
+    # {$WORKLOAD_PORT:-3500} = WORKLOAD_PORT env o'zgaruvchisi, standart 3500
+    handle {
+        reverse_proxy host.docker.internal:{$WORKLOAD_PORT:-3500} {
+            header_up X-Real-IP         {http.request.remote.host}
+            header_up X-Forwarded-For   {http.request.remote.host}
+            header_up X-Forwarded-Proto {http.request.scheme}
+            header_up Host              {http.request.host}
+        }
+    }
+
+    # ── Loglash ──────────────────────────────────────────────────────────────
+    log {
+        output file /var/log/caddy/workload.log {
+            roll_size 10mb
+            roll_keep 5
+        }
+        format json
+        level  INFO
+    }
+}

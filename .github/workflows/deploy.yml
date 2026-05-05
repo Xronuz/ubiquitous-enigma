@@ -20,11 +20,12 @@ jobs:
           git reset --hard origin/main
 
       # 2. Containerlarni to'xtatish — MA'LUMOTLAR (volumes) O'CHIRILMAYDI
+      #    caddy_data volumeni ASLO o'chirmang — TLS sertifikatlar shu yerda!
       - name: Stop containers (preserve volumes)
         run: |
           cd /opt/eduplatform
           docker compose -f docker-compose.selfhost.yml down --remove-orphans 2>/dev/null || true
-          echo "Containers stopped. Volumes preserved."
+          echo "Containers stopped. Volumes (DB, Redis, Caddy TLS certs) preserved."
 
       # 3. Imagelarni qayta build qilish va barcha servicelarni ishga tushirish
       - name: Build images and start all services
@@ -33,25 +34,26 @@ jobs:
           cd /opt/eduplatform
           docker compose -f docker-compose.selfhost.yml up -d --build
 
-      # 4. Nginx port 80 dan javob berishini kutish (real external check)
-      - name: Wait for nginx on port 80
+      # 4. Caddy port 80 dan javob berishini kutish (real external check)
+      #    Port 80 → 443 redirect (HTTP 301) yoki to'g'ridan API 200 — ikkalasi ham muvaffaqiyat
+      - name: Wait for caddy on port 80
         run: |
           cd /opt/eduplatform
-          echo "Waiting for nginx on port 80 (up to 5 min)..."
+          echo "Waiting for caddy on port 80 (up to 5 min)..."
           for i in $(seq 1 60); do
             STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:80/api/health 2>/dev/null || echo "000")
             if [ "$STATUS" = "200" ] || [ "$STATUS" = "301" ] || [ "$STATUS" = "302" ] || [ "$STATUS" = "307" ]; then
-              echo "Nginx healthy — HTTP $STATUS after $((i * 5))s"
+              echo "Caddy healthy — HTTP $STATUS after $((i * 5))s"
               break
             fi
             if [ "$i" -eq 60 ]; then
-              echo "ERROR: Nginx did not become healthy in 5 minutes (last HTTP status: $STATUS)"
+              echo "ERROR: Caddy did not become healthy in 5 minutes (last HTTP status: $STATUS)"
               echo ""
               echo "=== PORT STATE ==="
-              ss -tlnp | grep ':80' || echo "(nothing listening on :80)"
+              ss -tlnp | grep -E ':80|:443' || echo "(nothing listening on :80/:443)"
               echo ""
-              echo "=== NGINX LOGS ==="
-              docker compose -f docker-compose.selfhost.yml logs --tail=50 nginx 2>/dev/null || true
+              echo "=== CADDY LOGS ==="
+              docker compose -f docker-compose.selfhost.yml logs --tail=50 caddy 2>/dev/null || true
               echo ""
               echo "=== FRONTEND LOGS ==="
               docker compose -f docker-compose.selfhost.yml logs --tail=30 frontend 2>/dev/null || true
@@ -69,8 +71,8 @@ jobs:
         if: always()
         run: |
           cd /opt/eduplatform
-          echo "=== PORT 80 STATE ==="
-          ss -tlnp | grep ':80' || echo "(nothing listening on :80)"
+          echo "=== PORT 80/443 STATE ==="
+          ss -tlnp | grep -E ':80|:443' || echo "(nothing listening on :80/:443)"
           echo ""
           echo "=== CONTAINERS ==="
           docker compose -f docker-compose.selfhost.yml ps
@@ -80,6 +82,9 @@ jobs:
           echo ""
           echo "=== BACKEND LOGS (last 50) ==="
           docker compose -f docker-compose.selfhost.yml logs --tail=50 backend 2>/dev/null || true
+          echo ""
+          echo "=== CADDY LOGS (last 30) ==="
+          docker compose -f docker-compose.selfhost.yml logs --tail=30 caddy 2>/dev/null || true
           echo ""
           echo "=== FRONTEND LOGS (last 20) ==="
           docker compose -f docker-compose.selfhost.yml logs --tail=20 frontend 2>/dev/null || true
