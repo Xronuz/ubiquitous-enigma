@@ -19,27 +19,14 @@ jobs:
           git fetch origin main
           git reset --hard origin/main
 
-      # 2. Barcha konteynerlarni to'xtatish va DB volumelarini o'chirish
-      #    uploads_data — saqlanadi (foydalanuvchi fayllari yo'qotilmaydi)
-      #    postgres_data, redis_data — tozalanadi (yangi migratsia muammosiz ishlaydi)
-      - name: Stop services and wipe database volumes
-        run: |
-          cd /opt/eduplatform
-          docker compose -f docker-compose.selfhost.yml down --remove-orphans 2>/dev/null || true
-          docker volume rm eduplatform_postgres_data eduplatform_redis_data 2>/dev/null || true
-          echo "DB volumes wiped. Fresh start."
-
-      # 3. Imagelarni build qilish va barcha servislarni ishga tushirish
-      #    Tartib docker-compose depends_on orqali avtomatik:
-      #    postgres -> redis -> migrate -> backend -> frontend -> nginx
+      # 2. Faqat imagelarni qayta build qilish — MA'LUMOTLAR O'CHIRILMAYDI
       - name: Build images and start all services
         run: |
           set -e
           cd /opt/eduplatform
           docker compose -f docker-compose.selfhost.yml up -d --build
 
-      # 4. Backend va frontend healthy bo'lishini kutish
-      #    Backend migrate tugaguncha kelmaydi (depends_on: service_completed_successfully)
+      # 3. Backend va frontend healthy bo'lishini kutish
       - name: Wait for services to become healthy
         run: |
           cd /opt/eduplatform
@@ -76,7 +63,7 @@ jobs:
 
           echo "All services healthy."
 
-      # 5. Har doim ko'rsatiladigan holat (muvaffaqiyat va xato uchun)
+      # 4. Har doim ko'rsatiladigan holat
       - name: Status and logs
         if: always()
         run: |
@@ -92,6 +79,3 @@ jobs:
           echo ""
           echo "=== FRONTEND LOGS (last 20) ==="
           docker compose -f docker-compose.selfhost.yml logs --tail=20 frontend 2>/dev/null || true
-          echo ""
-          echo "=== DISK USAGE ==="
-          docker system df 2>/dev/null || true
