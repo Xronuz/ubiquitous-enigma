@@ -40,6 +40,12 @@ export const usersApi = {
     return data;
   },
 
+  /** Permanent hard-delete — faqat director */
+  hardDelete: async (id: string) => {
+    const { data } = await apiClient.delete(`/users/${id}/permanent`);
+    return data;
+  },
+
   restore: async (id: string) => {
     const { data } = await apiClient.put(`/users/${id}/restore`);
     return data;

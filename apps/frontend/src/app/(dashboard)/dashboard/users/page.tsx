@@ -70,7 +70,9 @@ export default function UsersPage() {
   const [open, setOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [showPass, setShowPass] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState<any>(null);
+  const [confirmDelete, setConfirmDelete]     = useState<any>(null);
+  const [confirmHardDelete, setConfirmHardDelete] = useState<any>(null);
+  const isDirector = user?.role === 'director';
   const [csvResult, setCsvResult] = useState<{ created: number; skipped: number; errors: string[] } | null>(null);
   const csvInputRef = useRef<HTMLInputElement>(null);
   const [teacherSubjects, setTeacherSubjects] = useState<{ name: string; classId: string }[]>([]);
@@ -157,6 +159,19 @@ export default function UsersPage() {
       toast({ title: vars.restore ? '✅ Foydalanuvchi faollashtirildi' : "Foydalanuvchi bloklandi" });
       queryClient.invalidateQueries({ queryKey: ['users'] });
       setConfirmDelete(null);
+    },
+    onError: (err: any) => {
+      const msg = err?.response?.data?.message;
+      toast({ variant: 'destructive', title: 'Xato', description: Array.isArray(msg) ? msg.join(', ') : msg ?? 'Xatolik' });
+    },
+  });
+
+  const hardDeleteMutation = useMutation({
+    mutationFn: (id: string) => usersApi.hardDelete(id),
+    onSuccess: () => {
+      toast({ title: '🗑️ Foydalanuvchi butunlay o\'chirildi' });
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      setConfirmHardDelete(null);
     },
     onError: (err: any) => {
       const msg = err?.response?.data?.message;
@@ -329,15 +344,23 @@ export default function UsersPage() {
                   </StatusBadge>
                 </TD>
                 <TD className="text-right">
-                  {u.isActive ? (
-                    <Btn variant="danger" size="sm" icon={<Ban className="h-3.5 w-3.5" />} onClick={() => setConfirmDelete(u)}>
-                      Bloklash
-                    </Btn>
-                  ) : (
-                    <Btn variant="soft" size="sm" icon={<RotateCcw className="h-3.5 w-3.5" />} onClick={() => setConfirmDelete({ ...u, restore: true })}>
-                      Faollashtirish
-                    </Btn>
-                  )}
+                  <div className="flex items-center justify-end gap-1.5">
+                    {u.isActive ? (
+                      <Btn variant="danger" size="sm" icon={<Ban className="h-3.5 w-3.5" />} onClick={() => setConfirmDelete(u)}>
+                        Bloklash
+                      </Btn>
+                    ) : (
+                      <Btn variant="soft" size="sm" icon={<RotateCcw className="h-3.5 w-3.5" />} onClick={() => setConfirmDelete({ ...u, restore: true })}>
+                        Faollashtirish
+                      </Btn>
+                    )}
+                    {isDirector && u.role !== 'director' && (
+                      <Btn variant="danger" size="sm" icon={<Trash2 className="h-3.5 w-3.5" />}
+                        onClick={() => setConfirmHardDelete(u)}
+                        title="Butunlay o'chirish"
+                      />
+                    )}
+                  </div>
                 </TD>
               </TR>
             ))}
@@ -370,6 +393,40 @@ export default function UsersPage() {
               onClick={() => deleteMutation.mutate({ id: confirmDelete?.id, restore: confirmDelete?.restore })}
             >
               {confirmDelete?.restore ? 'Faollashtirish' : 'Bloklash'}
+            </Btn>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Hard delete confirm dialog — faqat director */}
+      <Dialog open={!!confirmHardDelete} onOpenChange={v => { if (!v) setConfirmHardDelete(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <Trash2 className="h-5 w-5" />
+              Foydalanuvchini butunlay o'chirish
+            </DialogTitle>
+            <DialogDescription className="pt-1">
+              <span className="font-semibold text-foreground">
+                {confirmHardDelete?.firstName} {confirmHardDelete?.lastName}
+              </span>{' '}
+              ({confirmHardDelete?.email}) foydalanuvchisi tizimdan <span className="font-semibold text-destructive">butunlay va qaytarib bo'lmasdan</span> o'chiriladi.
+              Barcha ma'lumotlari ham o'chadi.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="rounded-lg bg-destructive/10 border border-destructive/20 px-3 py-2.5 text-xs text-destructive font-medium flex items-start gap-2 mt-1">
+            <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+            Bu amalni bekor qilib bo'lmaydi. Davom etishdan oldin ishonch hosil qiling.
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <Btn variant="secondary" onClick={() => setConfirmHardDelete(null)}>Bekor</Btn>
+            <Btn
+              variant="danger"
+              loading={hardDeleteMutation.isPending}
+              icon={<Trash2 className="h-3.5 w-3.5" />}
+              onClick={() => hardDeleteMutation.mutate(confirmHardDelete?.id)}
+            >
+              Ha, o'chirish
             </Btn>
           </div>
         </DialogContent>

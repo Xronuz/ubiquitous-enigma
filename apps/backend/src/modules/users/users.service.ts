@@ -242,6 +242,40 @@ export class UsersService {
     return { message: 'Foydalanuvchi bloklandi' };
   }
 
+  /** Permanent hard-delete — faqat director o'z maktabidagi foydalanuvchini o'chiradi */
+  async hardDelete(id: string, currentUser: JwtPayload) {
+    // Faqat director ruxsat berilgan
+    if (currentUser.role !== UserRole.DIRECTOR) {
+      throw new ForbiddenException('Faqat direktor foydalanuvchini butunlay o\'chira oladi');
+    }
+    // Foydalanuvchi mavjudligini va bir maktabda ekanligini tekshirish
+    const target = await this.prisma.user.findFirst({
+      where: { id, schoolId: currentUser.schoolId! },
+    });
+    if (!target) throw new NotFoundException('Foydalanuvchi topilmadi');
+    // Direktorning o'zini o'chirishdan himoya
+    if (target.id === currentUser.sub) {
+      throw new ForbiddenException('O\'zingizni o\'chira olmaysiz');
+    }
+    // Boshqa direktorni o'chirishdan himoya
+    if (target.role === UserRole.DIRECTOR) {
+      throw new ForbiddenException('Boshqa direktorni o\'chira olmaysiz');
+    }
+
+    await this.prisma.user.delete({ where: { id } });
+
+    await this.auditService.log({
+      userId: currentUser.sub,
+      schoolId: currentUser.schoolId ?? undefined,
+      action: 'hard_delete',
+      entity: 'User',
+      entityId: id,
+      oldData: { email: target.email, role: target.role, firstName: target.firstName, lastName: target.lastName },
+    });
+
+    return { message: 'Foydalanuvchi butunlay o\'chirildi' };
+  }
+
   async restore(id: string, currentUser: JwtPayload) {
     const user = await this.prisma.user.findFirst({
       where: { id, schoolId: currentUser.schoolId! },

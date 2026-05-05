@@ -87,6 +87,14 @@ export class UsersController {
     return this.usersService.restore(id, user);
   }
 
+  @Delete(':id/permanent')
+  @Roles(UserRole.DIRECTOR)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Foydalanuvchini butunlay o\'chirish (faqat direktor)' })
+  hardDelete(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
+    return this.usersService.hardDelete(id, user);
+  }
+
   @Post(':id/link-student/:studentId')
   @Roles(UserRole.DIRECTOR, UserRole.VICE_PRINCIPAL)
   @ApiOperation({ summary: 'Ota-onani o\'quvchiga bog\'lash' })
