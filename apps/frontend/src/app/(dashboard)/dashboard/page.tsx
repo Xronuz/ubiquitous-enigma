@@ -123,7 +123,7 @@ function StatCard({
     >
       {/* Arrow indicator — pastki o'ng burchak, icon bilan to'qnashmaydi */}
       {isClickable && (
-        <ArrowUpRight className="absolute bottom-4 right-5 h-4 w-4 text-slate-300 opacity-50 group-hover:opacity-100 group-hover:text-slate-500 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all duration-200" />
+        <ArrowUpRight className="absolute bottom-4 right-5 h-4 w-4 text-slate-300 opacity-50 group-hover:opacity-100 group-hover:text-emerald-500 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all duration-200" />
       )}
 
       {/* Top row */}
@@ -1684,7 +1684,7 @@ function DirectorDashboard() {
           className="group relative block rounded-[24px] bg-white p-7 transition-all duration-200 cursor-pointer hover:-translate-y-[2px] hover:shadow-[0_20px_48px_rgba(0,0,0,0.08)]"
           style={{ border: '1px solid rgba(0,0,0,0.04)', boxShadow: '0 10px 30px rgba(0,0,0,0.04)' }}
         >
-          <ArrowUpRight className="absolute bottom-4 right-5 h-4 w-4 text-slate-300 opacity-50 group-hover:opacity-100 group-hover:text-slate-500 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all duration-200" />
+          <ArrowUpRight className="absolute bottom-4 right-5 h-4 w-4 text-slate-300 opacity-50 group-hover:opacity-100 group-hover:text-emerald-500 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all duration-200" />
           <div className="flex items-start justify-between mb-4">
             <p className="text-[10px] font-bold uppercase tracking-[0.12em]" style={{ color: C.muted }}>KPI bo'yicha</p>
             <div className="h-10 w-10 rounded-2xl flex items-center justify-center shrink-0" style={{ background: '#EDE9FE' }}>
@@ -1708,7 +1708,7 @@ function DirectorDashboard() {
           className="group relative block rounded-[24px] bg-white p-7 transition-all duration-200 cursor-pointer hover:-translate-y-[2px] hover:shadow-[0_20px_48px_rgba(0,0,0,0.08)]"
           style={{ border: '1px solid rgba(0,0,0,0.04)', boxShadow: '0 10px 30px rgba(0,0,0,0.04)' }}
         >
-          <ArrowUpRight className="absolute bottom-4 right-5 h-4 w-4 text-slate-300 opacity-50 group-hover:opacity-100 group-hover:text-slate-500 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all duration-200" />
+          <ArrowUpRight className="absolute bottom-4 right-5 h-4 w-4 text-slate-300 opacity-50 group-hover:opacity-100 group-hover:text-emerald-500 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all duration-200" />
           <div className="flex items-start justify-between mb-4">
             <p className="text-[10px] font-bold uppercase tracking-[0.12em]" style={{ color: C.muted }}>AI Tahlil</p>
             <div className="h-10 w-10 rounded-2xl flex items-center justify-center shrink-0" style={{ background: '#DCFCE7' }}>
