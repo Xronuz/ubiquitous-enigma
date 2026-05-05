@@ -324,7 +324,7 @@ function NavLink({ item, active, expanded }: { item: NavItem; active: boolean; e
       title={!expanded ? item.label : undefined}
       className={cn(
         'relative flex items-center gap-3 rounded-xl transition-all duration-150',
-        expanded ? 'h-[50px] w-full px-3.5' : 'h-[50px] w-[50px] justify-center',
+        expanded ? 'h-[42px] w-full px-3' : 'h-[42px] w-[42px] justify-center',
         active
           ? 'bg-emerald-50 dark:bg-emerald-900/25 text-emerald-700 dark:text-emerald-400 shadow-sm'
           : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100/80 dark:hover:bg-slate-800/60 hover:text-slate-700 dark:hover:text-slate-200',
@@ -336,7 +336,7 @@ function NavLink({ item, active, expanded }: { item: NavItem; active: boolean; e
       />
       {expanded && (
         <span className={cn(
-          'text-[15px] font-semibold truncate',
+          'text-[13px] font-semibold truncate',
           active ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-300',
         )}>
           {item.label}
@@ -352,7 +352,7 @@ function NavLink({ item, active, expanded }: { item: NavItem; active: boolean; e
 function SectionLabel({ label, expanded }: { label: string; expanded: boolean }) {
   if (!expanded) return <div className="h-px w-8 my-1.5 mx-auto bg-slate-100 dark:bg-slate-700 rounded-full" />;
   return (
-    <p className="mt-4 mb-1 px-3.5 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400 select-none">
+    <p className="mt-3 mb-1 px-3 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400 select-none">
       {label}
     </p>
   );
@@ -384,13 +384,13 @@ export function Sidebar() {
         'border border-slate-200/70 dark:border-slate-700/70',
         'shadow-sm dark:shadow-slate-900/20',
         '[backdrop-filter:blur(20px)] [-webkit-backdrop-filter:blur(20px)]',
-        expanded ? 'w-[260px]' : 'w-[62px]',
+        expanded ? 'w-[208px]' : 'w-[52px]',
       )}
     >
       {/* Logo row */}
       <div className={cn(
-        'flex h-[70px] shrink-0 items-center px-3 border-b border-slate-100/80 dark:border-slate-700/80',
-        expanded ? 'justify-between gap-2' : 'flex-col justify-center gap-1.5',
+        'flex h-[56px] shrink-0 items-center px-2.5 border-b border-slate-100/80 dark:border-slate-700/80',
+        expanded ? 'justify-between gap-2' : 'flex-col justify-center gap-1',
       )}>
         <Link href="/dashboard" className="flex shrink-0 items-center justify-center">
           {expanded ? (
@@ -398,19 +398,19 @@ export function Sidebar() {
             <Image
               src="/xedu-logo-full.png"
               alt="Xedu"
-              width={120}
-              height={40}
+              width={96}
+              height={32}
               className="object-contain dark:brightness-90"
               priority
             />
           ) : (
             /* Qisqargan holat: faqat icon qismi */
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-100/80 dark:border-emerald-800/50 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors overflow-hidden">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-100/80 dark:border-emerald-800/50 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors overflow-hidden">
               <Image
                 src="/xedu-logo-full.png"
                 alt="Xedu"
-                width={52}
-                height={52}
+                width={44}
+                height={44}
                 className="object-cover object-left scale-[1.6] translate-x-[-4px]"
                 priority
               />
@@ -472,7 +472,7 @@ export function Sidebar() {
       {/* Footer */}
       <div className={cn(
         'shrink-0 border-t border-slate-100/80 dark:border-slate-700/80 py-3',
-        expanded ? 'px-4' : 'px-2.5',
+        expanded ? 'px-3' : 'px-2',
       )}>
         {expanded ? (
           <div className="flex items-center justify-between">
