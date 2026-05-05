@@ -1,8 +1,9 @@
 name: CI
 
 on:
-  push:
-    branches: [main, develop]
+  # CI only runs on pull_requests — NOT on push to main.
+  # Push to main triggers Deploy only (self-hosted runner can't handle
+  # CI builds and production startup simultaneously without resource contention).
   pull_request:
     branches: [main, develop]
 
