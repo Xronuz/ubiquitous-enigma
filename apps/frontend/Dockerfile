@@ -1,7 +1,7 @@
 # ─── Stage 1: Builder ─────────────────────────────────────────────────────
 FROM node:20-alpine AS builder
 
-RUN npm install -g pnpm@9
+RUN npm install -g pnpm@9.15.4
 
 WORKDIR /app
 

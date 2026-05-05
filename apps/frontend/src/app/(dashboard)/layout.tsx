@@ -91,7 +91,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   if (!_hasHydrated || isRecovering) {
     return (
-      <div className="flex h-screen items-center justify-center bg-[#f8faf8]">
+      <div className="flex h-screen items-center justify-center bg-[#f8faf8] dark:bg-[#0d1117]">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-emerald-500 border-t-transparent" />
       </div>
     );
