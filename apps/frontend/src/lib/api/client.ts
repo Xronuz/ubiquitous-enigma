@@ -82,7 +82,10 @@ apiClient.interceptors.response.use(
         refreshAttempts = 0;
         if (typeof window !== 'undefined') {
           localStorage.clear();
-          window.location.href = '/login';
+          // /auth/clear clears httpOnly cookies server-side, then redirects to /login.
+          // Direct redirect to /login won't work: middleware still sees the stale
+          // access_token cookie and loops back to /dashboard.
+          window.location.href = '/auth/clear';
         }
         return Promise.reject(error);
       }
@@ -116,7 +119,8 @@ apiClient.interceptors.response.use(
         processQueue(refreshError, null);
         if (typeof window !== 'undefined') {
           localStorage.clear();
-          window.location.href = '/login';
+          // /auth/clear clears httpOnly cookies server-side, then redirects to /login.
+          window.location.href = '/auth/clear';
         }
         return Promise.reject(refreshError);
       } finally {
