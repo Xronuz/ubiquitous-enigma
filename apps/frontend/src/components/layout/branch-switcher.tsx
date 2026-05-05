@@ -66,10 +66,14 @@ export function BranchSwitcher() {
     }
   }, [fetchedBranches, setBranches]);
 
+  const isDirector = user?.role === 'director';
+
   // Hozirgi filial nomi
   const currentLabel = activeBranchId
     ? (activeBranchMeta?.name ?? branches.find((b) => b.id === activeBranchId)?.name ?? 'Filial')
-    : 'Filial tanlanmagan';
+    : isDirector
+      ? 'Barcha filiallar'
+      : 'Filial tanlanmagan';
 
   const activeBranches = branches.filter((b) => b.isActive);
 
@@ -100,11 +104,17 @@ export function BranchSwitcher() {
             'hover:shadow-md transition-all duration-150',
             'disabled:opacity-60 disabled:cursor-not-allowed',
             'focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/30',
-            authBranchId && 'text-blue-700 dark:text-blue-300',
+            authBranchId
+              ? 'text-blue-700 dark:text-blue-300'
+              : isDirector
+                ? 'text-emerald-700 dark:text-emerald-400'
+                : '',
           )}
         >
           {isSwitching ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0" />
+          ) : !activeBranchId && isDirector ? (
+            <Layers className="h-3.5 w-3.5 shrink-0 text-emerald-600" />
           ) : (
             <Building2 className="h-3.5 w-3.5 shrink-0" />
           )}
@@ -119,7 +129,25 @@ export function BranchSwitcher() {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
 
-        {/* "Barcha filiallar" ko'rinishi olib tashlandi — strict branch-required */}
+        {/* "Barcha filiallar" — faqat director */}
+        {isDirector && (
+          <>
+            <DropdownMenuItem
+              onClick={() => switchBranch(null, null)}
+              className="flex items-center gap-2"
+            >
+              <Layers className="h-4 w-4 text-emerald-600 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium">Barcha filiallar</p>
+                <p className="text-xs text-muted-foreground">Umumiy statistika</p>
+              </div>
+              {!activeBranchId && (
+                <Check className="h-4 w-4 text-primary shrink-0" />
+              )}
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+          </>
+        )}
 
         {/* Filiallar ro'yxati */}
         {isLoading ? (
