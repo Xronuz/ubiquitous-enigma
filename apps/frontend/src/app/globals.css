@@ -50,7 +50,22 @@
     --shadow-pill:     0 1px 3px rgba(0,0,0,0.06);
   }
 
+  /* Dashboard C-token dark overrides */
+  :root {
+    --c-text:   #111827;
+    --c-muted:  #6B7280;
+    --c-border: rgba(0,0,0,0.06);
+    --c-bg:     #F7F8F8;
+    --c-card:   #FFFFFF;
+  }
+
   .dark {
+    --c-text:   #F1F5F9;
+    --c-muted:  #94A3B8;
+    --c-border: rgba(255,255,255,0.07);
+    --c-bg:     #1E293B;
+    --c-card:   #1e2433;
+
     --background:         222 47% 5%;
     --foreground:         210 40% 96%;
     --card:               222 40% 8%;

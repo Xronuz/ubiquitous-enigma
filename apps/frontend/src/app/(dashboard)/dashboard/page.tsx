@@ -46,16 +46,16 @@ import { useRouter } from 'next/navigation';
 import { useToast } from '@/components/ui/use-toast';
 import { cn } from '@/lib/utils';
 
-// ── Design tokens ─────────────────────────────────────────────────────────────
+// ── Design tokens — CSS variables = dark mode automatic ────────────────────────
 const C = {
   primary:     '#0F7B53',
   primaryMid:  '#1C8E61',
   primaryLight:'#DDF5EA',
-  text:        '#111827',
-  muted:       '#6B7280',
-  border:      'rgba(0,0,0,0.05)',
-  bg:          '#F7F8F8',
-  card:        '#FFFFFF',
+  text:        'var(--c-text)',
+  muted:       'var(--c-muted)',
+  border:      'var(--c-border)',
+  bg:          'var(--c-bg)',
+  card:        'var(--c-card)',
   shadow:      '0 10px 30px rgba(0,0,0,0.04)',
 } as const;
 
@@ -116,8 +116,8 @@ function StatCard({
     <Wrapper
       {...(wrapperProps as any)}
       className={cn(
-        'group relative block rounded-2xl bg-white p-6 shadow-sm transition-all duration-200',
-        isClickable && 'cursor-pointer hover:-translate-y-[2px] hover:shadow-md',
+        'group relative block rounded-2xl bg-white dark:bg-[#1e2433] p-6 shadow-sm dark:shadow-slate-900/30 transition-all duration-200',
+        isClickable && 'cursor-pointer hover:-translate-y-[2px] hover:shadow-md dark:hover:shadow-slate-900/50',
       )}
       style={{}}
     >
@@ -178,7 +178,7 @@ function SectionHeader({ title, action }: { title: string; action?: React.ReactN
 function PCard({ className, style, children }: { className?: string; style?: React.CSSProperties; children: React.ReactNode }) {
   return (
     <div
-      className={cn('rounded-2xl bg-white p-6 shadow-sm', className)}
+      className={cn('rounded-2xl bg-white dark:bg-[#1e2433] p-6 shadow-sm dark:shadow-slate-900/30', className)}
       style={{ ...style }}
     >
       {children}
@@ -312,7 +312,7 @@ function TodayScheduleWidget() {
           {slots.slice(0, 6).map((slot: any) => (
             <div
               key={slot.id}
-              className="flex items-center gap-3 rounded-[14px] border p-3 transition-colors hover:bg-slate-50"
+              className="flex items-center gap-3 rounded-[14px] border p-3 transition-colors hover:bg-slate-50 dark:hover:bg-slate-700/30"
               style={{ borderColor: C.border }}
             >
               <div
@@ -1145,7 +1145,7 @@ function SuperAdminDashboard() {
               { label: 'Sozlamalar',       href: '/dashboard/settings',    icon: Globe,       iconColor: C.primary },
             ].map(({ label, href, icon: Icon, iconColor }) => (
               <Link key={href} href={href}
-                className="flex flex-col items-center gap-2 rounded-[14px] border p-3 text-center transition-colors hover:bg-slate-50"
+                className="flex flex-col items-center gap-2 rounded-[14px] border p-3 text-center transition-colors hover:bg-slate-50 dark:hover:bg-slate-700/30"
                 style={{ borderColor: C.border }}
               >
                 <div className="h-8 w-8 rounded-lg flex items-center justify-center" style={{ background: C.bg }}>
@@ -1681,7 +1681,7 @@ function DirectorDashboard() {
 
         {/* KPI Summary */}
         <a href="/dashboard/kpi"
-          className="group relative block rounded-2xl bg-white p-6 shadow-sm transition-all duration-200 cursor-pointer hover:-translate-y-[2px] hover:shadow-md"
+          className="group relative block rounded-2xl bg-white dark:bg-[#1e2433] p-6 shadow-sm dark:shadow-slate-900/30 transition-all duration-200 cursor-pointer hover:-translate-y-[2px] hover:shadow-md"
         >
           <ArrowUpRight className="absolute bottom-4 right-5 h-4 w-4 text-slate-300 opacity-50 group-hover:opacity-100 group-hover:text-emerald-500 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all duration-200" />
           <div className="flex items-start justify-between mb-4">
@@ -1704,7 +1704,7 @@ function DirectorDashboard() {
 
         {/* AI Analytics */}
         <a href="/dashboard/ai-analytics"
-          className="group relative block rounded-2xl bg-white p-6 shadow-sm transition-all duration-200 cursor-pointer hover:-translate-y-[2px] hover:shadow-md"
+          className="group relative block rounded-2xl bg-white dark:bg-[#1e2433] p-6 shadow-sm dark:shadow-slate-900/30 transition-all duration-200 cursor-pointer hover:-translate-y-[2px] hover:shadow-md"
         >
           <ArrowUpRight className="absolute bottom-4 right-5 h-4 w-4 text-slate-300 opacity-50 group-hover:opacity-100 group-hover:text-emerald-500 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all duration-200" />
           <div className="flex items-start justify-between mb-4">
@@ -1759,7 +1759,7 @@ function DirectorDashboard() {
                   const bTeachers   = branchUsers.filter((u: any) => ['teacher', 'class_teacher'].includes(u.role)).length;
                   const bStaff      = branchUsers.filter((u: any) => !['student', 'teacher', 'class_teacher', 'parent'].includes(u.role)).length;
                   return (
-                    <tr key={branch.id} className="border-b last:border-0 hover:bg-slate-50/60 transition-colors" style={{ borderColor: C.border }}>
+                    <tr key={branch.id} className="border-b last:border-0 hover:bg-slate-50/60 dark:hover:bg-slate-700/30 transition-colors" style={{ borderColor: C.border }}>
                       <td className="py-3 px-3">
                         <p className="font-semibold text-[13px]" style={{ color: C.text }}>{branch.name}</p>
                         {branch.address && <p className="text-[11px] mt-0.5 truncate max-w-[200px]" style={{ color: C.muted }}>{branch.address}</p>}
@@ -1911,7 +1911,7 @@ function DirectorDashboard() {
               ))}
               <button
                 onClick={() => router.push('/dashboard/discipline')}
-                className="w-full text-xs font-semibold py-2 rounded-[14px] transition-colors hover:bg-slate-50"
+                className="w-full text-xs font-semibold py-2 rounded-[14px] transition-colors hover:bg-slate-50 dark:hover:bg-slate-700/30"
                 style={{ color: C.primary }}
               >
                 Barchasini ko'rish →

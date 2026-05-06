@@ -3,7 +3,7 @@ import * as ExcelJS from 'exceljs';
 import { PrismaService } from '@/common/prisma/prisma.service';
 import { EventsGateway } from '@/modules/gateway/events.gateway';
 
-export type AuditAction = 'create' | 'update' | 'delete' | 'login' | 'logout' | 'export';
+export type AuditAction = 'create' | 'update' | 'delete' | 'hard_delete' | 'login' | 'logout' | 'export';
 
 export interface AuditLogOptions {
   userId?: string;
