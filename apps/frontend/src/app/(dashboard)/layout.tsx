@@ -102,32 +102,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <HeaderActionsProvider>
-      {/*
-        Modern Bento Box:
-        bg-[#f8faf8] + p-3 gap-3 = yaxlit, ixcham, tartibli
-        ┌──────────┬────────────────────────────┐
-        │ Sidebar  │ Header                     │  <- yagona chiziqda
-        │ rounded  ├────────────────────────────│
-        │          │ Main content (transparent) │
-        └──────────┴────────────────────────────┘
-      */}
-      <div className="flex h-screen bg-[#F7F8F8] dark:bg-[#0d1117] p-3 gap-3 overflow-hidden">
+      {/* White sidebar + header, gray content with rounded-tl-2xl inner corner */}
+      <div className="flex h-screen bg-white dark:bg-slate-900 overflow-hidden">
         <RealtimeProvider />
 
-        {/* Sidebar bento panel */}
-        <div className="hidden md:block shrink-0">
+        <div className="hidden md:flex shrink-0">
           <Sidebar />
         </div>
 
-        {/* O'ng ustun: header + content */}
-        <div className="flex flex-1 min-w-0 flex-col gap-3 overflow-hidden">
-
-          {/* Header panel */}
+        <div className="flex flex-1 min-w-0 flex-col overflow-hidden">
           <Header />
-
-          {/* Transparent content — ramka yo'q, faqat ichki card'lar styled */}
           <main
-            className="flex-1 min-h-0 overflow-y-auto"
+            className="flex-1 min-h-0 overflow-y-auto bg-slate-100 dark:bg-slate-950 rounded-tl-2xl p-6"
             onClick={() => { if (!sidebarCollapsed) setSidebarCollapsed(true); }}
           >
             <BreadcrumbNav />

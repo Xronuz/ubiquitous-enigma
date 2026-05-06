@@ -116,10 +116,10 @@ function StatCard({
     <Wrapper
       {...(wrapperProps as any)}
       className={cn(
-        'group relative block rounded-[24px] bg-white p-7 transition-all duration-200',
-        isClickable && 'cursor-pointer hover:-translate-y-[2px] hover:shadow-[0_20px_48px_rgba(0,0,0,0.08)]',
+        'group relative block rounded-2xl bg-white p-6 shadow-sm transition-all duration-200',
+        isClickable && 'cursor-pointer hover:-translate-y-[2px] hover:shadow-md',
       )}
-      style={{ border: '1px solid rgba(0,0,0,0.04)', boxShadow: '0 10px 30px rgba(0,0,0,0.04)' }}
+      style={{}}
     >
       {/* Arrow indicator — pastki o'ng burchak, icon bilan to'qnashmaydi */}
       {isClickable && (
@@ -178,8 +178,8 @@ function SectionHeader({ title, action }: { title: string; action?: React.ReactN
 function PCard({ className, style, children }: { className?: string; style?: React.CSSProperties; children: React.ReactNode }) {
   return (
     <div
-      className={cn('rounded-[24px] bg-white p-7', className)}
-      style={{ border: '1px solid rgba(0,0,0,0.04)', boxShadow: '0 10px 30px rgba(0,0,0,0.04)', ...style }}
+      className={cn('rounded-2xl bg-white p-6 shadow-sm', className)}
+      style={{ ...style }}
     >
       {children}
     </div>
@@ -1681,8 +1681,7 @@ function DirectorDashboard() {
 
         {/* KPI Summary */}
         <a href="/dashboard/kpi"
-          className="group relative block rounded-[24px] bg-white p-7 transition-all duration-200 cursor-pointer hover:-translate-y-[2px] hover:shadow-[0_20px_48px_rgba(0,0,0,0.08)]"
-          style={{ border: '1px solid rgba(0,0,0,0.04)', boxShadow: '0 10px 30px rgba(0,0,0,0.04)' }}
+          className="group relative block rounded-2xl bg-white p-6 shadow-sm transition-all duration-200 cursor-pointer hover:-translate-y-[2px] hover:shadow-md"
         >
           <ArrowUpRight className="absolute bottom-4 right-5 h-4 w-4 text-slate-300 opacity-50 group-hover:opacity-100 group-hover:text-emerald-500 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all duration-200" />
           <div className="flex items-start justify-between mb-4">
@@ -1705,8 +1704,7 @@ function DirectorDashboard() {
 
         {/* AI Analytics */}
         <a href="/dashboard/ai-analytics"
-          className="group relative block rounded-[24px] bg-white p-7 transition-all duration-200 cursor-pointer hover:-translate-y-[2px] hover:shadow-[0_20px_48px_rgba(0,0,0,0.08)]"
-          style={{ border: '1px solid rgba(0,0,0,0.04)', boxShadow: '0 10px 30px rgba(0,0,0,0.04)' }}
+          className="group relative block rounded-2xl bg-white p-6 shadow-sm transition-all duration-200 cursor-pointer hover:-translate-y-[2px] hover:shadow-md"
         >
           <ArrowUpRight className="absolute bottom-4 right-5 h-4 w-4 text-slate-300 opacity-50 group-hover:opacity-100 group-hover:text-emerald-500 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all duration-200" />
           <div className="flex items-start justify-between mb-4">

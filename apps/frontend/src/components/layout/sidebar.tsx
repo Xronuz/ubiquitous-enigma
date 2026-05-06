@@ -379,17 +379,14 @@ export function Sidebar() {
   return (
     <aside
       className={cn(
-        'flex h-full shrink-0 flex-col rounded-2xl overflow-hidden transition-all duration-300 ease-in-out',
-        'bg-white/95 dark:bg-slate-900/95',
-        'border border-slate-200/70 dark:border-slate-700/70',
-        'shadow-sm dark:shadow-slate-900/20',
-        '[backdrop-filter:blur(20px)] [-webkit-backdrop-filter:blur(20px)]',
+        'flex h-full shrink-0 flex-col transition-all duration-300 ease-in-out',
+        'bg-white dark:bg-slate-900',
         expanded ? 'w-[208px]' : 'w-[52px]',
       )}
     >
       {/* Logo row */}
       <div className={cn(
-        'flex h-[56px] shrink-0 items-center px-2.5 border-b border-slate-100/80 dark:border-slate-700/80',
+        'flex h-[60px] shrink-0 items-center px-2.5',
         expanded ? 'justify-between gap-2' : 'flex-col items-center justify-center gap-1.5 pt-2',
       )}>
         <Link href="/dashboard" className="flex shrink-0 items-center justify-center">
@@ -471,7 +468,7 @@ export function Sidebar() {
 
       {/* Footer */}
       <div className={cn(
-        'shrink-0 border-t border-slate-100/80 dark:border-slate-700/80 py-3',
+        'shrink-0 py-3',
         expanded ? 'px-3' : 'px-2',
       )}>
         {expanded ? (

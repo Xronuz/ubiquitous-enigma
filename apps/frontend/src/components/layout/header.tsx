@@ -52,12 +52,8 @@ export function Header() {
   return (
     <header
       className={cn(
-        'flex h-[74px] shrink-0 items-center justify-between gap-4 rounded-2xl px-5',
-        'bg-white/95 dark:bg-slate-900/95',
-        '[backdrop-filter:blur(20px)] [-webkit-backdrop-filter:blur(20px)]',
-        'border border-slate-200/70 dark:border-slate-700/70',
-        'shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_16px_rgba(0,0,0,0.04)]',
-        'dark:shadow-[0_1px_3px_rgba(0,0,0,0.3),0_4px_16px_rgba(0,0,0,0.3)]',
+        'flex h-[60px] shrink-0 items-center justify-between gap-4 px-5',
+        'bg-white dark:bg-slate-900',
       )}
     >
       {/* Left: mobile nav + search */}
@@ -65,8 +61,9 @@ export function Header() {
         <MobileNav />
         <button
           onClick={() => document.dispatchEvent(new CustomEvent('open-command-palette'))}
+          aria-label="Qidiruv panelini ochish"
           className={cn(
-            'hidden md:flex items-center gap-2.5 rounded-full h-[42px] px-4 w-[360px] transition-colors cursor-pointer',
+            'hidden md:flex items-center gap-2.5 rounded-full h-[42px] px-4 w-[260px] lg:w-[360px] transition-colors cursor-pointer',
             'bg-slate-100/80 dark:bg-slate-800/80',
             'border border-black/[0.06] dark:border-white/[0.06]',
             'hover:bg-slate-200/60 dark:hover:bg-slate-700/60',
@@ -89,6 +86,7 @@ export function Header() {
 
         <button
           onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+          aria-label="Mavzuni o'zgartirish"
           className={cn(
             'relative flex h-[42px] w-[42px] items-center justify-center rounded-full transition-colors',
             'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200',
@@ -100,13 +98,7 @@ export function Header() {
           <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
         </button>
 
-        <div className={cn(
-          'flex h-[42px] w-[42px] items-center justify-center rounded-full',
-          'bg-slate-100/80 dark:bg-slate-800/80',
-          'border border-black/[0.06] dark:border-white/[0.06]',
-        )}>
-          <NotificationDrawer />
-        </div>
+        <NotificationDrawer />
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -118,7 +110,7 @@ export function Header() {
               'border border-black/[0.06] dark:border-white/[0.06]',
             )}>
               <Avatar className={cn('h-8 w-8 ring-2 ring-offset-1 ring-offset-white dark:ring-offset-slate-900 shrink-0', ringColor)}>
-                <AvatarImage src={undefined} />
+                <AvatarImage src={user?.avatarUrl ?? undefined} />
                 <AvatarFallback className="text-[11px] font-bold bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400">
                   {user ? getInitials(user.firstName, user.lastName) : 'U'}
                 </AvatarFallback>
