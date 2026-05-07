@@ -199,9 +199,9 @@ export class PayrollController {
   }
 
   @Put('monthly/:id/paid')
-  @Roles(...MANAGERS)
+  @Roles(UserRole.DIRECTOR)
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: "Oylik to'landi deb belgilash" })
+  @ApiOperation({ summary: "Oylik to'landi deb belgilash (faqat direktor)" })
   markPayrollPaid(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
     return this.service.markPayrollPaid(id, user);
   }

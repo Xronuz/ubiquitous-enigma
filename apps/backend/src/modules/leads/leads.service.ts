@@ -416,7 +416,13 @@ export class LeadsService {
       throw new ForbiddenException("Boshqa xodim izohini o'chira olmaysiz");
     }
 
-    await this.prisma.leadComment.delete({ where: { id: commentId } });
+    // Defense-in-depth: schoolId WHERE da bo'lishi shart
+    const result = await this.prisma.leadComment.deleteMany({
+      where: { id: commentId, leadId, schoolId: currentUser.schoolId! },
+    });
+    if (result.count === 0) {
+      throw new NotFoundException('Izoh topilmadi');
+    }
     return { message: "Izoh o'chirildi" };
   }
 

@@ -149,7 +149,13 @@ export class ClassesService {
     if (studentCount > 0) {
       throw new BadRequestException('Sinfda o\'quvchilar bor. Avval ularni chiqaring');
     }
-    await this.prisma.class.delete({ where: { id } });
+    // Defense-in-depth: tenant scope ham WHERE da bo'lsin (TOCTOU racega qarshi)
+    const result = await this.prisma.class.deleteMany({
+      where: { id, ...buildTenantWhere(currentUser) },
+    });
+    if (result.count === 0) {
+      throw new NotFoundException('Sinf topilmadi yoki sizga tegishli emas');
+    }
     await this.invalidate(currentUser.schoolId!);
     return { message: 'Sinf o\'chirildi' };
   }

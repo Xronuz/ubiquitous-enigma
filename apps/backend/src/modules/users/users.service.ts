@@ -11,6 +11,11 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { buildTenantWhere } from '@/common/utils/tenant-scope.util';
+import {
+  assertCanManage,
+  assertNotSelf,
+  buildVisibleRoleFilter,
+} from '@/common/utils/role-hierarchy.util';
 
 @Injectable()
 export class UsersService {
@@ -76,7 +81,18 @@ export class UsersService {
     // super_admin can see all users; others get branchFilter
     const baseFilter = currentUser.isSuperAdmin ? {} : buildTenantWhere(currentUser);
     const where: any = { ...baseFilter };
-    if (role) where.role = role;
+
+    // Rol-darajasiga ko'ra ko'rinish: actor o'zidan yuqori rolni ko'rmaydi
+    const visibleRoleFilter = buildVisibleRoleFilter(currentUser.role as UserRole);
+    if (role) {
+      // Aniq rol so'ralganda — agar u yashirilgan bo'lsa, bo'sh natija qaytarish
+      if (visibleRoleFilter?.notIn?.includes(role as UserRole)) {
+        return { data: [], meta: { total: 0, page, limit, totalPages: 0 } };
+      }
+      where.role = role;
+    } else if (visibleRoleFilter) {
+      where.role = visibleRoleFilter;
+    }
     if (search) {
       where.OR = [
         { firstName: { contains: search, mode: 'insensitive' } },
@@ -112,6 +128,12 @@ export class UsersService {
 
     if (!currentUser.isSuperAdmin && user.schoolId !== currentUser.schoolId) {
       throw new ForbiddenException('Boshqa maktab foydalanuvchisiga kirish taqiqlangan');
+    }
+
+    // Rol-darajasi: o'zidan yuqori rolni ko'ra olmaydi (super_admin'ni direktorga ochmaslik)
+    const visibleRoleFilter = buildVisibleRoleFilter(currentUser.role as UserRole);
+    if (visibleRoleFilter?.notIn?.includes(user.role as UserRole)) {
+      throw new NotFoundException('Foydalanuvchi topilmadi');
     }
     return user;
   }
@@ -183,8 +205,18 @@ export class UsersService {
   async update(id: string, dto: UpdateUserDto, currentUser: JwtPayload) {
     const before = await this.findOne(id, currentUser);
 
+    // Rol-ierarxiya: faqat o'zidan past yoki o'zini-o'zi (cheklangan field'lar)
+    if (id !== currentUser.sub) {
+      assertCanManage(currentUser, before.role as UserRole);
+    }
+
     // Prevent mass assignment of sensitive / security-critical fields
     const { role, schoolId, branchId, password, ...safeDto } = dto as any;
+
+    // O'zini-o'zi bloklashni to'sish — login holatini yo'qotmasligi uchun
+    if (id === currentUser.sub && safeDto.isActive === false) {
+      throw new ForbiddenException("O'zingizni bloklay olmaysiz");
+    }
 
     const updateData: Record<string, any> = {};
     if (safeDto.firstName !== undefined) updateData.firstName = safeDto.firstName;
@@ -224,6 +256,13 @@ export class UsersService {
 
   async remove(id: string, currentUser: JwtPayload) {
     const user = await this.findOne(id, currentUser);
+
+    // O'zini-o'zi bloklash taqiqlanadi (login qulflanib qolmasligi uchun)
+    assertNotSelf(currentUser.sub, id);
+
+    // Rol-ierarxiya: faqat o'zidan past rolni bloklash mumkin
+    assertCanManage(currentUser, user.role as UserRole);
+
     await this.prisma.user.update({
       where: { id },
       data: { isActive: false },
@@ -242,7 +281,7 @@ export class UsersService {
     return { message: 'Foydalanuvchi bloklandi' };
   }
 
-  /** Permanent hard-delete — faqat director o'z maktabidagi foydalanuvchini o'chiradi */
+  /** Permanent hard-delete — faqat director o'z maktabidagi past rolli foydalanuvchini o'chiradi */
   async hardDelete(id: string, currentUser: JwtPayload) {
     // Faqat director ruxsat berilgan
     if (currentUser.role !== UserRole.DIRECTOR) {
@@ -253,14 +292,12 @@ export class UsersService {
       where: { id, schoolId: currentUser.schoolId! },
     });
     if (!target) throw new NotFoundException('Foydalanuvchi topilmadi');
-    // Direktorning o'zini o'chirishdan himoya
-    if (target.id === currentUser.sub) {
-      throw new ForbiddenException('O\'zingizni o\'chira olmaysiz');
-    }
-    // Boshqa direktorni o'chirishdan himoya
-    if (target.role === UserRole.DIRECTOR) {
-      throw new ForbiddenException('Boshqa direktorni o\'chira olmaysiz');
-    }
+
+    // O'zini-o'zi o'chirishdan himoya
+    assertNotSelf(currentUser.sub, target.id);
+
+    // Rol-ierarxiya: super_admin, boshqa direktor, va teng/yuqori rollardan himoya
+    assertCanManage(currentUser, target.role as UserRole);
 
     await this.prisma.user.delete({ where: { id } });
 
@@ -281,6 +318,10 @@ export class UsersService {
       where: { id, schoolId: currentUser.schoolId! },
     });
     if (!user) throw new NotFoundException('Foydalanuvchi topilmadi');
+
+    // Rol-ierarxiya: faqat o'zidan past rolni qayta faollashtirish mumkin
+    assertCanManage(currentUser, user.role as UserRole);
+
     await this.prisma.user.update({
       where: { id },
       data: { isActive: true },

@@ -343,7 +343,13 @@ export class GradesService {
       }
     }
 
-    await this.prisma.grade.delete({ where: { id } });
+    // Defense-in-depth: tenant scope ham WHERE da bo'lsin
+    const result = await this.prisma.grade.deleteMany({
+      where: { id, ...buildTenantWhere(currentUser) },
+    });
+    if (result.count === 0) {
+      throw new NotFoundException('Baho topilmadi yoki sizga tegishli emas');
+    }
 
     // ── Audit log ────────────────────────────────────────────────────────────
     this.auditService?.log({

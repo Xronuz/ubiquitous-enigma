@@ -333,7 +333,10 @@ export default function UsersPage() {
             <TH className="text-right">Amal</TH>
           </THead>
           <TBody>
-            {filtered.map((u: any) => (
+            {filtered.map((u: any) => {
+              const isSelf = u.id === user?.id;
+              const isUntouchable = u.role === 'super_admin' || u.role === 'director' || isSelf;
+              return (
               <TR key={u.id}>
                 <TD><AvatarCell name={`${u.firstName} ${u.lastName}`} subtitle={u.email} /></TD>
                 <TD><span className="text-[12px] font-semibold" style={{ color: DS.muted }}>{getRoleLabel(u.role)}</span></TD>
@@ -345,7 +348,9 @@ export default function UsersPage() {
                 </TD>
                 <TD className="text-right">
                   <div className="flex items-center justify-end gap-1.5">
-                    {u.isActive ? (
+                    {isUntouchable ? (
+                      <span className="text-[12px]" style={{ color: DS.muted }}>—</span>
+                    ) : u.isActive ? (
                       <Btn variant="danger" size="sm" icon={<Ban className="h-3.5 w-3.5" />} onClick={() => setConfirmDelete(u)}>
                         Bloklash
                       </Btn>
@@ -354,7 +359,7 @@ export default function UsersPage() {
                         Faollashtirish
                       </Btn>
                     )}
-                    {isDirector && u.role !== 'director' && (
+                    {isDirector && !isUntouchable && (
                       <Btn variant="danger" size="sm" icon={<Trash2 className="h-3.5 w-3.5" />}
                         onClick={() => setConfirmHardDelete(u)}
                         title="Butunlay o'chirish"
@@ -363,7 +368,8 @@ export default function UsersPage() {
                   </div>
                 </TD>
               </TR>
-            ))}
+              );
+            })}
           </TBody>
           {meta && meta.totalPages > 1 && (
             <Pagination page={page} total={meta.total} perPage={20} onPage={setPage} />

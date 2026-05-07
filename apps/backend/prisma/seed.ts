@@ -10,6 +10,23 @@ async function hash(password: string) {
 }
 
 async function main() {
+  // Production rejimda seed bajarilmaydi
+  if (process.env.NODE_ENV === 'production') {
+    console.log('⛔ Production rejimida seed bajarilmaydi');
+    return;
+  }
+
+  // Idempotent guard: agar 1 dan ortiq foydalanuvchi mavjud bo'lsa, mavjud DB ustiga
+  // qayta yozmaslik. Faqat SEED_FORCE=true bilan qayta majbur qilinadi.
+  if (process.env.SEED_FORCE !== 'true') {
+    const existingCount = await prisma.user.count();
+    if (existingCount > 1) {
+      console.log(`ℹ️  DB da ${existingCount} foydalanuvchi mavjud — seed o'tkazilmaydi.`);
+      console.log('   Qayta majburlash: SEED_FORCE=true pnpm db:seed');
+      return;
+    }
+  }
+
   console.log('🌱 Seeding demo data...');
 
   // ─── 1. Demo School ────────────────────────────────────────────────────────
@@ -66,8 +83,8 @@ async function main() {
     firstName: string;
     lastName: string;
     role: UserRole;
-    schoolId: string;
-    branchId: string;
+    schoolId: string | null;
+    branchId: string | null;
   }> = [
     {
       email: 'super@eduplatform.uz',
@@ -75,8 +92,8 @@ async function main() {
       firstName: 'Super',
       lastName: 'Admin',
       role: 'super_admin' as UserRole,
-      schoolId: school.id,
-      branchId: branch.id,
+      schoolId: null, // Super admin platforma darajasida — maktabga bog'liq emas
+      branchId: null,
     },
     {
       email: 'director@demo-school.uz',
@@ -153,19 +170,14 @@ async function main() {
   ];
 
   for (const u of users) {
+    const existing = await prisma.user.findUnique({ where: { email: u.email } });
+    if (existing) {
+      console.log(`  • User [${existing.role}]: ${existing.email} (mavjud — tegmaymiz)`);
+      continue;
+    }
     const passwordHash = await hash(u.password);
-    const created = await prisma.user.upsert({
-      where: { email: u.email },
-      update: {
-        passwordHash,
-        firstName: u.firstName,
-        lastName: u.lastName,
-        role: u.role,
-        schoolId: u.schoolId,
-        branchId: u.branchId,
-        isActive: true,
-      },
-      create: {
+    const created = await prisma.user.create({
+      data: {
         email: u.email,
         passwordHash,
         firstName: u.firstName,

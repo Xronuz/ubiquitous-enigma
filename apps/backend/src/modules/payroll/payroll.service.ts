@@ -245,11 +245,13 @@ export class PayrollService {
   }
 
   async deleteSalaryConfig(id: string, currentUser: JwtPayload) {
-    const config = await this.prisma.staffSalary.findFirst({
+    // Defense-in-depth: tenant scope WHERE da bo'lishi shart
+    const result = await this.prisma.staffSalary.deleteMany({
       where: { id, ...buildTenantWhere(currentUser) },
     });
-    if (!config) throw new NotFoundException('Maosh konfiguratsiyasi topilmadi');
-    await this.prisma.staffSalary.delete({ where: { id } });
+    if (result.count === 0) {
+      throw new NotFoundException('Maosh konfiguratsiyasi topilmadi yoki sizga tegishli emas');
+    }
     return { message: "Maosh konfiguratsiyasi o'chirildi" };
   }
 
